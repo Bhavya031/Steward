@@ -34,8 +34,6 @@ server/helper-executor.test.ts:T—
 server/helper-policy.ts:SA
 server/index.ts:EM
 server/install-policy.ts:SA
-server/loudness-recipe.test.ts:T—
-server/loudness-recipe.ts:RA
 server/loudness-policy.ts:SA
 server/media-formats.ts:RY
 server/media-recipe.test.ts:T—
@@ -48,6 +46,7 @@ server/plan.test.ts:T—
 server/plan.ts:PA
 server/probe.ts:SA
 server/process-stream.ts:EA
+server/recipe-integrity.test.ts:T—
 server/recipe-match.test.ts:T—
 server/recipe-match.ts:RA
 server/recipe-cleanup.test.ts:T—
