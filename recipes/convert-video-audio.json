@@ -1,0 +1,35 @@
+{
+  "name": "convert-video-audio",
+  "replaced_service": "CloudConvert",
+  "monthly_price": 9,
+  "command_template": {
+    "commands": [
+      [
+        "ffmpeg",
+        "-i",
+        "{{input_0}}",
+        "{{media_args}}",
+        "{{input_0_dir}}/{{input_0_stem}}.{{target_format}}"
+      ]
+    ],
+    "output_path": "{{input_0_dir}}/{{input_0_stem}}.{{target_format}}"
+  },
+  "checks": [
+    {
+      "type": "format_matches",
+      "target": "{{target_format}}"
+    },
+    {
+      "type": "duration_matches",
+      "target": "{{input_0}}"
+    },
+    {
+      "type": "streams_present",
+      "target": "{{target_streams}}"
+    }
+  ],
+  "created_at": "2026-07-15T18:03:49.118Z",
+  "arch": "arm64",
+  "tool": "ffmpeg",
+  "install_weight": "light"
+}

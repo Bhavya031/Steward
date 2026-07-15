@@ -12,6 +12,9 @@ const QUERY_ARGS = {
     "-v", "error", "-count_frames", "-show_entries",
     "stream=index,codec_type,nb_read_frames", "-of", "json",
   ],
+  media_format: [
+    "-v", "error", "-show_entries", "format=format_name:format_tags=major_brand", "-of", "json",
+  ],
 } as const;
 
 export type FfprobeQuery = keyof typeof QUERY_ARGS;

@@ -89,7 +89,9 @@ export async function rerun(
   const trustedRecipe = validateRecipe(recipe);
   const normalizedFiles = files.map((file) => resolve(file));
   const profile = options.profile ?? probeSystem();
-  const runtimeSlots = await runtimeRecipeSlots(trustedRecipe, normalizedFiles, profile);
+  const runtimeSlots = await runtimeRecipeSlots(
+    trustedRecipe, normalizedFiles, profile, options.taskDescription,
+  );
   const plan = renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots);
   let allPass = false;
   try {

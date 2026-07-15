@@ -1,6 +1,8 @@
 import { executeFfprobe } from "./executor.ts";
+import { mediaRecipeSlots } from "./media-recipe.ts";
 import type { SystemProfile } from "./probe.ts";
 import type { Recipe } from "./recipe-types.ts";
+import type { RecipeSlotValue } from "./recipe-template.ts";
 
 const BITRATE_SLOT = "{{video_bitrate_kbps}}";
 
@@ -26,11 +28,13 @@ export async function runtimeRecipeSlots(
   recipe: Recipe,
   files: string[],
   profile: SystemProfile,
-): Promise<Record<string, string>> {
+  taskDescription?: string,
+): Promise<Record<string, RecipeSlotValue>> {
+  const slots = await mediaRecipeSlots(recipe, files, profile, taskDescription);
   const needsBitrate = recipe.command_template.commands.flat().some((argument) =>
     argument.includes(BITRATE_SLOT)
   );
-  if (!needsBitrate) return {};
+  if (!needsBitrate) return slots;
   const sizeCheck = recipe.checks.find((check) => check.type === "size_under");
   if (typeof sizeCheck?.target !== "number" || !files[0]) {
     throw new Error("video bitrate recipe requires a numeric size limit and one input");
@@ -43,5 +47,5 @@ export async function runtimeRecipeSlots(
   if (videoKbps < 32) {
     throw new Error("source is too long for the recipe's 96 kbps audio within the size limit");
   }
-  return { video_bitrate_kbps: `${videoKbps}k` };
+  return { ...slots, video_bitrate_kbps: `${videoKbps}k` };
 }

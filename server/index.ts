@@ -1,5 +1,6 @@
 import { constants, accessSync, statSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
+import { mediaFormat } from "./media-formats.ts";
 import type { Plan } from "./plan.ts";
 import { probeSystem, type SystemProfile } from "./probe.ts";
 import { runWithRepair } from "./repair-loop.ts";
@@ -41,6 +42,12 @@ function identityFor(task: string, plan: Plan): RecipeIdentity {
       monthly_price: 12,
     };
   }
+  const formatCheck = plan.checks.find((check) =>
+    check.type === "format_matches" && mediaFormat(check.target)
+  );
+  if (formatCheck) {
+    return { name: "convert-video-audio", replaced_service: "CloudConvert", monthly_price: 9 };
+  }
   return {
     name: slug(task) || `${plan.tool}-recipe`,
     replaced_service: "Single-purpose file SaaS",
@@ -52,10 +59,12 @@ function printSystem(profile: SystemProfile): void {
   console.log(`System: macOS ${profile.macosVersion} · ${profile.architecture} · ${profile.ram.gib} GiB`);
 }
 
-async function runMatched(recipe: Recipe, confidence: number, files: string[]): Promise<void> {
+async function runMatched(recipe: Recipe, confidence: number, files: string[], task: string): Promise<void> {
   console.log(`Recipe exists: ${recipe.name} (${Math.round(confidence * 100)}% local match)`);
   console.log("Mode: saved recipe · model calls: 0");
-  const run = await rerun(recipe, files, { executionOptions: { onEvent: executionReporter() } });
+  const run = await rerun(recipe, files, {
+    taskDescription: task, executionOptions: { onEvent: executionReporter() },
+  });
   printRecipeCard(recipe, run.plan, run.checks, false);
   if (!run.all_pass) throw new Error(`recipe rerun failed (exit ${run.execution.exit_code})`);
 }
@@ -103,7 +112,7 @@ export async function main(argv = Bun.argv.slice(2)): Promise<void> {
   const files = filesFrom(rawFiles);
   console.log("STEWARD · your computer already knows how.");
   const localMatch = match(task, files);
-  if (localMatch) return runMatched(localMatch.recipe, localMatch.confidence, files);
+  if (localMatch) return runMatched(localMatch.recipe, localMatch.confidence, files, task);
   return runPlanned(task, files);
 }
 

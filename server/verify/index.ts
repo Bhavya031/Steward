@@ -1,6 +1,8 @@
 import type { CheckTarget } from "../plan.ts";
 import { AUDIO_CHECK_TYPES, verifyAudioCheck, type AudioCheckType } from "./audio.ts";
 import { DOC_CHECK_TYPES, verifyDocCheck, type DocCheckType } from "./doc.ts";
+import { mediaFormat } from "../media-formats.ts";
+import { verifyMediaFormat } from "./media-format.ts";
 import type { VerificationContext, VerificationResult, VerificationRunContext } from "./types.ts";
 import { VIDEO_CHECK_TYPES, verifyVideoCheck, type VideoCheckType } from "./video.ts";
 
@@ -34,7 +36,9 @@ export async function verifyChecks(
       continue;
     }
     try {
-      const check = DOC_TYPES.has(type)
+      const check = type === "format_matches" && mediaFormat(target)
+        ? verifyMediaFormat(target as CheckTarget, runContext)
+        : DOC_TYPES.has(type)
         ? verifyDocCheck(type as DocCheckType, target as CheckTarget, runContext)
         : AUDIO_TYPES.has(type)
           ? verifyAudioCheck(type as AudioCheckType, target as CheckTarget, runContext)
