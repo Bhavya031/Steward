@@ -1,11 +1,11 @@
 # Security audit
 
-Last updated: Phase 2 Step 9.5 (2026-07-15). `server/` is currently a CLI; there is no HTTP/WS listener or session-token surface until Phase 3.
+Last updated: Phase 2 Step 10 derivation hardening (2026-07-16). `server/` is currently a CLI; there is no HTTP/WS listener or session-token surface until Phase 3.
 
 ## Current execution surface
 
-- Fresh tasks: task/files → model plan → strict plan/profile validation → positive per-tool flag classification → role-based real-path confinement → executor.
-- Recipe reruns: validated recipe → local slot rendering → the same executor and verifier. The resolved source graph excludes the agent and any Codex/model reference.
+- Fresh tasks: task/files → model plan → strict plan/profile/derivation validation → declared derivations resolve through fixed ffprobe input → positive per-tool flag classification → role-based real-path confinement → executor.
+- Recipe reruns: validated recipe → local path slots + serialized named derivations → the same executor and verifier. Derivation names/typed args are closed and contain no eval/expression surface; the resolved source graph excludes the agent and any Codex/model reference.
 - Verification: fixed ffprobe/ffmpeg/Ghostscript command builders route through the executor; verification never executes plan-supplied argv.
 - Helpers: exact helper tier and granted roots; helpers cannot be primary recipe tools or install steps.
 - Writes: task outputs beside inputs or in an executor-managed temp root; recipes use atomic temp+rename; failed outputs and normal temp directories are removed.

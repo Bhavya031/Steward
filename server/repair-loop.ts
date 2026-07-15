@@ -1,6 +1,7 @@
 import type { RepairContext } from "./agent-prompts.ts";
 import type { AttemptEvent, AttemptOutcome, AttemptRun, PlanSummary } from "./attempt-types.ts";
 import { discardFailedOutput } from "./failed-output.ts";
+import { materializePlanDerivations } from "./derivation-runtime.ts";
 import { executePlan, type ExecutionOptions } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
@@ -65,8 +66,9 @@ export async function runWithRepair(options: RepairLoopOptions): Promise<Attempt
   const events: AttemptEvent[] = [];
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     if (plan.install_cmd !== null) throw new Error("repair proposed an install that requires confirmation");
+    const executablePlan = await materializePlanDerivations(plan, options.inputPaths, options.profile);
     const execution = await executePlan(
-      plan, options.profile, options.inputPaths, options.executionOptions,
+      executablePlan, options.profile, options.inputPaths, options.executionOptions,
     );
     const checks = execution.ok
       ? await verifyChecks(plan.checks, {

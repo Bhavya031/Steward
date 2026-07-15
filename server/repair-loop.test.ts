@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { executePlan } from "./executor.ts";
+import { executePlan, type ExecutionEvent } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import { probeSystem } from "./probe.ts";
 import { runWithRepair } from "./repair-loop.ts";
@@ -52,6 +52,33 @@ beforeAll(async () => {
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe("repair loop", () => {
+  test("materializes a declared derivation but retains the authored plan", async () => {
+    const output = join(root, "derived.mp4");
+    const authored: Plan = {
+      ...attemptPlan(output, false),
+      commands: [[
+        "ffmpeg", "-loglevel", "error", "-i", source, "-c:v", "libx264",
+        "-b:v", "{{video_bitrate_kbps}}", "-c:a", "aac", output,
+      ]],
+      derivations: {
+        video_bitrate_kbps: {
+          name: "size_target_video_bitrate",
+          args: { target_bytes: 1_000_000, audio_kbps: 96, safety_factor: 0.9 },
+        },
+      },
+    };
+    const events: ExecutionEvent[] = [];
+    const run = await runWithRepair({
+      initialPlan: authored, profile, inputPaths: [source],
+      executionOptions: { onEvent: (event) => events.push(event) },
+      repair: async () => { throw new Error("repair should not run"); },
+    });
+    const started = events.find((event) => event.type === "started");
+    expect(run.all_pass).toBe(true);
+    expect(run.plan).toEqual(authored);
+    expect(started?.type === "started" ? started.argv.join(" ") : "").not.toContain("{{");
+  });
+
   test("emits failed evidence then recovers to green", async () => {
     const output = join(root, "recovered.mp4");
     const initial = attemptPlan(output, true);

@@ -93,14 +93,29 @@ describe("recipes", () => {
   });
 
   test("preserves the executor-owned temp slot in multi-command recipes", () => {
-    const directory = resolve(import.meta.dir, "..", "recipes");
-    const recipe = load(directory).find((item) => item.name === "compress-video-under-25mb");
-    if (!recipe) throw new Error("committed compress recipe is missing");
+    const declared = plan();
+    declared.commands = [
+      ["ffmpeg", "-i", source, "-b:v", "{{video_bitrate_kbps}}", "-pass", "1",
+        "-passlogfile", "{{temp_dir}}/ffmpeg2pass", "-an", "-f", "null", "{{temp_dir}}/pass1.null"],
+      ["ffmpeg", "-i", source, "-b:v", "{{video_bitrate_kbps}}", "-pass", "2",
+        "-passlogfile", "{{temp_dir}}/ffmpeg2pass", output],
+    ];
+    declared.derivations = {
+      video_bitrate_kbps: {
+        name: "size_target_video_bitrate",
+        args: { target_bytes: 25_000_000, audio_kbps: 96, safety_factor: 0.94 },
+      },
+    };
+    const recipe = save({ ...input(), plan: declared }, join(root, "declared"));
+    if (!recipe) throw new Error("declared recipe did not save");
     const rendered = renderRecipe(recipe, [join(root, "fresh.mp4")], {
       video_bitrate_kbps: "1000k",
     });
     expect(rendered.commands).toHaveLength(2);
     expect(rendered.commands.flat()).toContain("{{temp_dir}}/ffmpeg2pass");
+    expect(recipe.derivations).toEqual(declared.derivations);
+    const stored = JSON.parse(readFileSync(join(root, "declared", `${recipe.name}.json`), "utf8"));
+    expect(stored.derivations).toEqual(declared.derivations);
   });
 
   test("rerun's resolved module graph cannot reach the model", async () => {

@@ -38,6 +38,7 @@ export function save(
     arch: input.arch,
     tool: input.plan.tool,
     install_weight: installWeightFor(input.plan.tool),
+    ...(input.plan.derivations ? { derivations: input.plan.derivations } : {}),
   });
   mkdirSync(directory, { recursive: true });
   const destination = join(directory, `${recipe.name}.json`);

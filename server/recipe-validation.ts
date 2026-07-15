@@ -1,11 +1,13 @@
 import { CHECK_TYPES, type CheckTarget, type PlanCheck, type PlanCheckType, type PlanTool } from "./plan.ts";
+import { validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
 import type { Recipe } from "./recipe-types.ts";
 import { TOOL_POLICIES, type InstallWeight } from "./tools.ts";
 
-const RECIPE_KEYS = [
+const REQUIRED_RECIPE_KEYS = [
   "name", "replaced_service", "monthly_price", "command_template", "checks",
   "created_at", "arch", "tool", "install_weight",
 ];
+const RECIPE_KEYS = [...REQUIRED_RECIPE_KEYS, "derivations"];
 const CHECK_TYPE_SET = new Set<string>(CHECK_TYPES);
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -38,7 +40,10 @@ function validateChecks(value: unknown): PlanCheck[] {
 }
 
 export function validateRecipe(value: unknown): Recipe {
-  if (!record(value) || !exactKeys(value, RECIPE_KEYS)) throw new Error("recipe shape is invalid");
+  if (!record(value) || !Object.keys(value).every((key) => RECIPE_KEYS.includes(key)) ||
+      !REQUIRED_RECIPE_KEYS.every((key) => Object.hasOwn(value, key))) {
+    throw new Error("recipe shape is invalid");
+  }
   if (!safeString(value.name) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.name)) {
     throw new Error("recipe name must be a lowercase slug");
   }
@@ -55,6 +60,11 @@ export function validateRecipe(value: unknown): Recipe {
       !safeString(value.command_template.output_path)) {
     throw new Error("recipe command template strings are invalid");
   }
+  const derivations: Derivations | undefined = value.derivations === undefined
+    ? undefined : validateDerivations(value.derivations);
+  validateCommandSlots(commands, derivations, (slot) =>
+    slot === "temp_dir" || /^input_\d+(?:_(?:dir|name|stem|ext))?$/.test(slot)
+  );
   if (!value.command_template.output_path.startsWith("{{input_0_dir}}/")) {
     throw new Error("recipe output must remain inside the first input directory");
   }
@@ -71,7 +81,7 @@ export function validateRecipe(value: unknown): Recipe {
     throw new Error("recipe created_at is invalid");
   }
   if (!safeString(value.arch)) throw new Error("recipe arch is invalid");
-  return {
+  const recipe: Recipe = {
     name: value.name,
     replaced_service: value.replaced_service,
     monthly_price: value.monthly_price,
@@ -85,4 +95,6 @@ export function validateRecipe(value: unknown): Recipe {
     tool,
     install_weight: value.install_weight as InstallWeight,
   };
+  if (derivations) recipe.derivations = derivations;
+  return recipe;
 }

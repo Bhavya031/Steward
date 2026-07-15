@@ -1,6 +1,6 @@
 import { isAbsolute } from "node:path";
+import { DerivationValidationError, validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
 import { ALLOWED_BINARIES, type AllowedBinary } from "./tools.ts";
-
 export type PlanTool = Exclude<AllowedBinary, "brew">;
 export type CheckTarget = string | number | boolean;
 export const CHECK_TYPES = [
@@ -9,33 +9,29 @@ export const CHECK_TYPES = [
   "file_valid", "page_count_positive", "text_extractable", "format_matches",
 ] as const;
 export type PlanCheckType = (typeof CHECK_TYPES)[number];
-
 export interface PlanCheck {
   type: PlanCheckType;
   target: CheckTarget;
 }
-
 export interface Plan {
   tool: PlanTool;
   install_cmd: string[] | null;
   commands: string[][];
   output_path: string;
   checks: PlanCheck[];
+  derivations?: Derivations;
 }
-
 const PLAN_TOOLS = new Set<PlanTool>(
   ALLOWED_BINARIES.filter((binary): binary is PlanTool => binary !== "brew"),
 );
 const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
-const PLAN_KEYS = ["tool", "install_cmd", "commands", "output_path", "checks"];
-
+const REQUIRED_PLAN_KEYS = ["tool", "install_cmd", "commands", "output_path", "checks"];
+const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations"];
 export class PlanValidationError extends Error {
   constructor(message: string) {
-    super(message);
-    this.name = "PlanValidationError";
+    super(message); this.name = "PlanValidationError";
   }
 }
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -44,7 +40,6 @@ function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
   const actual = Object.keys(value);
   return actual.length === keys.length && actual.every((key) => keys.includes(key));
 }
-
 function isSafeString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && !value.includes("\0");
 }
@@ -106,14 +101,24 @@ function validateCheck(value: unknown, index: number): PlanCheck {
 }
 
 export function validatePlan(value: unknown): Plan {
-  if (!isObject(value) || !hasExactKeys(value, PLAN_KEYS)) {
-    throw new PlanValidationError(`plan must contain exactly: ${PLAN_KEYS.join(", ")}`);
+  const shape = isObject(value) && Object.keys(value).every((key) => PLAN_KEYS.includes(key)) &&
+    REQUIRED_PLAN_KEYS.every((key) => Object.hasOwn(value, key));
+  if (!shape) {
+    throw new PlanValidationError(`plan must contain ${REQUIRED_PLAN_KEYS.join(", ")} and optional derivations only`);
   }
   if (!isSafeString(value.tool) || !PLAN_TOOLS.has(value.tool as PlanTool)) {
     throw new PlanValidationError("tool is not an allowlisted task binary");
   }
   const tool = value.tool as PlanTool;
   const commands = validateCommands(value.commands, tool);
+  let derivations: Derivations | undefined;
+  try {
+    derivations = value.derivations == null ? undefined : validateDerivations(value.derivations);
+    validateCommandSlots(commands, derivations, (slot) => slot === "temp_dir");
+  } catch (error) {
+    if (error instanceof DerivationValidationError) throw new PlanValidationError(error.message);
+    throw error;
+  }
   if (!isSafeString(value.output_path) || !isAbsolute(value.output_path)) {
     throw new PlanValidationError("output_path must be an absolute path");
   }
@@ -128,13 +133,15 @@ export function validatePlan(value: unknown): Plan {
   if (!Array.isArray(value.checks) || value.checks.length === 0) {
     throw new PlanValidationError("checks must be a non-empty array");
   }
-  return {
+  const plan: Plan = {
     tool,
     install_cmd: value.install_cmd as string[] | null,
     commands,
     output_path: value.output_path,
     checks: value.checks.map(validateCheck),
   };
+  if (derivations) plan.derivations = derivations;
+  return plan;
 }
 
 export function parsePlan(raw: string): Plan {

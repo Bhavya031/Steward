@@ -1,4 +1,5 @@
 import type { Plan } from "./plan.ts";
+import { DERIVATION_GUIDE } from "./derivations.ts";
 import type { SystemProfile } from "./probe.ts";
 import type { VerificationResult } from "./verify/index.ts";
 
@@ -8,6 +9,8 @@ const RULES = `Rules:
 - All commands must use the selected tool. Only the final command may write output_path.
 - Never use overwrite flags such as -y; Steward requires a new output path.
 - Temporary artifacts may use {{temp_dir}}/child-name; Steward creates and removes that directory.
+- Apart from {{temp_dir}}, every {{slot}} in commands must have a matching derivations entry.
+- Return derivations as null when no named derivation is needed.
 - output_path must be absolute, inside the first input's directory, and differ from every input path.
 - If the selected tool is installed, install_cmd must be null.
 - If it is missing, install_cmd may only propose ["brew","install",...] using its official package; LibreOffice uses --cask.
@@ -17,7 +20,9 @@ const RULES = `Rules:
 - For audio work, audio_stream_present targets true, loudness_matches targets LUFS, true_peak_under targets -1 dBTP unless the task requires a stricter maximum, and duration_matches targets the input path.
 - For media conversion, use format_matches (target avi/flac/m4a/mkv/mov/mp3/mp4/ogg/wav/webm), duration_matches (target input path), and streams_present. Omit codec flags so ffmpeg selects compatible defaults from the output extension.
 - For documents, file_valid and format_matches target pdf/docx/epub/html/md/txt; page_count_positive targets a minimum page integer; text_extractable targets minimum non-whitespace characters.
-- Checks must objectively verify the requested result. Do not claim that any command ran.`;
+- Checks must objectively verify the requested result. Do not claim that any command ran.
+
+${DERIVATION_GUIDE}`;
 
 function boundary(profile: SystemProfile): string {
   return `You are Steward's planning boundary. Plan only: do not run commands or use tools.

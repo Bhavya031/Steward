@@ -37,6 +37,7 @@ const profile: SystemProfile = {
 describe("parsePlan", () => {
   test("accepts a strict plan", () => {
     expect(parsePlan(JSON.stringify(validPlan))).toEqual(validPlan);
+    expect(parsePlan(JSON.stringify({ ...validPlan, derivations: null }))).toEqual(validPlan);
   });
 
   test("strips a JSON markdown fence", () => {
@@ -127,6 +128,8 @@ describe("parsePlan", () => {
       expect(prompt.toLowerCase()).not.toContain("two-pass");
       expect(prompt.toLowerCase()).not.toContain("2-pass");
     }
+    expect(prompts[0]).toContain("size_target_video_bitrate");
+    expect(prompts[0]).toContain("Code runs only the derivation name and exact args declared");
     expect(prompts[1]).toContain("10.000 s ±0.500 s");
     expect(prompts[1]).toContain("measured stderr");
   });

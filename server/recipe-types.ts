@@ -1,5 +1,6 @@
 import type { ExecutionOptions, ExecutionResult } from "./execution-types.ts";
 import type { InstallWeight } from "./tools.ts";
+import type { Derivations } from "./derivations.ts";
 import type { Plan, PlanCheck, PlanTool } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
 import type { VerificationResult } from "./verify/index.ts";
@@ -14,6 +15,7 @@ export interface Recipe {
   arch: string;
   tool: PlanTool;
   install_weight: InstallWeight;
+  derivations?: Derivations;
 }
 
 export interface SaveRecipeInput {

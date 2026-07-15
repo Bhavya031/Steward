@@ -60,8 +60,38 @@
         "required": ["type", "target"],
         "additionalProperties": false
       }
+    },
+    "derivations": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "video_bitrate_kbps": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "enum": ["size_target_video_bitrate"] },
+                "args": {
+                  "type": "object",
+                  "properties": {
+                    "target_bytes": { "type": "integer", "minimum": 1 },
+                    "audio_kbps": { "type": "number", "exclusiveMinimum": 0 },
+                    "safety_factor": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+                  },
+                  "required": ["target_bytes", "audio_kbps", "safety_factor"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["name", "args"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["video_bitrate_kbps"],
+          "additionalProperties": false
+        }
+      ]
     }
   },
-  "required": ["tool", "install_cmd", "commands", "output_path", "checks"],
+  "required": ["tool", "install_cmd", "commands", "output_path", "checks", "derivations"],
   "additionalProperties": false
 }
