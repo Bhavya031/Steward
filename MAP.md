@@ -24,6 +24,7 @@ server/helper-executor.test.ts:T—
 server/helper-policy.ts:SA
 server/index.ts:EM
 server/install-policy.ts:SA
+server/loudness-policy.ts:SA
 server/path-policy.ts:SA
 server/path-error.ts:SY
 server/plan.schema.json:P—
@@ -46,7 +47,12 @@ server/soffice-profile.ts:SA
 server/terminal.ts:DA
 server/tools.ts:SA
 server/two-pass-policy.ts:SA
+server/verify/audio.test.ts:T—
+server/verify/audio.ts:VA
+server/verify/common.ts:VA
 server/verify/index.ts:VA
+server/verify/loudness-parser.test.ts:T—
+server/verify/loudness-parser.ts:VA
 server/verify/types.ts:VY
 server/verify/video-truncation.test.ts:T—
 server/verify/video.test.ts:T—

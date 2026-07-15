@@ -79,6 +79,19 @@ describe("parsePlan", () => {
     expect(() => parsePlan(JSON.stringify(future))).toThrow("not supported");
   });
 
+  test("accepts the registered audio checks", () => {
+    const checks: Plan["checks"] = [
+      { type: "audio_stream_present", target: true },
+      { type: "loudness_matches", target: -14 },
+      { type: "true_peak_under", target: -1 },
+    ];
+    const audio = {
+      ...validPlan,
+      checks,
+    };
+    expect(parsePlan(JSON.stringify(audio)).checks).toEqual(checks);
+  });
+
   test("rejects install proposals for installed tools", () => {
     const plan = { ...validPlan, install_cmd: ["brew", "install", "ffmpeg"] };
     expect(() => validatePlanForProfile(plan, profile)).toThrow("must be null");

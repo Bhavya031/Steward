@@ -4,6 +4,7 @@ import { boundedTimeout, resolveBinary, summarizeExecution } from "./execution-p
 import { HELPER_PATHS, validateHelperStep } from "./helper-policy.ts";
 import { buildFfprobeCommand, type FfprobeQuery } from "./ffprobe-policy.ts";
 import { validateInstallProposal } from "./install-policy.ts";
+import { buildLoudnessCommand } from "./loudness-policy.ts";
 import type { SystemProfile } from "./probe.ts";
 import { validatePlan, type Plan } from "./plan.ts";
 import { validateCommandPaths } from "./path-policy.ts";
@@ -136,4 +137,13 @@ export async function executeFfprobe(
 ): Promise<ExecutionResult> {
   const command = buildFfprobeCommand(query, inputPath);
   return runBinary("ffprobe", resolveBinary("ffprobe", profile), command.slice(1), options);
+}
+
+export async function executeLoudnessScan(
+  inputPath: unknown,
+  profile: SystemProfile,
+  options: ExecutionOptions = {},
+): Promise<ExecutionResult> {
+  const command = buildLoudnessCommand(inputPath);
+  return runBinary("ffmpeg", resolveBinary("ffmpeg", profile), command.slice(1), options);
 }

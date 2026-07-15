@@ -5,6 +5,7 @@ export type PlanTool = Exclude<AllowedBinary, "brew">;
 export type CheckTarget = string | number | boolean;
 export const CHECK_TYPES = [
   "size_under", "duration_matches", "streams_present", "plays",
+  "audio_stream_present", "loudness_matches", "true_peak_under",
 ] as const;
 export type PlanCheckType = (typeof CHECK_TYPES)[number];
 

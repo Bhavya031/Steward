@@ -1,0 +1,40 @@
+export interface LoudnessStats {
+  inputI: number;
+  inputTp: number;
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function level(value: unknown, name: string): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "-inf" || normalized === "-infinity") return Number.NEGATIVE_INFINITY;
+    const parsed = Number(normalized);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  throw new Error(`loudnorm ${name} is missing or invalid`);
+}
+
+function statsFrom(value: unknown): LoudnessStats | null {
+  if (!record(value) || !("input_i" in value) || !("input_tp" in value)) return null;
+  return {
+    inputI: level(value.input_i, "input_i"),
+    inputTp: level(value.input_tp, "input_tp"),
+  };
+}
+
+export function parseLoudnessStats(stderr: string): LoudnessStats {
+  const blocks = stderr.match(/\{[^{}]*\}/gs) ?? [];
+  for (let index = blocks.length - 1; index >= 0; index -= 1) {
+    try {
+      const stats = statsFrom(JSON.parse(blocks[index]!));
+      if (stats) return stats;
+    } catch {
+      // Earlier stderr can contain non-JSON braces; keep searching backwards.
+    }
+  }
+  throw new Error("ffmpeg loudnorm JSON block was not found");
+}

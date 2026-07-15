@@ -39,7 +39,10 @@
               "size_under",
               "duration_matches",
               "streams_present",
-              "plays"
+              "plays",
+              "audio_stream_present",
+              "loudness_matches",
+              "true_peak_under"
             ]
           },
           "target": {

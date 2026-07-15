@@ -1,24 +1,14 @@
 import { statSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
 import { executeFfprobe } from "../executor.ts";
-import { validateMediaPath, type FfprobeQuery } from "../ffprobe-policy.ts";
+import { validateMediaPath } from "../ffprobe-policy.ts";
 import type { CheckTarget } from "../plan.ts";
 import type { VerificationContext, VerificationResult } from "./types.ts";
+import { probeJson, result, streamsFrom, verifyDurationMatches, type ProbeStream } from "./common.ts";
 
 export const VIDEO_CHECK_TYPES = [
   "size_under", "duration_matches", "streams_present", "plays",
 ] as const;
 export type VideoCheckType = (typeof VIDEO_CHECK_TYPES)[number];
-
-interface ProbeStream {
-  codec_type?: unknown;
-  codec_name?: unknown;
-  nb_read_frames?: unknown;
-}
-
-function result(name: string, pass: boolean, expected: string, actual: string): VerificationResult {
-  return { name, pass, expected, actual };
-}
 
 function formatBytes(bytes: number): string {
   const units = ["bytes", "KB", "MB", "GB"];
@@ -32,67 +22,12 @@ function formatBytes(bytes: number): string {
   return `${display} ${units[unit]} (${bytes.toLocaleString("en-US")} bytes)`;
 }
 
-async function probeJson(query: FfprobeQuery, path: string, context: VerificationContext): Promise<unknown> {
-  const probe = await executeFfprobe(query, path, context.profile);
-  if (!probe.ok || probe.stderr_tail.trim()) {
-    throw new Error(`ffprobe exit ${probe.exit_code}: ${probe.stderr_tail.trim() || "no details"}`);
-  }
-  try {
-    return JSON.parse(probe.stdout_tail);
-  } catch {
-    throw new Error("ffprobe returned invalid JSON");
-  }
-}
-
-function streamsFrom(value: unknown): ProbeStream[] {
-  if (typeof value !== "object" || value === null || !("streams" in value)) return [];
-  const streams = (value as { streams?: unknown }).streams;
-  return Array.isArray(streams) ? streams.filter((item): item is ProbeStream => typeof item === "object" && item !== null) : [];
-}
-
-function durationFrom(value: unknown): number {
-  const format = typeof value === "object" && value !== null && "format" in value
-    ? (value as { format?: unknown }).format : null;
-  const raw = typeof format === "object" && format !== null && "duration" in format
-    ? (format as { duration?: unknown }).duration : null;
-  const duration = typeof raw === "string" || typeof raw === "number" ? Number(raw) : NaN;
-  if (!Number.isFinite(duration) || duration < 0) throw new Error("ffprobe returned no duration");
-  return duration;
-}
-
 async function sizeUnder(target: CheckTarget, context: VerificationContext): Promise<VerificationResult> {
   if (typeof target !== "number" || !Number.isFinite(target) || target <= 0) {
     return result("size_under", false, "positive byte limit", `invalid target: ${String(target)}`);
   }
   const bytes = statSync(validateMediaPath(context.outputPath)).size;
   return result("size_under", bytes < target, `under ${formatBytes(target)}`, formatBytes(bytes));
-}
-
-function grantedSource(target: string, context: VerificationContext): string | null {
-  if (target.includes("\0") || !isAbsolute(target)) return null;
-  const normalized = resolve(target);
-  const granted = context.sourcePaths.find((path) =>
-    typeof path === "string" && isAbsolute(path) && resolve(path) === normalized
-  );
-  return granted ? validateMediaPath(granted) : null;
-}
-
-async function durationMatches(target: CheckTarget, context: VerificationContext): Promise<VerificationResult> {
-  if (typeof target !== "string") {
-    return result("duration_matches", false, "granted source duration ±0.500 s", `invalid target: ${String(target)}`);
-  }
-  const source = grantedSource(target, context);
-  if (!source) return result("duration_matches", false, "granted source duration ±0.500 s", `ungranted source: ${target}`);
-  const [expected, actual] = await Promise.all([
-    probeJson("duration", source, context).then(durationFrom),
-    probeJson("duration", context.outputPath, context).then(durationFrom),
-  ]);
-  const difference = Math.abs(actual - expected);
-  return result(
-    "duration_matches", difference <= 0.5,
-    `${expected.toFixed(3)} s ±0.500 s`,
-    `${actual.toFixed(3)} s (Δ ${difference.toFixed(3)} s)`,
-  );
 }
 
 async function streamsPresent(target: CheckTarget, context: VerificationContext): Promise<VerificationResult> {
@@ -135,7 +70,7 @@ export async function verifyVideoCheck(
   context: VerificationContext,
 ): Promise<VerificationResult> {
   if (type === "size_under") return sizeUnder(target, context);
-  if (type === "duration_matches") return durationMatches(target, context);
+  if (type === "duration_matches") return verifyDurationMatches(target, context);
   if (type === "streams_present") return streamsPresent(target, context);
   return plays(target, context);
 }

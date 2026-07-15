@@ -6,7 +6,7 @@ const QUERY_ARGS = {
   duration: ["-v", "error", "-show_entries", "format=duration", "-of", "json"],
   streams: [
     "-v", "error", "-show_entries",
-    "stream=index,codec_type,codec_name", "-of", "json",
+    "stream=index,codec_type,codec_name,channels,sample_rate", "-of", "json",
   ],
   decode: [
     "-v", "error", "-count_frames", "-show_entries",
