@@ -1,0 +1,9 @@
+.DS_Store
+node_modules/
+.env
+dist/
+*.log
+
+# whisper.cpp models are large and must be installed explicitly.
+ggml-*.bin
+
