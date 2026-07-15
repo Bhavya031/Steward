@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "probe": "bun run server/probe.ts",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -11,4 +12,3 @@
     "typescript": "5.8.2"
   }
 }
-

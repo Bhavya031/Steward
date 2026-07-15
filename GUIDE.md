@@ -2,36 +2,31 @@
 
 ## Vision
 
-Steward turns plain-language local file tasks into verified commands, then saves every green run as a permanent one-click recipe that re-runs with zero model calls. Tagline: **your computer already knows how.**
+Plain-language file tasks become local, evidence-verified commands, then permanent zero-model recipes. Tagline: **your computer already knows how.**
 
-## Locked decisions
+## Locked
 
-- Bun + TypeScript server; Svelte CSR UI begins only in Phase 3.
-- macOS on Apple Silicon and Intel; handle `/opt/homebrew` and `/usr/local` explicitly.
+- Bun/TypeScript; Svelte CSR only in Phase 3; macOS arm64/x64.
 - Final allowlist: `ffmpeg`, `ffprobe`, `pandoc`, `magick`, `ocrmypdf`, `whisper-cli`, `gs`, `soffice`, `brew`. No additions without explicit approval.
-- The agent plans only; `server/executor.ts` will be the sole shell boundary.
-- Bind localhost only; every request requires a random per-session token.
-- Verification returns evidence (`name`, `pass`, `expected`, `actual`), never bare booleans.
-- Recipes save only after all checks pass; re-runs never import the agent.
-- No Phase 3 UI or Phase 4 scope before its phase specification.
+- Agent only fixed-spawns `codex`; executor alone runs validated planned argv.
+- Bind `127.0.0.1`; require a random session token.
+- Checks return evidence; save only all-green recipes; re-runs never import agent.
+- No future-phase work before its spec.
 
-## Current phase + step
+## Now
 
-Phase 1 — Step 1 amended: final allowlist and install weights proven in the system probe. Next: Step 2 Codex CLI planning bridge.
+Phase 1 — Step 2 complete: GPT-5.6 Sol plans through authenticated Codex CLI and strict host validation. Await approval before Step 3 executor.
 
 ## Decisions
 
-- Keep modules near 150 lines so responsibilities and security boundaries stay reviewable.
-- Ignore `ggml-*.bin` because Whisper models are GB-scale install artifacts, not source.
-- Probe commands are fixed diagnostic argv arrays; no user input reaches them.
-- Light installs may appear in a plan; heavy installs (`soffice`, Whisper tooling/models) require a visible user-confirmed step. Nothing installs silently.
-- Keep binary `bun.lockb` via `bunfig.toml` because the build spec explicitly requires it.
-- Skip dependency declaration checking because Bun 1.2.8 types conflict with resolved Node declarations; Steward code remains strict-checked.
+- Modules ~150 lines; probes use fixed argv (auditability).
+- Light installs may be proposed; heavy `soffice`/Whisper needs explicit yes; never silent.
+- Planner: ephemeral/read-only `gpt-5.6-sol`, schema, host validation, one retry (untrusted output).
+- Binary `bun.lockb`; `skipLibCheck` only isolates Bun/Node declarations.
 
 ## Landmines
 
-- Homebrew default prefix differs by architecture: Apple Silicon `/opt/homebrew`, Intel `/usr/local`.
-- `whisper-cli --version` is unsupported; read its installed Homebrew formula version instead.
-- On macOS, probe `/Applications/LibreOffice.app/Contents/MacOS/soffice` before PATH shims.
-- A missing Whisper model must become a visible install step, never a silent wait.
-- Any input-to-command path must use argv arrays, allowlisted binaries, validated paths, streaming, and a 30-minute timeout.
+- Prefixes: arm64 `/opt/homebrew`; Intel `/usr/local`.
+- `whisper-cli --version` fails; use Brew’s formula version. Ignore `ggml-*.bin`; missing models stay visible.
+- Prefer `/Applications/LibreOffice.app/Contents/MacOS/soffice` over PATH shims.
+- CLI 0.144.4 rejects generic `gpt-5.6` with ChatGPT auth; `gpt-5.6-sol` works.

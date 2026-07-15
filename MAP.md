@@ -1,12 +1,16 @@
 # Steward Map
 
-`.gitignore` — Excludes local dependencies, secrets, build output, logs, and large Whisper models. Exports: none.
-`bun.lockb` — Committed binary Bun dependency lockfile. Exports: none.
-`bunfig.toml` — Keeps Bun on the required committed `bun.lockb` format. Exports: none.
-`MAP.md` — One-line repository map for fast session orientation. Exports: none.
-`GUIDE.md` — Project brain: vision, locked decisions, current work, decisions, and landmines. Exports: none.
-`package.json` — Bun scripts and pinned development tooling. Exports: scripts `probe`, `typecheck`.
-`README.md` — Public project overview stub; full collaboration narrative is due at freeze. Exports: none.
-`tsconfig.json` — Strict TypeScript checking for the server. Exports: none.
-`server/probe.ts` — Builds and prints the typed macOS, hardware, Homebrew, and final allowlisted-tool profile. Exports: `ToolStatus`, `BrewStatus`, `SystemProfile`, `probeSystem`.
-`server/tools.ts` — Owns the final nine-binary allowlist and light/heavy install policy. Exports: `InstallWeight`, `AllowedBinary`, `TOOL_POLICIES`, `ALLOWED_BINARIES`, `installWeightFor`.
+`.gitignore` — Local/build/model exclusions. Exports: none.
+`bun.lockb` — Bun dependency lock. Exports: none.
+`bunfig.toml` — Binary-lock configuration. Exports: none.
+`MAP.md` — File index. Exports: none.
+`GUIDE.md` — Project brain/current step. Exports: none.
+`package.json` — Bun tooling. Exports: scripts `probe`, `test`, `typecheck`.
+`README.md` — Public stub. Exports: none.
+`tsconfig.json` — Strict server types. Exports: none.
+`server/agent.ts` — Authenticated Codex planner/retry. Exports: `PLANNER_MODEL`, `CodexAuthStatus`, `AgentError`, `confirmCodexAuth`, `validatePlanForProfile`, `planTask`.
+`server/plan.schema.json` — Planner output schema. Exports: none.
+`server/plan.test.ts` — Plan safety tests. Exports: none.
+`server/plan.ts` — Plan parsing/validation. Exports: `PlanTool`, `CheckTarget`, `CHECK_TYPES`, `PlanCheckType`, `PlanCheck`, `Plan`, `PlanValidationError`, `validatePlan`, `parsePlan`.
+`server/probe.ts` — Typed system/tool probe. Exports: `ToolStatus`, `BrewStatus`, `SystemProfile`, `probeSystem`.
+`server/tools.ts` — Final allowlist/install weights. Exports: `InstallWeight`, `AllowedBinary`, `TOOL_POLICIES`, `ALLOWED_BINARIES`, `installWeightFor`.

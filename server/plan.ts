@@ -1,0 +1,131 @@
+import { isAbsolute } from "node:path";
+import { ALLOWED_BINARIES, type AllowedBinary } from "./tools.ts";
+
+export type PlanTool = Exclude<AllowedBinary, "brew">;
+export type CheckTarget = string | number | boolean;
+export const CHECK_TYPES = [
+  "size_under", "duration_matches", "streams_present", "plays", "format_matches",
+  "loudness_matches", "true_peak_under", "audio_stream_present", "file_valid",
+  "page_count_positive", "text_extractable",
+] as const;
+export type PlanCheckType = (typeof CHECK_TYPES)[number];
+
+export interface PlanCheck {
+  type: PlanCheckType;
+  target: CheckTarget;
+}
+
+export interface Plan {
+  tool: PlanTool;
+  install_cmd: string[] | null;
+  command: string[];
+  output_path: string;
+  checks: PlanCheck[];
+}
+
+const PLAN_TOOLS = new Set<PlanTool>(
+  ALLOWED_BINARIES.filter((binary): binary is PlanTool => binary !== "brew"),
+);
+const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
+const PLAN_KEYS = ["tool", "install_cmd", "command", "output_path", "checks"];
+
+export class PlanValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PlanValidationError";
+  }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
+  const actual = Object.keys(value);
+  return actual.length === keys.length && actual.every((key) => keys.includes(key));
+}
+
+function isSafeString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && !value.includes("\0");
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isSafeString);
+}
+
+function stripFences(raw: string): string {
+  const trimmed = raw.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced?.[1]?.trim() ?? trimmed;
+}
+
+function parseJson(raw: string): unknown {
+  const stripped = stripFences(raw);
+  const start = stripped.indexOf("{");
+  const end = stripped.lastIndexOf("}");
+  const candidates = [stripped];
+  if (start >= 0 && end > start) candidates.push(stripped.slice(start, end + 1));
+
+  for (const candidate of new Set(candidates)) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Try the next defensive extraction before reporting malformed output.
+    }
+  }
+  throw new PlanValidationError("Codex returned malformed JSON");
+}
+
+function validateCheck(value: unknown, index: number): PlanCheck {
+  if (!isObject(value) || !hasExactKeys(value, ["type", "target"])) {
+    throw new PlanValidationError(`checks[${index}] must contain only type and target`);
+  }
+  if (!isSafeString(value.type) || !VALID_CHECKS.has(value.type as PlanCheckType)) {
+    throw new PlanValidationError(`checks[${index}].type is not supported`);
+  }
+  const target = value.target;
+  if (!["string", "number", "boolean"].includes(typeof target)) {
+    throw new PlanValidationError(`checks[${index}].target has an unsupported type`);
+  }
+  return { type: value.type as PlanCheckType, target: target as CheckTarget };
+}
+
+export function validatePlan(value: unknown): Plan {
+  if (!isObject(value) || !hasExactKeys(value, PLAN_KEYS)) {
+    throw new PlanValidationError(`plan must contain exactly: ${PLAN_KEYS.join(", ")}`);
+  }
+  if (!isSafeString(value.tool) || !PLAN_TOOLS.has(value.tool as PlanTool)) {
+    throw new PlanValidationError("tool is not an allowlisted task binary");
+  }
+  if (!isStringArray(value.command) || value.command.length === 0) {
+    throw new PlanValidationError("command must be a non-empty argv array");
+  }
+  if (value.command[0] !== value.tool) {
+    throw new PlanValidationError("command[0] must exactly match tool");
+  }
+  if (!isSafeString(value.output_path) || !isAbsolute(value.output_path)) {
+    throw new PlanValidationError("output_path must be an absolute path");
+  }
+  if (value.install_cmd !== null) {
+    if (!isStringArray(value.install_cmd) || value.install_cmd.length < 3) {
+      throw new PlanValidationError("install_cmd must be null or a non-empty argv array");
+    }
+    if (value.install_cmd[0] !== "brew" || value.install_cmd[1] !== "install") {
+      throw new PlanValidationError("install_cmd may only propose brew install");
+    }
+  }
+  if (!Array.isArray(value.checks) || value.checks.length === 0) {
+    throw new PlanValidationError("checks must be a non-empty array");
+  }
+  return {
+    tool: value.tool as PlanTool,
+    install_cmd: value.install_cmd as string[] | null,
+    command: value.command,
+    output_path: value.output_path,
+    checks: value.checks.map(validateCheck),
+  };
+}
+
+export function parsePlan(raw: string): Plan {
+  return validatePlan(parseJson(raw));
+}
