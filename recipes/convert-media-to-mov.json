@@ -1,0 +1,34 @@
+{
+  "name": "convert-media-to-mov",
+  "replaced_service": "CloudConvert",
+  "monthly_price": 9,
+  "command_template": {
+    "commands": [
+      [
+        "ffmpeg",
+        "-i",
+        "{{input_0}}",
+        "{{input_0_dir}}/{{input_0_stem}}.mov"
+      ]
+    ],
+    "output_path": "{{input_0_dir}}/{{input_0_stem}}.mov"
+  },
+  "checks": [
+    {
+      "type": "format_matches",
+      "target": "mov"
+    },
+    {
+      "type": "duration_matches",
+      "target": "{{input_0}}"
+    },
+    {
+      "type": "streams_present",
+      "target": "video,audio"
+    }
+  ],
+  "created_at": "2026-07-15T19:03:54.925Z",
+  "arch": "arm64",
+  "tool": "ffmpeg",
+  "install_weight": "light"
+}

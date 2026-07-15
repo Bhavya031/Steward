@@ -1,5 +1,5 @@
 import { extname } from "node:path";
-import { mediaTargetFromConversionPhrase } from "./media-formats.ts";
+import { mediaFormat, mediaTargetFromConversionPhrase, type MediaFormat } from "./media-formats.ts";
 import type { Recipe } from "./recipe-types.ts";
 
 export type RecipeIntent = "compression" | "conversion";
@@ -30,9 +30,11 @@ function tokens(value: string): Set<string> {
 
 export function recipeIntent(recipe: Recipe): RecipeIntent | null {
   if (recipe.checks.some((check) => check.type === "size_under")) return "compression";
-  const hasTargetFormat = recipe.checks.some((check) => check.target === "{{target_format}}") ||
-    recipe.command_template.output_path.includes("{{target_format}}");
-  return hasTargetFormat ? "conversion" : null;
+  return recipeMediaTarget(recipe) ? "conversion" : null;
+}
+
+export function recipeMediaTarget(recipe: Recipe): MediaFormat | null {
+  return mediaFormat(recipe.checks.find((check) => check.type === "format_matches")?.target);
 }
 
 export function taskIntent(task: string): RecipeIntent | null {
@@ -61,6 +63,9 @@ export function recipeConfidence(recipe: Recipe, taskDescription: string, files:
   const requested = taskIntent(taskDescription);
   if (!requested) return Number(lexical.toFixed(3));
   const capability = recipeIntent(recipe);
-  const scored = capability === requested ? 0.7 + lexical * 0.3 : lexical * 0.3;
+  const requestedFormat = mediaTargetFromConversionPhrase(taskDescription);
+  const wrongFormat = requested === "conversion" && requestedFormat !== null &&
+    recipeMediaTarget(recipe) !== requestedFormat;
+  const scored = capability === requested && !wrongFormat ? 0.7 + lexical * 0.3 : lexical * 0.3;
   return Number(Math.min(1, scored).toFixed(3));
 }

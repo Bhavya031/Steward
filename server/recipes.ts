@@ -3,7 +3,8 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync
 import { join, resolve } from "node:path";
 import { executePlan } from "./executor.ts";
 import { discardFailedOutput } from "./failed-output.ts";
-import { recipeConfidence, recipeIntent, taskIntent } from "./recipe-match.ts";
+import { recipeConfidence, recipeIntent, recipeMediaTarget, taskIntent } from "./recipe-match.ts";
+import { mediaTargetFromConversionPhrase } from "./media-formats.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
 import type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
@@ -84,6 +85,8 @@ export function match(
   const requested = taskIntent(taskDescription);
   const capability = recipeIntent(best.recipe);
   if ((requested || capability) && requested !== capability) return null;
+  if (requested === "conversion" &&
+      mediaTargetFromConversionPhrase(taskDescription) !== recipeMediaTarget(best.recipe)) return null;
   return best;
 }
 
@@ -95,9 +98,7 @@ export async function rerun(
   const trustedRecipe = validateRecipe(recipe);
   const normalizedFiles = files.map((file) => resolve(file));
   const profile = options.profile ?? probeSystem();
-  const runtimeSlots = await runtimeRecipeSlots(
-    trustedRecipe, normalizedFiles, profile, options.taskDescription,
-  );
+  const runtimeSlots = await runtimeRecipeSlots(trustedRecipe, normalizedFiles, profile);
   const plan = renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots);
   let allPass = false;
   try {

@@ -1,5 +1,5 @@
 Vision: verified local work→model-free recipes.
 Locked: Bun/TS; macOS arm64/x64; Svelte P3; binaries `ffmpeg ffprobe pandoc magick ocrmypdf whisper-cli gs soffice brew`; step helpers `ls cat mkdir cp mv stat du head tail`. Final lists; localhost token.
-Now: P2.10 recipe 3 honest single-pass green; await approval. `server/` is CLI-only; HTTP/WS arrives in P3.
+Now: P2.10 recipes 2–3 honest and green; target formats save separately; await approval. `server/` is CLI-only; HTTP/WS arrives in P3.
 Rules: ≤150L; heavy ask; `gpt-5.6-sol`; executor-only spawn; recipes≠agent; argv[][]; repair≤3/evidence-only/fixed checks; outputs confined; argv positively classified; failed outputs removed; recipe=authored plan; slots substitute paths/plan-declared targets only—never commands, computed args, or hidden algorithms; baked loudnorm measurements cannot save; match needs ≥0.45 score and ≥0.15 lead.
-Risks: Brew `/opt/homebrew|/usr/local`; isolate `soffice`; passlogs in `{{temp_dir}}`; verification shares one loudness scan/file/run; ≤-69 LUFS=silent fail; PDF parse/text=GS only; ZIP markers; Recipe2 `{{media_args}}` predates recipe=plan invariant and needs correction before Step11; Day5 deferrals in AUDIT.md.
+Risks: Brew `/opt/homebrew|/usr/local`; isolate `soffice`; passlogs in `{{temp_dir}}`; verification shares one loudness scan/file/run; ≤-69 LUFS=silent fail; PDF parse/text=GS only; ZIP markers; compress recipe `{{video_bitrate_kbps}}` is the sole sweep finding that violates recipe=plan and needs correction before Step11; Day5 deferrals in AUDIT.md.

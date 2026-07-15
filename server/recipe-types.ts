@@ -43,5 +43,4 @@ export interface RecipeRun {
 export interface RerunOptions {
   profile?: SystemProfile;
   executionOptions?: ExecutionOptions;
-  taskDescription?: string;
 }

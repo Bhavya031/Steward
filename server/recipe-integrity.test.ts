@@ -8,7 +8,10 @@ import { save } from "./recipes.ts";
 const root = mkdtempSync(join(tmpdir(), "steward-recipe-integrity-"));
 const source = join(root, "source.wav");
 const output = join(root, "source-normalized.wav");
+const mediaSource = join(root, "clip.mkv");
+const mediaOutput = join(root, "clip.mp4");
 writeFileSync(source, "fixture");
+writeFileSync(mediaSource, "fixture");
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 function plan(filter: string): Plan {
@@ -53,5 +56,32 @@ describe("recipe plan integrity", () => {
       "ffmpeg", "-i", "{{input_0}}", "-af", filter,
       "{{input_0_dir}}/{{input_0_stem}}-normalized.wav",
     ]]);
+  });
+
+  test("stores a concrete media plan without inventing formats, streams, or codecs", () => {
+    const mediaPlan: Plan = {
+      tool: "ffmpeg", install_cmd: null,
+      commands: [["ffmpeg", "-i", mediaSource, mediaOutput]], output_path: mediaOutput,
+      checks: [
+        { type: "format_matches", target: "mp4" },
+        { type: "duration_matches", target: mediaSource },
+        { type: "streams_present", target: "video,audio" },
+      ],
+    };
+    const recipe = save({
+      name: "convert-media-to-mp4", replaced_service: "CloudConvert", monthly_price: 9,
+      plan: mediaPlan, inputPaths: [mediaSource], arch: "arm64",
+      verification: mediaPlan.checks.map((check) => ({
+        name: check.type, pass: true, expected: "expected", actual: "measured",
+      })),
+    }, join(root, "media"));
+    expect(recipe?.command_template.commands).toEqual([[
+      "ffmpeg", "-i", "{{input_0}}", "{{input_0_dir}}/{{input_0_stem}}.mp4",
+    ]]);
+    expect(recipe?.checks).toEqual([
+      { type: "format_matches", target: "mp4" },
+      { type: "duration_matches", target: "{{input_0}}" },
+      { type: "streams_present", target: "video,audio" },
+    ]);
   });
 });

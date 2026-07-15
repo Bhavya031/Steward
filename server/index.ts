@@ -46,7 +46,12 @@ function identityFor(task: string, plan: Plan): RecipeIdentity {
     check.type === "format_matches" && mediaFormat(check.target)
   );
   if (formatCheck) {
-    return { name: "convert-video-audio", replaced_service: "CloudConvert", monthly_price: 9 };
+    const targetFormat = mediaFormat(formatCheck.target);
+    if (!targetFormat) throw new Error("media format identity lost its validated target");
+    return {
+      name: `convert-media-to-${targetFormat}`,
+      replaced_service: "CloudConvert", monthly_price: 9,
+    };
   }
   if (plan.checks.some((check) => check.type === "loudness_matches" && check.target === -14)) {
     return { name: "normalize-audio-to-14-lufs", replaced_service: "Podcast loudness SaaS", monthly_price: 10 };
@@ -62,11 +67,11 @@ function printSystem(profile: SystemProfile): void {
   console.log(`System: macOS ${profile.macosVersion} · ${profile.architecture} · ${profile.ram.gib} GiB`);
 }
 
-async function runMatched(recipe: Recipe, confidence: number, files: string[], task: string): Promise<void> {
+async function runMatched(recipe: Recipe, confidence: number, files: string[]): Promise<void> {
   console.log(`Recipe exists: ${recipe.name} (${Math.round(confidence * 100)}% local match)`);
   console.log("Mode: saved recipe · model calls: 0");
   const run = await rerun(recipe, files, {
-    taskDescription: task, executionOptions: { onEvent: executionReporter() },
+    executionOptions: { onEvent: executionReporter() },
   });
   printRecipeCard(recipe, run.plan, run.checks, false);
   if (!run.all_pass) throw new Error(`recipe rerun failed (exit ${run.execution.exit_code})`);
@@ -115,7 +120,7 @@ export async function main(argv = Bun.argv.slice(2)): Promise<void> {
   const files = filesFrom(rawFiles);
   console.log("STEWARD · your computer already knows how.");
   const localMatch = match(task, files);
-  if (localMatch) return runMatched(localMatch.recipe, localMatch.confidence, files, task);
+  if (localMatch) return runMatched(localMatch.recipe, localMatch.confidence, files);
   return runPlanned(task, files);
 }
 
