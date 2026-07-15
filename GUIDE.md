@@ -1,11 +1,11 @@
 # Steward Guide
 
-**Vision:** Natural-language tasks → verified local execution → model-free recipes. **Your computer already knows how.**
+**Vision:** Plain-language task → verified local run → model-free recipe. **Your computer already knows how.**
 
-**Locked:** Bun/TS, macOS arm64/x64; Svelte Phase 3. Binaries: `ffmpeg ffprobe pandoc magick ocrmypdf whisper-cli gs soffice brew`; additions need approval. `codex` plans; executor runs argv. Localhost+token; evidence; green-only recipes.
+**Locked:** Bun/TS; macOS arm64/x64; Svelte P3. Primary/install, final: `ffmpeg ffprobe pandoc magick ocrmypdf whisper-cli gs soffice brew`. Helpers, steps only: `ls cat mkdir cp mv stat du head tail`; never recipes/install. Additions need approval. Localhost+token; evidence; green-only saves.
 
-**Now:** Phase 1 Step 3 complete (streamed ffmpeg); next: Step 4 video verification.
+**Now:** P1 Step 3 + helper amendment done; next: Step 4 video verification.
 
-**Policy:** ≤150-line modules. Heavy installs need explicit yes. Planner: read-only `gpt-5.6-sol`, schema/validation/retry. Executor: probed binaries, exact grants, no overwrite/network, 30-minute cap, streaming.
+**Policy:** ≤150 lines/module; heavy installs require yes. Read-only `gpt-5.6-sol` planner, strict JSON/retry. Executor: argv, grants, no overwrite/network, 30m, streaming; helpers use fixed paths.
 
-**Landmines:** Brew: arm64 `/opt/homebrew`, Intel `/usr/local`. Whisper version via Brew. Executor isolates `soffice`. `gpt-5.6-sol` verified; generic alias fails this CLI path.
+**Landmines:** Brew arm64 `/opt/homebrew`, x64 `/usr/local`; Whisper via Brew; isolate `soffice`; generic GPT alias fails.

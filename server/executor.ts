@@ -1,14 +1,15 @@
 import { constants, accessSync } from "node:fs";
 import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult } from "./execution-types.ts";
+import { HELPER_PATHS, validateHelperStep } from "./helper-policy.ts";
 import { validateInstallProposal } from "./install-policy.ts";
 import type { SystemProfile } from "./probe.ts";
 import { validatePlan, type Plan } from "./plan.ts";
 import { validateCommandPaths } from "./path-policy.ts";
+import { consumeProcessStream } from "./process-stream.ts";
 import { createSofficeProfile } from "./soffice-profile.ts";
 import type { AllowedBinary } from "./tools.ts";
 
 export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult } from "./execution-types.ts";
-const MAX_CAPTURE_CHARS = 64 * 1_024;
 
 function resolveBinary(binary: AllowedBinary, profile: SystemProfile): string {
   const status =
@@ -33,40 +34,12 @@ function boundedTimeout(requested = MAX_EXECUTION_MS): number {
   return requested;
 }
 
-function appendTail(current: string, chunk: string): string {
-  return `${current}${chunk}`.slice(-MAX_CAPTURE_CHARS);
-}
-
-async function consume(
-  stream: ReadableStream<Uint8Array>,
-  type: "stdout" | "stderr",
-  emit: (event: ExecutionEvent) => void,
-): Promise<string> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let tail = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    tail = appendTail(tail, chunk);
-    emit({ type, chunk });
-  }
-  const final = decoder.decode();
-  if (final) {
-    tail = appendTail(tail, final);
-    emit({ type, chunk: final });
-  }
-  return tail;
-}
-
 async function runBinary(
-  binary: AllowedBinary,
+  binary: string,
+  executable: string,
   args: string[],
-  profile: SystemProfile,
   options: ExecutionOptions,
 ): Promise<ExecutionResult> {
-  const executable = resolveBinary(binary, profile);
   const timeoutMs = boundedTimeout(options.timeoutMs);
   const emit = options.onEvent ?? (() => undefined);
   const started = performance.now();
@@ -85,8 +58,8 @@ async function runBinary(
   try {
     emit({ type: "started", argv: [binary, ...args] });
     const [stdoutTail, stderrTail, exitCode] = await Promise.all([
-      consume(child.stdout, "stdout", emit),
-      consume(child.stderr, "stderr", emit),
+      consumeProcessStream(child.stdout, "stdout", emit),
+      consumeProcessStream(child.stderr, "stderr", emit),
       child.exited,
     ]);
     const result: ExecutionResult = {
@@ -123,13 +96,14 @@ export async function executePlan(
   }
   validateCommandPaths(plan.tool, plan.command, inputPaths, plan.output_path);
   const args = plan.command.slice(1);
-  if (plan.tool !== "soffice") return runBinary(plan.tool, args, profile, options);
+  const executable = resolveBinary(plan.tool, profile);
+  if (plan.tool !== "soffice") return runBinary(plan.tool, executable, args, options);
   const isolatedProfile = createSofficeProfile();
   try {
     return await runBinary(
       plan.tool,
+      executable,
       [isolatedProfile.argument, ...args],
-      profile,
       options,
     );
   } finally {
@@ -145,5 +119,20 @@ export async function executeInstall(
   options: ExecutionOptions = {},
 ): Promise<ExecutionResult> {
   const install = validateInstallProposal(tool, proposedArgv, profile, heavyConfirmed);
-  return runBinary("brew", install.argv.slice(1), profile, options);
+  return runBinary("brew", resolveBinary("brew", profile), install.argv.slice(1), options);
+}
+
+export async function executeHelperStep(
+  untrustedStep: unknown,
+  grants: unknown,
+  options: ExecutionOptions = {},
+): Promise<ExecutionResult> {
+  const step = validateHelperStep(untrustedStep, grants);
+  const executable = HELPER_PATHS[step.tool];
+  try {
+    accessSync(executable, constants.X_OK);
+  } catch {
+    throw new ExecutionError(`${step.tool} is not executable at ${executable}`);
+  }
+  return runBinary(step.tool, executable, step.command.slice(1), options);
 }
