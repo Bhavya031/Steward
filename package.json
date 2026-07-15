@@ -1,0 +1,14 @@
+{
+  "name": "steward",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "bun run server/probe.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "1.2.8",
+    "typescript": "5.8.2"
+  }
+}
+
