@@ -1,5 +1,6 @@
 import { CHECK_TYPES, type CheckTarget, type PlanCheck, type PlanCheckType, type PlanTool } from "./plan.ts";
 import { validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
+import { validateIntermediates } from "./intermediate-policy.ts";
 import type { Recipe } from "./recipe-types.ts";
 import { TOOL_POLICIES, type InstallWeight } from "./tools.ts";
 
@@ -7,7 +8,7 @@ const REQUIRED_RECIPE_KEYS = [
   "name", "replaced_service", "monthly_price", "command_template", "checks",
   "created_at", "arch", "tool", "install_weight",
 ];
-const RECIPE_KEYS = [...REQUIRED_RECIPE_KEYS, "derivations"];
+const RECIPE_KEYS = [...REQUIRED_RECIPE_KEYS, "derivations", "intermediates"];
 const CHECK_TYPE_SET = new Set<string>(CHECK_TYPES);
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -62,6 +63,8 @@ export function validateRecipe(value: unknown): Recipe {
   }
   const derivations: Derivations | undefined = value.derivations === undefined
     ? undefined : validateDerivations(value.derivations);
+  const intermediates = value.intermediates === undefined
+    ? undefined : validateIntermediates(value.intermediates);
   validateCommandSlots(commands, derivations, (slot) =>
     slot === "temp_dir" || /^input_\d+(?:_(?:dir|name|stem|ext))?$/.test(slot)
   );
@@ -96,5 +99,6 @@ export function validateRecipe(value: unknown): Recipe {
     install_weight: value.install_weight as InstallWeight,
   };
   if (derivations) recipe.derivations = derivations;
+  if (intermediates) recipe.intermediates = intermediates;
   return recipe;
 }

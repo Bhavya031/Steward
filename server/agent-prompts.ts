@@ -6,9 +6,11 @@ import type { VerificationResult } from "./verify/index.ts";
 const RULES = `Rules:
 - tool and every commands[n][0] must be one of: ffmpeg, ffprobe, pandoc, magick, ocrmypdf, whisper-cli, gs, soffice.
 - commands is an ordered list of argv arrays; install_cmd is one argv array. Never return shell strings, sh, bash, zsh, eval, pipes, redirects, or command substitution.
-- All commands must use the selected tool. Only the final command may write output_path.
+- All commands must use the selected tool. Only the final command may write output_path; earlier ordinary file outputs must be declared in intermediates.
 - Never use overwrite flags such as -y; Steward requires a new output path.
 - Temporary artifacts may use {{temp_dir}}/child-name; Steward creates and removes that directory.
+- Each intermediates entry and its matching command argument must be the same direct {{temp_dir}}/filename path. Never declare an input-directory or other absolute path. Steward removes every intermediate after success or failure.
+- Return intermediates as null when no ordinary intermediate output is needed. Executor-owned temporary artifacts do not need declarations.
 - Apart from {{temp_dir}}, every {{slot}} in commands must have a matching derivations entry.
 - Return derivations as null when no named derivation is needed.
 - output_path must be absolute, inside the first input's directory, and differ from every input path.

@@ -1,18 +1,23 @@
-import { constants, accessSync, lstatSync, realpathSync, statSync } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { constants, accessSync, realpathSync, statSync } from "node:fs";
+import { dirname, relative } from "node:path";
 import { commandAliases, requireAbsolute } from "./command-path.ts";
 import { classifyCommand } from "./flag-policy.ts";
+import { validateOutput } from "./output-policy.ts";
 import { PathPolicyError } from "./path-error.ts";
 import type { PlanTool } from "./plan.ts";
 export { PathPolicyError } from "./path-error.ts";
+export { validateOutput } from "./output-policy.ts";
 export interface ValidatedPaths {
   inputs: string[];
   output: string;
   outputDirectory: string;
+  intermediateOutputs: string[];
 }
 export interface CommandPathOptions {
   requireOutput?: boolean;
   temporaryDirectory?: string | null;
+  declaredIntermediates?: string[];
+  readableIntermediates?: string[];
 }
 function validateInput(path: string): { raw: string; real: string } {
   const raw = requireAbsolute(path, "input path");
@@ -27,57 +32,14 @@ function validateInput(path: string): { raw: string; real: string } {
   return { raw, real };
 }
 
-export function validateOutput(path: string, permittedRoots: string[]): {
-  raw: string;
-  real: string;
-  rawDirectory: string;
-  realDirectory: string;
-} {
-  const raw = requireAbsolute(path, "output path");
-  if (/[*?[\]]|%\d*d/.test(basename(raw))) throw new PathPolicyError("output patterns are not allowed");
-  const rawDirectory = dirname(raw);
-  let realDirectory: string;
-  try {
-    realDirectory = realpathSync(rawDirectory);
-    if (!statSync(realDirectory).isDirectory()) throw new Error("not a directory");
-  } catch {
-    throw new PathPolicyError(`output directory is missing or invalid: ${rawDirectory}`);
-  }
-  let status: ReturnType<typeof lstatSync> | null = null;
-  try {
-    status = lstatSync(raw);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw new PathPolicyError(`cannot inspect output path: ${path}`);
-    }
-  }
-  let real = join(realDirectory, basename(raw));
-  if (status) {
-    try {
-      real = realpathSync(raw);
-    } catch {
-      throw new PathPolicyError(`refusing to overwrite output symlink: ${path}`);
-    }
-  }
-  const roots = permittedRoots.map((root) => realpathSync(requireAbsolute(root, "output root")));
-  if (!roots.some((root) => contains(root, realDirectory) && contains(root, real))) {
-    throw new PathPolicyError("output path is outside the input directory and Steward temp root");
-  }
-  try {
-    accessSync(realDirectory, constants.W_OK);
-  } catch {
-    throw new PathPolicyError(`output directory is not writable: ${rawDirectory}`);
-  }
-  if (status) {
-    const kind = status.isSymbolicLink() ? "symlink" : "existing path";
-    throw new PathPolicyError(`refusing to overwrite output ${kind}: ${path}`);
-  }
-  return { raw, real, rawDirectory, realDirectory };
-}
-
 function contains(directory: string, candidate: string): boolean {
   const child = relative(directory, candidate);
   return child === "" || (!child.startsWith("..") && !child.startsWith("/"));
+}
+
+function matchedPath(aliases: string[], paths: string[]): string | undefined {
+  return paths.find((path) => commandAliases(path, "intermediate path")
+    .some((candidate) => aliases.includes(candidate)));
 }
 
 function inside(directory: string | null, candidate: string): boolean {
@@ -106,23 +68,40 @@ export function validateCommandPaths(
   const inputAliases = new Set(inputs.flatMap((input) => [input.raw, input.real]));
   const outputAliases = new Set([output.raw, output.real]);
   const outputDirectories = new Set([output.rawDirectory, output.realDirectory]);
+  const declared = options.declaredIntermediates ?? [];
+  const readable = options.readableIntermediates ?? [];
+  if ([...declared, ...readable].some((path) => !inside(temporaryDirectory, path))) {
+    throw new PathPolicyError("intermediate path is outside the Steward temp root");
+  }
   const seen = new Set<string>();
+  const intermediateOutputs: string[] = [];
+  let sourceSeen = false;
   let outputSeen = false;
 
   for (const candidate of classifyCommand(tool, command)) {
     const aliases = commandAliases(candidate.value, candidate.role);
-    const allowed = candidate.role === "input" ? aliases.some((path) => inputAliases.has(path))
-      : candidate.role === "output" ? aliases.some((path) => outputAliases.has(path))
+    const intermediateInput = candidate.role === "input" ? matchedPath(aliases, readable) : undefined;
+    const intermediateOutput = candidate.role === "output" ? matchedPath(aliases, declared) : undefined;
+    const input = aliases.some((path) => inputAliases.has(path));
+    const finalOutput = aliases.some((path) => outputAliases.has(path));
+    const allowed = candidate.role === "input" ? input || intermediateInput !== undefined
+      : candidate.role === "output" ? finalOutput || intermediateOutput !== undefined
         : candidate.role === "output-directory" ? aliases.some((path) => outputDirectories.has(path))
           : aliases.some((path) => inside(temporaryDirectory, path));
     if (!allowed) throw new PathPolicyError(`${candidate.role} path was not explicitly granted: ${candidate.value}`);
     aliases.forEach((path) => seen.add(path));
-    if (candidate.role === "output" || candidate.role === "output-directory") outputSeen = true;
+    if (candidate.role === "input") sourceSeen = true;
+    if (intermediateOutput) intermediateOutputs.push(intermediateOutput);
+    if (finalOutput || candidate.role === "output-directory") outputSeen = true;
   }
-  for (const input of inputs) {
-    if (!seen.has(input.raw) && !seen.has(input.real)) {
-      throw new PathPolicyError(`command does not reference granted input: ${input.raw}`);
+  if (readable.length === 0) {
+    for (const input of inputs) {
+      if (!seen.has(input.raw) && !seen.has(input.real)) {
+        throw new PathPolicyError(`command does not reference granted input: ${input.raw}`);
+      }
     }
+  } else if (!sourceSeen) {
+    throw new PathPolicyError("command does not reference a granted input or produced intermediate");
   }
   if (options.requireOutput !== false && !outputSeen) {
     throw new PathPolicyError("command does not reference the granted output path");
@@ -137,5 +116,6 @@ export function validateCommandPaths(
     inputs: inputs.map((input) => input.real),
     output: output.real,
     outputDirectory: output.realDirectory,
+    intermediateOutputs,
   };
 }

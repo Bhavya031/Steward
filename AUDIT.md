@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 2 Step 10 derivation hardening (2026-07-16). `server/` is currently a CLI; there is no HTTP/WS listener or session-token surface until Phase 3.
+Last updated: Phase 2 Step 10 intermediate-output hardening (2026-07-16). `server/` is currently a CLI; there is no HTTP/WS listener or session-token surface until Phase 3.
 
 ## Current execution surface
 
@@ -8,7 +8,7 @@ Last updated: Phase 2 Step 10 derivation hardening (2026-07-16). `server/` is cu
 - Recipe reruns: validated recipe → local path slots + serialized named derivations → the same executor and verifier. Derivation names/typed args are closed and contain no eval/expression surface; the resolved source graph excludes the agent and any Codex/model reference.
 - Verification: fixed ffprobe/ffmpeg/Ghostscript command builders route through the executor; verification never executes plan-supplied argv.
 - Helpers: exact helper tier and granted roots; helpers cannot be primary recipe tools or install steps.
-- Writes: task outputs beside inputs or in an executor-managed temp root; recipes use atomic temp+rename; failed outputs and normal temp directories are removed.
+- Writes: final task outputs stay beside inputs; ordinary intermediate outputs require exact model declarations that are resolved/revalidated only inside the executor-owned temp root. Reads require an earlier declared write. Recipes use atomic temp+rename; failed outputs and every temp root are removed.
 - Listener: none. Phase 3 must add `127.0.0.1`, random port, and per-session token checks before any request handling.
 
 ## Closed critical findings
@@ -19,6 +19,7 @@ Last updated: Phase 2 Step 10 derivation hardening (2026-07-16). `server/` is cu
 | Critical | Allowlisted binaries accepted dangerous model-controlled flags and embedded file sources. | Every token is positively classified per tool; path roles are validated; GS pipe/unsafe mode, ffmpeg lavfi/movie sources, and pandoc execution hooks are explicitly denied. |
 | High | Failed outputs blocked retries and could be mistaken for successful artifacts. | Recipe non-green exits and terminal repair failure remove regular-file outputs without touching inputs. |
 | High | Basename-only module graph could hide an agent import behind `index.ts` collisions. | Tests use canonical repo-relative paths, scan reachability hazards, and independently bundle the rerun entry. |
+| High | A legitimate repair could not write an ordinary intermediate, while widening temp access risked restoring arbitrary writes. | Plans/recipes may serialize exact direct-child temp intermediates; undeclared, escaping, input-directory, and read-before-write paths fail closed; cleanup is tested on success and failure. |
 
 ## Deferred to Day 5 audit
 

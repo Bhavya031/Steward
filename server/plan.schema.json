@@ -90,8 +90,19 @@
           "additionalProperties": false
         }
       ]
+    },
+    "intermediates": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "maxItems": 8
+        }
+      ]
     }
   },
-  "required": ["tool", "install_cmd", "commands", "output_path", "checks", "derivations"],
+  "required": ["tool", "install_cmd", "commands", "output_path", "checks", "derivations", "intermediates"],
   "additionalProperties": false
 }

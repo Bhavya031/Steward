@@ -1,0 +1,98 @@
+STEWARD · your computer already knows how.
+No local recipe matched.
+System: macOS 26.4.1 · arm64 · 16 GiB
+Mode: GPT-5.6 planning
+Command: ffmpeg -i /tmp/steward-derivation-live/noise-8s.mp4 -map 0:v:0 -map 0:a:0 -c:v libx264 -b:v 23404k -c:a aac -b:a 96k -movflags +faststart /tmp/steward-derivation-live/noise-8s-under-25mb.mp4
+Progress: frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.65
+Progress: frame=    3 fps=2.2 q=14.0 size=     512KiB time=00:00:00.03 bitrate=125841.9kbits/s speed=0.0246x elapsed=0:00:01.35
+Progress: frame=    9 fps=4.4 q=17.0 size=    2304KiB time=00:00:00.23 bitrate=80891.9kbits/s speed=0.114x elapsed=0:00:02.03
+Progress: frame=   17 fps=6.2 q=20.0 size=    4096KiB time=00:00:00.50 bitrate=67109.6kbits/s speed=0.182x elapsed=0:00:02.74
+Progress: frame=   22 fps=6.5 q=23.0 size=    5376KiB time=00:00:00.66 bitrate=66060.8kbits/s speed=0.198x elapsed=0:00:03.36
+Progress: frame=   29 fps=7.2 q=25.0 size=    6400KiB time=00:00:00.93 bitrate=56174.1kbits/s speed=0.231x elapsed=0:00:04.03
+Progress: frame=   37 fps=7.8 q=26.0 size=    7424KiB time=00:00:01.16 bitrate=52129.5kbits/s speed=0.247x elapsed=0:00:04.72
+Progress: frame=   45 fps=8.3 q=27.0 size=    8448KiB time=00:00:01.43 bitrate=48283.5kbits/s speed=0.265x elapsed=0:00:05.41
+Progress: frame=   52 fps=8.6 q=28.0 size=    9472KiB time=00:00:01.66 bitrate=46557.0kbits/s speed=0.274x elapsed=0:00:06.07
+Progress: frame=   59 fps=8.8 q=29.0 size=   10240KiB time=00:00:01.90 bitrate=44150.8kbits/s speed=0.283x elapsed=0:00:06.70
+Progress: frame=   67 fps=9.1 q=29.0 size=   11008KiB time=00:00:02.16 bitrate=41620.6kbits/s speed=0.293x elapsed=0:00:07.38
+Progress: frame=   75 fps=9.3 q=29.0 size=   11776KiB time=00:00:02.43 bitrate=39645.0kbits/s speed=0.302x elapsed=0:00:08.06
+Progress: frame=   82 fps=9.5 q=30.0 size=   12544KiB time=00:00:02.66 bitrate=38535.3kbits/s speed=0.309x elapsed=0:00:08.64
+Progress: frame=   90 fps=9.6 q=30.0 size=   13312KiB time=00:00:02.93 bitrate=37176.9kbits/s speed=0.314x elapsed=0:00:09.33
+Progress: frame=   97 fps=9.7 q=30.0 size=   13824KiB time=00:00:03.16 bitrate=35762.1kbits/s speed=0.315x elapsed=0:00:10.04
+Progress: frame=  102 fps=9.5 q=30.0 size=   14336KiB time=00:00:03.33 bitrate=35232.3kbits/s speed=0.311x elapsed=0:00:10.70
+Progress: frame=  107 fps=9.4 q=30.0 size=   14848KiB time=00:00:03.50 bitrate=34752.9kbits/s speed=0.307x elapsed=0:00:11.39
+Progress: frame=  115 fps=9.5 q=30.0 size=   15616KiB time=00:00:03.76 bitrate=33962.8kbits/s speed=0.311x elapsed=0:00:12.09
+Progress: frame=  123 fps=9.6 q=30.0 size=   16384KiB time=00:00:04.03 bitrate=33277.2kbits/s speed=0.316x elapsed=0:00:12.75
+Progress: frame=  132 fps=9.8 q=30.0 size=   17152KiB time=00:00:04.33 bitrate=32425.3kbits/s speed=0.322x elapsed=0:00:13.45
+Progress: frame=  141 fps= 10 q=30.0 size=   17920KiB time=00:00:04.63 bitrate=31683.7kbits/s speed=0.327x elapsed=0:00:14.15
+Progress: frame=  147 fps= 10 q=30.0 size=   18432KiB time=00:00:04.83 bitrate=31240.4kbits/s speed=0.329x elapsed=0:00:14.68
+Progress: frame=  157 fps= 10 q=30.0 size=   19200KiB time=00:00:05.16 bitrate=30442.6kbits/s speed=0.336x elapsed=0:00:15.38
+Progress: frame=  164 fps= 10 q=30.0 size=   19968KiB time=00:00:05.40 bitrate=30292.3kbits/s speed=0.336x elapsed=0:00:16.07
+Progress: frame=  172 fps= 10 q=30.0 size=   20480KiB time=00:00:05.66 bitrate=29606.9kbits/s speed=0.338x elapsed=0:00:16.76
+Progress: frame=  181 fps= 10 q=30.0 size=   21504KiB time=00:00:05.96 bitrate=29524.2kbits/s speed=0.343x elapsed=0:00:17.41
+Progress: frame=  190 fps= 10 q=30.0 size=   22272KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:18.10
+Progress: frame=  199 fps= 11 q=30.0 size=   23040KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:18.80
+Progress: frame=  210 fps= 11 q=30.0 size=   23808KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:19.50
+Progress: frame=  219 fps= 11 q=30.0 size=   24576KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:20.19
+Progress: frame=  226 fps= 11 q=30.0 size=   25344KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:20.89
+Progress: frame=  236 fps= 11 q=-1.0 size=   26112KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:21.59
+Progress: frame=  240 fps= 11 q=-1.0 Lsize=   26764KiB time=00:00:07.93 bitrate=27637.0kbits/s speed=0.364x elapsed=0:00:21.77
+STEWARD_EVENT {"type":"attempt","attempt":1,"plan_summary":{"tool":"ffmpeg","command_count":1,"output_path":"/tmp/steward-derivation-live/noise-8s-under-25mb.mp4","checks":["size_under","duration_matches","streams_present","plays"],"commands":[["ffmpeg","-i","/tmp/steward-derivation-live/noise-8s.mp4","-map","0:v:0","-map","0:a:0","-c:v","libx264","-b:v","{{video_bitrate_kbps}}","-c:a","aac","-b:a","96k","-movflags","+faststart","/tmp/steward-derivation-live/noise-8s-under-25mb.mp4"]],"intermediates":[],"derivations":{"video_bitrate_kbps":{"name":"size_target_video_bitrate","args":{"target_bytes":25000000,"audio_kbps":96,"safety_factor":0.94}}}},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":1,"checks_passed":3,"checks_total":4,"failed_checks":[{"name":"size_under","pass":false,"expected":"under 23.84 MB (25,000,000 bytes)","actual":"26.14 MB (27,406,680 bytes)"}],"stderr_tail":"frame=  141 fps= 10 q=30.0 size=   17920KiB time=00:00:04.63 bitrate=31683.7kbits/s speed=0.327x elapsed=0:00:14.15    \nframe=  147 fps= 10 q=30.0 size=   18432KiB time=00:00:04.83 bitrate=31240.4kbits/s speed=0.329x elapsed=0:00:14.68    \nframe=  157 fps= 10 q=30.0 size=   19200KiB time=00:00:05.16 bitrate=30442.6kbits/s speed=0.336x elapsed=0:00:15.38    \nframe=  164 fps= 10 q=30.0 size=   19968KiB time=00:00:05.40 bitrate=30292.3kbits/s speed=0.336x elapsed=0:00:16.07    \nframe=  172 fps= 10 q=30.0 size=   20480KiB time=00:00:05.66 bitrate=29606.9kbits/s speed=0.338x elapsed=0:00:16.76    \nframe=  181 fps= 10 q=30.0 size=   21504KiB time=00:00:05.96 bitrate=29524.2kbits/s speed=0.343x elapsed=0:00:17.41    \nframe=  190 fps= 10 q=30.0 size=   22272KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:18.10    \nframe=  199 fps= 11 q=30.0 size=   23040KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:18.80    \nframe=  210 fps= 11 q=30.0 size=   23808KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:19.50    \nframe=  219 fps= 11 q=30.0 size=   24576KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:20.19    \nframe=  226 fps= 11 q=30.0 size=   25344KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:20.89    \nframe=  236 fps= 11 q=-1.0 size=   26112KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:21.59    \n[mp4 @ 0x78cccc280] Starting second pass: moving the moov atom to the beginning of the file\n[out#0/mp4 @ 0x78cc28300] video:26662KiB audio:94KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.030308%\nframe=  240 fps= 11 q=-1.0 Lsize=   26764KiB time=00:00:07.93 bitrate=27637.0kbits/s speed=0.364x elapsed=0:00:21.77    \n[libx264 @ 0x78cc24e00] frame I:1     Avg QP: 8.00  size:329034\n[libx264 @ 0x78cc24e00] frame P:239   Avg QP:32.05  size:112854\n[libx264 @ 0x78cc24e00] mb I  I16..4:  0.0% 45.2% 54.8%\n[libx264 @ 0x78cc24e00] mb P  I16..4: 83.8%  6.2% 10.0%  P16..4:  0.0%  0.0%  0.0%  0.0%  0.0%    skip: 0.0%\n[libx264 @ 0x78cc24e00] final ratefactor: 22.59\n[libx264 @ 0x78cc24e00] 8x8 transform intra:6.4% inter:100.0%\n[libx264 @ 0x78cc24e00] coded y,uvDC,uvAC intra: 99.5% 100.0% 100.0% inter: 100.0% 100.0% 100.0%\n[libx264 @ 0x78cc24e00] i16 v,h,dc,p:  0%  0% 95%  5%\n[libx264 @ 0x78cc24e00] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu:  5%  3% 59%  6%  5%  5%  5%  5%  6%\n[libx264 @ 0x78cc24e00] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 23%  3% 27%  9%  8%  8%  8%  7%  7%\n[libx264 @ 0x78cc24e00] i8c dc,h,v,p: 93%  0%  1%  6%\n[libx264 @ 0x78cc24e00] Weighted P-Frames: Y:0.0% UV:0.0%\n[libx264 @ 0x78cc24e00] ref P L0:  0.0%  0.0%  0.0% 100.0%\n[libx264 @ 0x78cc24e00] kb/s:27301.18\n[aac @ 0x78cc27b80] Qavg: 120.718"}}
+Command: ffmpeg -i /tmp/steward-derivation-live/noise-8s.mp4 -map 0:v:0 -map 0:a:0 -c:v libx264 -b:v 23404k -maxrate 23404k -bufsize 1000k -c:a aac -b:a 96k -movflags +faststart /tmp/steward-derivation-live/noise-8s-under-25mb-repaired.mp4
+
+Progress: [libx264 @ 0xc9ac24e00] 264 - core 165 r3222 b35605a - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analys
+Progress: frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.64
+Progress: frame=    4 fps=3.0 q=29.0 size=     256KiB time=00:00:00.06 bitrate=31462.9kbits/s speed=0.0507x elapsed=0:00:01.31
+Progress: frame=   10 fps=5.0 q=31.0 size=     512KiB time=00:00:00.30 bitrate=13982.3kbits/s speed=0.149x elapsed=0:00:02.01
+Progress: frame=   17 fps=6.3 q=30.0 size=    1280KiB time=00:00:00.50 bitrate=20972.3kbits/s speed=0.185x elapsed=0:00:02.70
+Progress: frame=   25 fps=7.5 q=30.0 size=    2048KiB time=00:00:00.76 bitrate=21883.8kbits/s speed=0.231x elapsed=0:00:03.31
+Progress: frame=   33 fps=8.2 q=30.0 size=    2560KiB time=00:00:01.03 bitrate=20295.4kbits/s speed=0.258x elapsed=0:00:04.00
+Progress: frame=   40 fps=8.7 q=30.0 size=    3072KiB time=00:00:01.26 bitrate=19868.1kbits/s speed=0.275x elapsed=0:00:04.61
+Progress: frame=   49 fps=9.2 q=30.0 size=    3840KiB time=00:00:01.56 bitrate=20079.4kbits/s speed=0.295x elapsed=0:00:05.31
+Progress: frame=   53 fps=9.1 q=29.0 size=    4352KiB time=00:00:01.70 bitrate=20971.7kbits/s speed=0.291x elapsed=0:00:05.84
+Progress: frame=   63 fps=9.6 q=30.0 size=    5120KiB time=00:00:02.03 bitrate=20627.9kbits/s speed=0.31x elapsed=0:00:06.55
+Progress: frame=   71 fps=9.8 q=29.0 size=    5888KiB time=00:00:02.30 bitrate=20971.7kbits/s speed=0.317x elapsed=0:00:07.26
+Progress: frame=   78 fps=9.8 q=30.0 size=    6400KiB time=00:00:02.53 bitrate=20695.7kbits/s speed=0.318x elapsed=0:00:07.96
+Progress: frame=   86 fps=9.9 q=30.0 size=    7168KiB time=00:00:02.80 bitrate=20971.7kbits/s speed=0.324x elapsed=0:00:08.64
+Progress: frame=   96 fps= 10 q=30.0 size=    7936KiB time=00:00:03.13 bitrate=20748.5kbits/s speed=0.337x elapsed=0:00:09.30
+Progress: frame=  103 fps= 10 q=30.0 size=    8448KiB time=00:00:03.36 bitrate=20556.4kbits/s speed=0.338x elapsed=0:00:09.95
+Progress: frame=  111 fps= 10 q=30.0 size=    9216KiB time=00:00:03.63 bitrate=20779.2kbits/s speed=0.341x elapsed=0:00:10.65
+Progress: frame=  120 fps= 11 q=30.0 size=    9984KiB time=00:00:03.93 bitrate=20793.9kbits/s speed=0.347x elapsed=0:00:11.34
+Progress: frame=  128 fps= 11 q=30.0 size=   10496KiB time=00:00:04.20 bitrate=20472.3kbits/s speed=0.349x elapsed=0:00:12.04
+Progress: frame=  137 fps= 11 q=30.0 size=   11264KiB time=00:00:04.50 bitrate=20505.6kbits/s speed=0.353x elapsed=0:00:12.74
+Progress: frame=  144 fps= 11 q=30.0 size=   12032KiB time=00:00:04.73 bitrate=20823.9kbits/s speed=0.354x elapsed=0:00:13.36
+Progress: frame=  151 fps= 11 q=30.0 size=   12544KiB time=00:00:04.96 bitrate=20690.1kbits/s speed=0.356x elapsed=0:00:13.95
+Progress: frame=  159 fps= 11 q=30.0 size=   13312KiB time=00:00:05.23 bitrate=20838.0kbits/s speed=0.357x elapsed=0:00:14.64
+Progress: frame=  169 fps= 11 q=30.0 size=   14080KiB time=00:00:05.56 bitrate=20720.4kbits/s speed=0.363x elapsed=0:00:15.32
+Progress: frame=  175 fps= 11 q=30.0 size=   14592KiB time=00:00:05.76 bitrate=20729.1kbits/s speed=0.362x elapsed=0:00:15.92
+Progress: frame=  182 fps= 11 q=30.0 size=   15104KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:16.50
+Progress: frame=  190 fps= 11 q=30.0 size=   15872KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:17.08
+Progress: frame=  197 fps= 11 q=30.0 size=   16384KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:17.68
+Progress: frame=  207 fps= 11 q=30.0 size=   17408KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:18.28
+Progress: frame=  215 fps= 11 q=30.0 size=   17920KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:18.89
+Progress: frame=  223 fps= 11 q=30.0 size=   18688KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:19.47
+Progress: frame=  231 fps= 12 q=-1.0 size=   19456KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:20.07
+Progress: frame=  240 fps= 12 q=-1.0 Lsize=   20321KiB time=00:00:07.93 bitrate=20983.7kbits/s speed=0.386x elapsed=0:00:20.54
+STEWARD_EVENT {"type":"attempt","attempt":2,"plan_summary":{"tool":"ffmpeg","command_count":1,"output_path":"/tmp/steward-derivation-live/noise-8s-under-25mb-repaired.mp4","checks":["size_under","duration_matches","streams_present","plays"],"commands":[["ffmpeg","-i","/tmp/steward-derivation-live/noise-8s.mp4","-map","0:v:0","-map","0:a:0","-c:v","libx264","-b:v","{{video_bitrate_kbps}}","-maxrate","{{video_bitrate_kbps}}","-bufsize","1000k","-c:a","aac","-b:a","96k","-movflags","+faststart","/tmp/steward-derivation-live/noise-8s-under-25mb-repaired.mp4"]],"intermediates":[],"derivations":{"video_bitrate_kbps":{"name":"size_target_video_bitrate","args":{"target_bytes":25000000,"audio_kbps":96,"safety_factor":0.94}}}},"outcome":{"status":"passed","exit_code":0,"commands_completed":1,"checks_passed":4,"checks_total":4,"failed_checks":[],"stderr_tail":""}}
+
+┌─ STEWARD RECIPE
+│ compress-video-under-25mb
+│ ffmpeg -i /tmp/steward-derivation-live/noise-8s.mp4 -map 0:v:0 -map 0:a:0 -c:v libx264 -b:v "{{video_bitrate_kbps}}" -maxrate "{{video_bitrate_kbps}}" -bufsize 1000k -c:a aac -b:a 96k -movflags +faststart /tmp/steward-derivation-live/noise-8s-under-25mb-repaired.mp4
+│ Replaces Video compressor SaaS: ~~$12/mo~~
+│ Saved permanently · model calls: planning complete
+└─ your computer already knows how.
+
+Checks:
+  ✓ size_under
+    expected: under 23.84 MB (25,000,000 bytes)
+    actual:   19.84 MB (20,808,804 bytes)
+  ✓ duration_matches
+    expected: 8.000 s ±0.500 s
+    actual:   8.000 s (Δ 0.000 s)
+  ✓ streams_present
+    expected: video, audio
+    actual:   video (h264), audio (aac)
+  ✓ plays
+    expected: full frame scan with no decode errors
+    actual:   video=240 frames, audio=375 frames; ffprobe exit 0; no decode errors
+Saved: recipes/compress-video-under-25mb.json
+

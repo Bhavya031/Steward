@@ -8,7 +8,7 @@ import { validateInstallProposal } from "./install-policy.ts";
 import { buildLoudnessCommand } from "./loudness-policy.ts";
 import type { SystemProfile } from "./probe.ts";
 import { validatePlan, type Plan } from "./plan.ts";
-import { validateCommandPaths } from "./path-policy.ts";
+import { validatePlanPaths } from "./plan-paths.ts";
 import { consumeProcessStream } from "./process-stream.ts";
 import { createSofficeProfile } from "./soffice-profile.ts";
 import { materializeRuntimeCommands } from "./runtime-temp.ts";
@@ -74,14 +74,11 @@ export async function executePlan(
     throw new ExecutionError("install proposal must be handled before task execution");
   }
   const timeoutMs = boundedTimeout(options.timeoutMs);
-  const runtime = materializeRuntimeCommands(plan.commands);
+  const runtime = materializeRuntimeCommands(plan.commands, plan.intermediates);
   const isolatedProfile = plan.tool === "soffice" ? createSofficeProfile() : null;
   try {
     enforceManagedPasslogs(runtime.commands, runtime.directory);
-    runtime.commands.forEach((command, index) => validateCommandPaths(
-      plan.tool, command, inputPaths, plan.output_path,
-      { requireOutput: index === runtime.commands.length - 1, temporaryDirectory: runtime.directory },
-    ));
+    validatePlanPaths(plan, runtime, inputPaths);
     const executable = resolveBinary(plan.tool, profile);
     const results: ExecutionResult[] = [];
     const started = performance.now();

@@ -98,5 +98,6 @@ export function renderRecipe(
     commands: recipe.command_template.commands.map((command) => command.map((argument) => fill(argument, slots))),
     output_path: fill(recipe.command_template.output_path, slots),
     checks: recipe.checks.map((check) => ({ type: check.type, target: fillTarget(check.target, slots) })),
+    ...(recipe.intermediates ? { intermediates: recipe.intermediates } : {}),
   });
 }

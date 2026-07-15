@@ -9,6 +9,7 @@ package.json:CX
 README.md:D—
 tsconfig.json:C—
 demo-material/repair-run-1.txt:D—
+demo-material/repair-verification-failure.txt:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-media-to-mov.json:R—
 recipes/convert-media-to-mp4.json:R—
@@ -36,6 +37,9 @@ server/flag-policy.ts:SA
 server/ffprobe-policy.ts:SA
 server/helper-executor.test.ts:T—
 server/helper-policy.ts:SA
+server/intermediate-executor.test.ts:T—
+server/intermediate-policy.test.ts:T—
+server/intermediate-policy.ts:SY
 server/index.ts:EM
 server/install-policy.ts:SA
 server/loudness-policy.ts:SA
@@ -43,12 +47,15 @@ server/media-formats.ts:RY
 server/path-policy.ts:SA
 server/path-policy.test.ts:T—
 server/path-error.ts:SY
+server/output-policy.ts:SA
+server/plan-paths.ts:SA
 server/plan.schema.json:P—
 server/plan.test.ts:T—
 server/plan.ts:PA
 server/probe.ts:SA
 server/process-stream.ts:EA
 server/recipe-integrity.test.ts:T—
+server/recipe-intermediate.test.ts:T—
 server/recipe-match.test.ts:T—
 server/recipe-match.ts:RA
 server/recipe-cleanup.test.ts:T—
@@ -59,6 +66,7 @@ server/recipe-validation.ts:RA
 server/recipes.test.ts:T—
 server/recipes.ts:RA
 server/repair-integrity.ts:SA
+server/repair-policy.test.ts:T—
 server/repair-loop.test.ts:T—
 server/repair-loop.ts:EA
 server/runtime-temp.ts:SA

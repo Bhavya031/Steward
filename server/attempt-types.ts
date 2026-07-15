@@ -7,6 +7,9 @@ export interface PlanSummary {
   command_count: number;
   output_path: string;
   checks: string[];
+  commands: string[][];
+  intermediates: string[];
+  derivations: Plan["derivations"] | null;
 }
 
 export interface AttemptOutcome {

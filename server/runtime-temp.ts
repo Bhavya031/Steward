@@ -1,11 +1,13 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { TEMP_DIR_SLOT } from "./intermediate-policy.ts";
 
-export const TEMP_DIR_SLOT = "{{temp_dir}}";
+export { TEMP_DIR_SLOT } from "./intermediate-policy.ts";
 
 export interface RuntimeCommands {
   commands: string[][];
+  intermediates: string[];
   directory: string | null;
   cleanup: () => void;
 }
@@ -19,19 +21,24 @@ function validateSlot(argument: string): void {
   }
 }
 
-export function materializeRuntimeCommands(commands: string[][]): RuntimeCommands {
-  const usesTemp = commands.some((command) =>
-    command.some((argument) => argument.includes(TEMP_DIR_SLOT))
-  );
-  commands.flat().forEach(validateSlot);
+export function materializeRuntimeCommands(
+  commands: string[][],
+  intermediates: string[] = [],
+): RuntimeCommands {
+  const values = [...commands.flat(), ...intermediates];
+  const usesTemp = values.some((value) => value.includes(TEMP_DIR_SLOT));
+  values.forEach(validateSlot);
   if (!usesTemp) {
-    return { commands: commands.map((command) => [...command]), directory: null, cleanup: () => undefined };
+    return {
+      commands: commands.map((command) => [...command]), intermediates: [],
+      directory: null, cleanup: () => undefined,
+    };
   }
   const directory = mkdtempSync(join(tmpdir(), "steward-run-"));
+  const materialize = (value: string) => value.split(TEMP_DIR_SLOT).join(directory);
   return {
-    commands: commands.map((command) =>
-      command.map((argument) => argument.split(TEMP_DIR_SLOT).join(directory))
-    ),
+    commands: commands.map((command) => command.map(materialize)),
+    intermediates: intermediates.map(materialize),
     directory,
     cleanup: () => rmSync(directory, { recursive: true, force: true }),
   };

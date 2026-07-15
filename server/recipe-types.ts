@@ -16,6 +16,7 @@ export interface Recipe {
   tool: PlanTool;
   install_weight: InstallWeight;
   derivations?: Derivations;
+  intermediates?: string[];
 }
 
 export interface SaveRecipeInput {

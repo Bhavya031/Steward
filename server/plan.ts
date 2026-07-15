@@ -1,5 +1,6 @@
 import { isAbsolute } from "node:path";
 import { DerivationValidationError, validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
+import { IntermediateValidationError, validateIntermediates } from "./intermediate-policy.ts";
 import { ALLOWED_BINARIES, type AllowedBinary } from "./tools.ts";
 export type PlanTool = Exclude<AllowedBinary, "brew">;
 export type CheckTarget = string | number | boolean;
@@ -20,13 +21,14 @@ export interface Plan {
   output_path: string;
   checks: PlanCheck[];
   derivations?: Derivations;
+  intermediates?: string[];
 }
 const PLAN_TOOLS = new Set<PlanTool>(
   ALLOWED_BINARIES.filter((binary): binary is PlanTool => binary !== "brew"),
 );
 const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
 const REQUIRED_PLAN_KEYS = ["tool", "install_cmd", "commands", "output_path", "checks"];
-const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations"];
+const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations", "intermediates"];
 export class PlanValidationError extends Error {
   constructor(message: string) {
     super(message); this.name = "PlanValidationError";
@@ -35,7 +37,6 @@ export class PlanValidationError extends Error {
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
 function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
   const actual = Object.keys(value);
   return actual.length === keys.length && actual.every((key) => keys.includes(key));
@@ -43,11 +44,9 @@ function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
 function isSafeString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && !value.includes("\0");
 }
-
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isSafeString);
 }
-
 function validateCommands(value: unknown, tool: PlanTool): string[][] {
   if (!Array.isArray(value) || value.length === 0 || value.length > 8) {
     throw new PlanValidationError("commands must contain 1 to 8 argv arrays");
@@ -62,20 +61,17 @@ function validateCommands(value: unknown, tool: PlanTool): string[][] {
     return [...command];
   });
 }
-
 function stripFences(raw: string): string {
   const trimmed = raw.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   return fenced?.[1]?.trim() ?? trimmed;
 }
-
 function parseJson(raw: string): unknown {
   const stripped = stripFences(raw);
   const start = stripped.indexOf("{");
   const end = stripped.lastIndexOf("}");
   const candidates = [stripped];
   if (start >= 0 && end > start) candidates.push(stripped.slice(start, end + 1));
-
   for (const candidate of new Set(candidates)) {
     try {
       return JSON.parse(candidate);
@@ -85,7 +81,6 @@ function parseJson(raw: string): unknown {
   }
   throw new PlanValidationError("planner returned malformed JSON");
 }
-
 function validateCheck(value: unknown, index: number): PlanCheck {
   if (!isObject(value) || !hasExactKeys(value, ["type", "target"])) {
     throw new PlanValidationError(`checks[${index}] must contain only type and target`);
@@ -99,12 +94,13 @@ function validateCheck(value: unknown, index: number): PlanCheck {
   }
   return { type: value.type as PlanCheckType, target: target as CheckTarget };
 }
-
 export function validatePlan(value: unknown): Plan {
   const shape = isObject(value) && Object.keys(value).every((key) => PLAN_KEYS.includes(key)) &&
     REQUIRED_PLAN_KEYS.every((key) => Object.hasOwn(value, key));
   if (!shape) {
-    throw new PlanValidationError(`plan must contain ${REQUIRED_PLAN_KEYS.join(", ")} and optional derivations only`);
+    throw new PlanValidationError(
+      `plan must contain ${REQUIRED_PLAN_KEYS.join(", ")} and optional derivations/intermediates only`,
+    );
   }
   if (!isSafeString(value.tool) || !PLAN_TOOLS.has(value.tool as PlanTool)) {
     throw new PlanValidationError("tool is not an allowlisted task binary");
@@ -112,11 +108,15 @@ export function validatePlan(value: unknown): Plan {
   const tool = value.tool as PlanTool;
   const commands = validateCommands(value.commands, tool);
   let derivations: Derivations | undefined;
+  let intermediates: string[] | undefined;
   try {
     derivations = value.derivations == null ? undefined : validateDerivations(value.derivations);
+    intermediates = value.intermediates == null ? undefined : validateIntermediates(value.intermediates);
     validateCommandSlots(commands, derivations, (slot) => slot === "temp_dir");
   } catch (error) {
-    if (error instanceof DerivationValidationError) throw new PlanValidationError(error.message);
+    if (error instanceof DerivationValidationError || error instanceof IntermediateValidationError) {
+      throw new PlanValidationError(error.message);
+    }
     throw error;
   }
   if (!isSafeString(value.output_path) || !isAbsolute(value.output_path)) {
@@ -141,9 +141,9 @@ export function validatePlan(value: unknown): Plan {
     checks: value.checks.map(validateCheck),
   };
   if (derivations) plan.derivations = derivations;
+  if (intermediates) plan.intermediates = intermediates;
   return plan;
 }
-
 export function parsePlan(raw: string): Plan {
   return validatePlan(parseJson(raw));
 }

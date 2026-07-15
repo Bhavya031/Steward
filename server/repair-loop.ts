@@ -2,7 +2,7 @@ import type { RepairContext } from "./agent-prompts.ts";
 import type { AttemptEvent, AttemptOutcome, AttemptRun, PlanSummary } from "./attempt-types.ts";
 import { discardFailedOutput } from "./failed-output.ts";
 import { materializePlanDerivations } from "./derivation-runtime.ts";
-import { executePlan, type ExecutionOptions } from "./executor.ts";
+import { executePlan, type ExecutionOptions, type PlanExecutionResult } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
 import { enforceRepairIntegrity } from "./repair-integrity.ts";
@@ -29,6 +29,9 @@ function summary(plan: Plan): PlanSummary {
     command_count: plan.commands.length,
     output_path: plan.output_path,
     checks: plan.checks.map((check) => check.type),
+    commands: plan.commands.map((command) => [...command]),
+    intermediates: [...(plan.intermediates ?? [])],
+    derivations: plan.derivations ?? null,
   };
 }
 
@@ -60,16 +63,31 @@ function outcome(
   };
 }
 
+function rejectedExecution(error: unknown): PlanExecutionResult {
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    ok: false, exit_code: -1, timed_out: false, duration_ms: 0,
+    stdout_tail: "", stderr_tail: `pre-spawn policy rejection: ${message}`,
+    command_results: [],
+  };
+}
+
 export async function runWithRepair(options: RepairLoopOptions): Promise<AttemptRun> {
   const originalPlan = options.initialPlan;
   let plan = options.initialPlan;
   const events: AttemptEvent[] = [];
+  let measuredFailures: VerificationResult[] = [];
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     if (plan.install_cmd !== null) throw new Error("repair proposed an install that requires confirmation");
-    const executablePlan = await materializePlanDerivations(plan, options.inputPaths, options.profile);
-    const execution = await executePlan(
-      executablePlan, options.profile, options.inputPaths, options.executionOptions,
-    );
+    let execution: PlanExecutionResult;
+    try {
+      const executablePlan = await materializePlanDerivations(plan, options.inputPaths, options.profile);
+      execution = await executePlan(
+        executablePlan, options.profile, options.inputPaths, options.executionOptions,
+      );
+    } catch (error) {
+      execution = rejectedExecution(error);
+    }
     const checks = execution.ok
       ? await verifyChecks(plan.checks, {
         outputPath: plan.output_path,
@@ -86,17 +104,23 @@ export async function runWithRepair(options: RepairLoopOptions): Promise<Attempt
     };
     events.push(event);
     options.onAttempt?.(event);
+    if (attemptOutcome.status === "verification_failed") {
+      measuredFailures = attemptOutcome.failed_checks;
+    }
     if (attemptOutcome.status === "passed") {
       return { plan, execution, checks, all_pass: true, events };
     }
+    const mayDiscardOutput = execution.command_results.length > 0;
     if (attempt === MAX_ATTEMPTS) {
-      discardFailedOutput(plan.output_path, options.inputPaths);
+      if (mayDiscardOutput) discardFailedOutput(plan.output_path, options.inputPaths);
       return { plan, execution, checks, all_pass: false, events };
     }
-    discardFailedOutput(plan.output_path, options.inputPaths);
+    if (mayDiscardOutput) discardFailedOutput(plan.output_path, options.inputPaths);
+    const repairEvidence = attemptOutcome.status === "execution_failed" && measuredFailures.length
+      ? measuredFailures : attemptOutcome.failed_checks;
     plan = enforceRepairIntegrity(originalPlan, await options.repair({
       original_plan: plan,
-      failed_checks: attemptOutcome.failed_checks,
+      failed_checks: repairEvidence,
       stderr_tail: attemptOutcome.stderr_tail,
     }));
   }
