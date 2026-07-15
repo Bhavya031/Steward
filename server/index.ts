@@ -1,11 +1,10 @@
 import { constants, accessSync, statSync } from "node:fs";
 import { basename, resolve } from "node:path";
-import { executePlan } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import { probeSystem, type SystemProfile } from "./probe.ts";
+import { runWithRepair } from "./repair-loop.ts";
 import { match, rerun, save, type Recipe } from "./recipes.ts";
-import { executionReporter, printChecks, printRecipeCard } from "./terminal.ts";
-import { verifyChecks } from "./verify/index.ts";
+import { executionReporter, printAttemptEvent, printChecks, printRecipeCard } from "./terminal.ts";
 
 interface RecipeIdentity {
   name: string;
@@ -66,33 +65,35 @@ async function runPlanned(task: string, files: string[]): Promise<void> {
   const profile = probeSystem();
   printSystem(profile);
   console.log("Mode: GPT-5.6 planning");
-  const { planTask } = await import("./agent.ts");
+  const { planTask, repairTask } = await import("./agent.ts");
   const planningTask = `${task}\nInput files (absolute paths): ${JSON.stringify(files)}`;
-  const plan = await planTask(profile, planningTask);
-  if (plan.install_cmd) {
-    throw new Error(`install requires confirmation before execution: ${JSON.stringify(plan.install_cmd)}`);
+  const initialPlan = await planTask(profile, planningTask);
+  if (initialPlan.install_cmd) {
+    throw new Error(`install requires confirmation before execution: ${JSON.stringify(initialPlan.install_cmd)}`);
   }
-  const execution = await executePlan(plan, profile, files, { onEvent: executionReporter() });
-  const checks = await verifyChecks(plan.checks, {
-    outputPath: plan.output_path,
-    sourcePaths: files,
+  const run = await runWithRepair({
+    initialPlan,
     profile,
+    inputPaths: files,
+    executionOptions: { onEvent: executionReporter() },
+    onAttempt: printAttemptEvent,
+    repair: (context) => repairTask(profile, context),
   });
-  if (!execution.ok || checks.length !== plan.checks.length || checks.some((check) => !check.pass)) {
-    printChecks(checks);
-    if (!execution.ok) console.error(`Executor stderr: ${execution.stderr_tail}`);
-    throw new Error("execution or verification failed; recipe was not saved");
+  if (!run.all_pass) {
+    printChecks(run.checks);
+    if (!run.execution.ok) console.error(`Executor stderr: ${run.execution.stderr_tail}`);
+    throw new Error(`all ${run.events.length} attempts failed; recipe was not saved`);
   }
-  const identity = identityFor(task, plan);
+  const identity = identityFor(task, run.plan);
   const recipe = save({
     ...identity,
-    plan,
+    plan: run.plan,
     inputPaths: files,
-    verification: checks,
+    verification: run.checks,
     arch: profile.architecture,
   });
   if (!recipe) throw new Error("green verification was refused by recipe storage");
-  printRecipeCard(recipe, plan, checks, true);
+  printRecipeCard(recipe, run.plan, run.checks, true);
   console.log(`Saved: recipes/${recipe.name}.json`);
 }
 

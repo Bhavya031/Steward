@@ -1,6 +1,7 @@
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { validatePlan, type CheckTarget, type Plan, type PlanCheck } from "./plan.ts";
 import type { Recipe } from "./recipe-types.ts";
+import { TEMP_DIR_SLOT } from "./runtime-temp.ts";
 
 export interface TemplatedPlan {
   command_template: Recipe["command_template"];
@@ -38,7 +39,7 @@ export function templatizePlan(plan: Plan, inputPaths: string[], recipeName: str
   const template = (value: string): string => replaceAll(value, replacements);
   return {
     command_template: {
-      argv: plan.command.map(template),
+      commands: plan.commands.map((command) => command.map(template)),
       output_path: output,
     },
     checks: plan.checks.map((check) => ({
@@ -65,11 +66,15 @@ function slotValues(files: string[]): Record<string, string> {
 
 function fill(value: string, slots: Record<string, string>): string {
   const rendered = value.replace(/\{\{([a-z0-9_]+)\}\}/g, (_match, name: string) => {
+    if (name === "temp_dir") return TEMP_DIR_SLOT;
     const replacement = slots[name];
     if (replacement === undefined) throw new Error(`recipe slot is unfilled: ${name}`);
     return replacement;
   });
-  if (rendered.includes("{{") || rendered.includes("}}")) throw new Error("recipe contains malformed slots");
+  const recipeOnly = rendered.split(TEMP_DIR_SLOT).join("");
+  if (recipeOnly.includes("{{") || recipeOnly.includes("}}")) {
+    throw new Error("recipe contains malformed slots");
+  }
   return rendered;
 }
 
@@ -77,12 +82,18 @@ function fillTarget(target: CheckTarget, slots: Record<string, string>): CheckTa
   return typeof target === "string" ? fill(target, slots) : target;
 }
 
-export function renderRecipe(recipe: Recipe, files: string[]): Plan {
-  const slots = slotValues(files);
+export function renderRecipe(
+  recipe: Recipe,
+  files: string[],
+  runtimeSlots: Record<string, string> = {},
+): Plan {
+  const slots = { ...runtimeSlots, ...slotValues(files) };
   return validatePlan({
     tool: recipe.tool,
     install_cmd: null,
-    command: recipe.command_template.argv.map((argument) => fill(argument, slots)),
+    commands: recipe.command_template.commands.map((command) =>
+      command.map((argument) => fill(argument, slots))
+    ),
     output_path: fill(recipe.command_template.output_path, slots),
     checks: recipe.checks.map((check) => ({ type: check.type, target: fillTarget(check.target, slots) })),
   });

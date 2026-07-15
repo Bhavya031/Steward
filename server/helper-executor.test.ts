@@ -45,7 +45,7 @@ describe("helper executor tier", () => {
     const invalidPrimary = {
       tool: "mkdir",
       install_cmd: null,
-      command: ["mkdir", join(root, "primary")],
+      commands: [["mkdir", join(root, "primary")]],
       output_path: join(root, "primary"),
       checks: [{ type: "file_valid", target: true }],
     };

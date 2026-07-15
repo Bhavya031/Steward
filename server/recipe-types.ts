@@ -8,7 +8,7 @@ export interface Recipe {
   name: string;
   replaced_service: string;
   monthly_price: number;
-  command_template: { argv: string[]; output_path: string };
+  command_template: { commands: string[][]; output_path: string };
   checks: PlanCheck[];
   created_at: string;
   arch: string;

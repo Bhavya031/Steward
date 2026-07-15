@@ -18,7 +18,7 @@ function plan(): Plan {
   return {
     tool: "ffmpeg",
     install_cmd: null,
-    command: ["ffmpeg", "-i", source, "-c:v", "libx264", output],
+    commands: [["ffmpeg", "-i", source, "-c:v", "libx264", output]],
     output_path: output,
     checks: [
       { type: "size_under", target: 25_000_000 },
@@ -70,14 +70,14 @@ describe("recipes", () => {
     ]);
   });
 
-  test("fills command, output, and check slots for a new input", () => {
+  test("fills commands, output, and check slots for a new input", () => {
     const recipe = save(input(), join(root, "slots"));
     if (!recipe) throw new Error("green recipe did not save");
     const second = join(root, "second clip.mp4");
     const rendered = renderRecipe(recipe, [second]);
-    expect(rendered.command).toEqual([
+    expect(rendered.commands).toEqual([[
       "ffmpeg", "-i", second, "-c:v", "libx264", join(root, "second clip-compressed.mp4"),
-    ]);
+    ]]);
     expect(rendered.output_path).toBe(join(root, "second clip-compressed.mp4"));
     expect(rendered.checks[1]?.target).toBe(second);
     expect(JSON.stringify(recipe)).not.toContain(source);
@@ -89,6 +89,17 @@ describe("recipes", () => {
     const found = match("shrink this movie to less than 25 MB", [join(root, "new.mp4")], directory);
     expect(found?.recipe.name).toBe("compress-video-under-25mb");
     expect(found?.confidence).toBeGreaterThan(0.8);
+  });
+
+  test("preserves the executor-owned temp slot in multi-command recipes", () => {
+    const directory = resolve(import.meta.dir, "..", "recipes");
+    const recipe = load(directory).find((item) => item.name === "compress-video-under-25mb");
+    if (!recipe) throw new Error("committed compress recipe is missing");
+    const rendered = renderRecipe(recipe, [join(root, "fresh.mp4")], {
+      video_bitrate_kbps: "1000k",
+    });
+    expect(rendered.commands).toHaveLength(2);
+    expect(rendered.commands.flat()).toContain("{{temp_dir}}/ffmpeg2pass");
   });
 
   test("rerun's complete module graph excludes agent.ts", () => {

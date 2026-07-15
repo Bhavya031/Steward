@@ -22,7 +22,7 @@ function generationPlan(): Plan {
   return {
     tool: "ffmpeg",
     install_cmd: null,
-    command: [
+    commands: [[
       "ffmpeg",
       "-f", "lavfi",
       "-i", "testsrc=size=64x64:rate=1",
@@ -30,7 +30,7 @@ function generationPlan(): Plan {
       "-c:v", "libx264",
       "-pix_fmt", "yuv420p",
       output,
-    ],
+    ]],
     output_path: output,
     checks: [{ type: "plays", target: true }],
   };
@@ -57,7 +57,7 @@ describe("executor", () => {
     const output = join(directory, `copied-${planNumber++}.mp4`);
     const copyPlan: Plan = {
       ...sourcePlan,
-      command: ["ffmpeg", "-i", sourcePlan.output_path, "-c", "copy", output],
+      commands: [["ffmpeg", "-i", sourcePlan.output_path, "-c", "copy", output]],
       output_path: output,
     };
     expect((await executePlan(copyPlan, profile, [sourcePlan.output_path])).ok).toBe(true);
@@ -65,19 +65,19 @@ describe("executor", () => {
   });
 
   test("rejects a non-allowlisted binary", async () => {
-    const plan = { ...generationPlan(), tool: "sh", command: ["sh", "-c", "true"] };
+    const plan = { ...generationPlan(), tool: "sh", commands: [["sh", "-c", "true"]] };
     await expect(executePlan(plan, profile, [])).rejects.toThrow("allowlisted");
   });
 
   test("rejects ungranted absolute paths", async () => {
     const plan = generationPlan();
-    plan.command.splice(-1, 0, "/etc/passwd");
+    plan.commands[0]!.splice(-1, 0, "/etc/passwd");
     await expect(executePlan(plan, profile, [])).rejects.toThrow("not explicitly granted");
   });
 
   test("rejects network input protocols", async () => {
     const plan = generationPlan();
-    plan.command.splice(-1, 0, "https://example.com/input.mp4");
+    plan.commands[0]!.splice(-1, 0, "https://example.com/input.mp4");
     await expect(executePlan(plan, profile, [])).rejects.toThrow("external protocol");
   });
 
@@ -117,7 +117,8 @@ describe("executor", () => {
 
   test("terminates work at a caller-supplied shorter timeout", async () => {
     const plan = generationPlan();
-    plan.command[plan.command.indexOf("1", plan.command.indexOf("-t"))] = "10";
+    const command = plan.commands[0]!;
+    command[command.indexOf("1", command.indexOf("-t"))] = "10";
     const result = await executePlan(plan, profile, [], { timeoutMs: 1 });
     expect(result.ok).toBe(false);
     expect(result.timed_out).toBe(true);
@@ -125,7 +126,8 @@ describe("executor", () => {
 
   test("returns nonzero exits with stderr evidence", async () => {
     const plan = generationPlan();
-    plan.command[plan.command.indexOf("testsrc=size=64x64:rate=1")] = "not_a_filter";
+    const command = plan.commands[0]!;
+    command[command.indexOf("testsrc=size=64x64:rate=1")] = "not_a_filter";
     const result = await executePlan(plan, profile, []);
     expect(result.ok).toBe(false);
     expect(result.exit_code).not.toBe(0);

@@ -3,29 +3,35 @@
   "replaced_service": "Video compressor SaaS",
   "monthly_price": 12,
   "command_template": {
-    "argv": [
-      "ffmpeg",
-      "-i",
-      "{{input_0}}",
-      "-map",
-      "0:v:0",
-      "-map",
-      "0:a:0",
-      "-c:v",
-      "libx264",
-      "-preset",
-      "slow",
-      "-crf",
-      "30",
-      "-c:a",
-      "aac",
-      "-b:a",
-      "96k",
-      "-movflags",
-      "+faststart",
-      "-fs",
-      "24900000",
-      "{{input_0_dir}}/{{input_0_stem}}-compressed.mp4"
+    "commands": [
+      [
+        "ffmpeg",
+        "-i", "{{input_0}}",
+        "-map", "0:v:0",
+        "-c:v", "libx264",
+        "-preset", "slow",
+        "-b:v", "{{video_bitrate_kbps}}",
+        "-pass", "1",
+        "-passlogfile", "{{temp_dir}}/ffmpeg2pass",
+        "-an",
+        "-f", "null",
+        "{{temp_dir}}/pass1.null"
+      ],
+      [
+        "ffmpeg",
+        "-i", "{{input_0}}",
+        "-map", "0:v:0",
+        "-map", "0:a:0",
+        "-c:v", "libx264",
+        "-preset", "slow",
+        "-b:v", "{{video_bitrate_kbps}}",
+        "-pass", "2",
+        "-passlogfile", "{{temp_dir}}/ffmpeg2pass",
+        "-c:a", "aac",
+        "-b:a", "96k",
+        "-movflags", "+faststart",
+        "{{input_0_dir}}/{{input_0_stem}}-compressed.mp4"
+      ]
     ],
     "output_path": "{{input_0_dir}}/{{input_0_stem}}-compressed.mp4"
   },

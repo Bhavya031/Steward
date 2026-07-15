@@ -9,6 +9,10 @@ export interface ExecutionResult {
   stderr_tail: string;
 }
 
+export interface PlanExecutionResult extends ExecutionResult {
+  command_results: ExecutionResult[];
+}
+
 export type ExecutionEvent =
   | { type: "started"; argv: string[] }
   | { type: "stdout" | "stderr"; chunk: string }

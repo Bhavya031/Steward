@@ -4,9 +4,7 @@ import { ALLOWED_BINARIES, type AllowedBinary } from "./tools.ts";
 export type PlanTool = Exclude<AllowedBinary, "brew">;
 export type CheckTarget = string | number | boolean;
 export const CHECK_TYPES = [
-  "size_under", "duration_matches", "streams_present", "plays", "format_matches",
-  "loudness_matches", "true_peak_under", "audio_stream_present", "file_valid",
-  "page_count_positive", "text_extractable",
+  "size_under", "duration_matches", "streams_present", "plays",
 ] as const;
 export type PlanCheckType = (typeof CHECK_TYPES)[number];
 
@@ -18,7 +16,7 @@ export interface PlanCheck {
 export interface Plan {
   tool: PlanTool;
   install_cmd: string[] | null;
-  command: string[];
+  commands: string[][];
   output_path: string;
   checks: PlanCheck[];
 }
@@ -27,7 +25,7 @@ const PLAN_TOOLS = new Set<PlanTool>(
   ALLOWED_BINARIES.filter((binary): binary is PlanTool => binary !== "brew"),
 );
 const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
-const PLAN_KEYS = ["tool", "install_cmd", "command", "output_path", "checks"];
+const PLAN_KEYS = ["tool", "install_cmd", "commands", "output_path", "checks"];
 
 export class PlanValidationError extends Error {
   constructor(message: string) {
@@ -51,6 +49,21 @@ function isSafeString(value: unknown): value is string {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isSafeString);
+}
+
+function validateCommands(value: unknown, tool: PlanTool): string[][] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 8) {
+    throw new PlanValidationError("commands must contain 1 to 8 argv arrays");
+  }
+  return value.map((command, index) => {
+    if (!isStringArray(command) || command.length === 0) {
+      throw new PlanValidationError(`commands[${index}] must be a non-empty argv array`);
+    }
+    if (command[0] !== tool) {
+      throw new PlanValidationError(`commands[${index}][0] must exactly match tool`);
+    }
+    return [...command];
+  });
 }
 
 function stripFences(raw: string): string {
@@ -97,12 +110,8 @@ export function validatePlan(value: unknown): Plan {
   if (!isSafeString(value.tool) || !PLAN_TOOLS.has(value.tool as PlanTool)) {
     throw new PlanValidationError("tool is not an allowlisted task binary");
   }
-  if (!isStringArray(value.command) || value.command.length === 0) {
-    throw new PlanValidationError("command must be a non-empty argv array");
-  }
-  if (value.command[0] !== value.tool) {
-    throw new PlanValidationError("command[0] must exactly match tool");
-  }
+  const tool = value.tool as PlanTool;
+  const commands = validateCommands(value.commands, tool);
   if (!isSafeString(value.output_path) || !isAbsolute(value.output_path)) {
     throw new PlanValidationError("output_path must be an absolute path");
   }
@@ -118,9 +127,9 @@ export function validatePlan(value: unknown): Plan {
     throw new PlanValidationError("checks must be a non-empty array");
   }
   return {
-    tool: value.tool as PlanTool,
+    tool,
     install_cmd: value.install_cmd as string[] | null,
-    command: value.command,
+    commands,
     output_path: value.output_path,
     checks: value.checks.map(validateCheck),
   };

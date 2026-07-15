@@ -1,4 +1,5 @@
 import type { ExecutionEvent } from "./execution-types.ts";
+import type { AttemptEvent } from "./attempt-types.ts";
 import type { Plan } from "./plan.ts";
 import type { Recipe } from "./recipe-types.ts";
 import type { VerificationResult } from "./verify/index.ts";
@@ -34,6 +35,10 @@ export function printChecks(checks: VerificationResult[]): void {
   }
 }
 
+export function printAttemptEvent(event: AttemptEvent): void {
+  console.log(`STEWARD_EVENT ${JSON.stringify(event)}`);
+}
+
 export function printRecipeCard(
   recipe: Recipe,
   plan: Plan,
@@ -44,7 +49,9 @@ export function printRecipeCard(
   const struck = process.stdout.isTTY ? `\u001b[9m${price}\u001b[29m` : `~~${price}~~`;
   console.log("\n┌─ STEWARD RECIPE");
   console.log(`│ ${recipe.name}`);
-  console.log(`│ ${displayArgv(plan.command)}`);
+  plan.commands.forEach((command, index) =>
+    console.log(`│ ${plan.commands.length > 1 ? `${index + 1}. ` : ""}${displayArgv(command)}`)
+  );
   console.log(`│ Replaces ${recipe.replaced_service}: ${struck}`);
   console.log(`│ ${saved ? "Saved permanently" : "Re-ran locally"} · model calls: ${saved ? "planning complete" : "0"}`);
   console.log("└─ your computer already knows how.\n");

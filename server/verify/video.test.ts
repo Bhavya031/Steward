@@ -29,7 +29,7 @@ function fixturePlan(output: string, duration: number, audio: boolean): Plan {
   return {
     tool: "ffmpeg",
     install_cmd: null,
-    command,
+    commands: [command],
     output_path: output,
     checks: [{ type: "plays", target: true }],
   };

@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { executePlan } from "./executor.ts";
 import { recipeConfidence } from "./recipe-match.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
+import { runtimeRecipeSlots } from "./recipe-runtime.ts";
 import type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
 import { validateRecipe } from "./recipe-validation.ts";
 import { probeSystem } from "./probe.ts";
@@ -86,8 +87,9 @@ export async function rerun(
 ): Promise<RecipeRun> {
   const trustedRecipe = validateRecipe(recipe);
   const normalizedFiles = files.map((file) => resolve(file));
-  const plan = renderRecipe(trustedRecipe, normalizedFiles);
   const profile = options.profile ?? probeSystem();
+  const runtimeSlots = await runtimeRecipeSlots(trustedRecipe, normalizedFiles, profile);
+  const plan = renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots);
   const execution = await executePlan(plan, profile, normalizedFiles, options.executionOptions);
   const checks = await verifyChecks(plan.checks, {
     outputPath: plan.output_path,

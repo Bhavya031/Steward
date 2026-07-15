@@ -1,5 +1,6 @@
 import { constants, accessSync } from "node:fs";
-import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult } from "./execution-types.ts";
+import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
+import { boundedTimeout, resolveBinary, summarizeExecution } from "./execution-policy.ts";
 import { HELPER_PATHS, validateHelperStep } from "./helper-policy.ts";
 import { buildFfprobeCommand, type FfprobeQuery } from "./ffprobe-policy.ts";
 import { validateInstallProposal } from "./install-policy.ts";
@@ -8,32 +9,10 @@ import { validatePlan, type Plan } from "./plan.ts";
 import { validateCommandPaths } from "./path-policy.ts";
 import { consumeProcessStream } from "./process-stream.ts";
 import { createSofficeProfile } from "./soffice-profile.ts";
-import type { AllowedBinary } from "./tools.ts";
+import { materializeRuntimeCommands } from "./runtime-temp.ts";
+import { enforceManagedPasslogs } from "./two-pass-policy.ts";
 
-export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult } from "./execution-types.ts";
-
-function resolveBinary(binary: AllowedBinary, profile: SystemProfile): string {
-  const status =
-    binary === "brew"
-      ? profile.brew
-      : profile.tools.find((tool) => tool.name === binary);
-  if (!status?.installed || !status.binary) {
-    throw new ExecutionError(`${binary} is not installed`);
-  }
-  try {
-    accessSync(status.binary, constants.X_OK);
-  } catch {
-    throw new ExecutionError(`${binary} is not executable at ${status.binary}`);
-  }
-  return status.binary;
-}
-
-function boundedTimeout(requested = MAX_EXECUTION_MS): number {
-  if (!Number.isInteger(requested) || requested <= 0 || requested > MAX_EXECUTION_MS) {
-    throw new ExecutionError("timeout must be between 1 ms and 30 minutes");
-  }
-  return requested;
-}
+export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 
 async function runBinary(
   binary: string,
@@ -90,25 +69,36 @@ export async function executePlan(
   profile: SystemProfile,
   inputPaths: unknown,
   options: ExecutionOptions = {},
-): Promise<ExecutionResult> {
+): Promise<PlanExecutionResult> {
   const plan: Plan = validatePlan(untrustedPlan);
   if (plan.install_cmd !== null) {
     throw new ExecutionError("install proposal must be handled before task execution");
   }
-  validateCommandPaths(plan.tool, plan.command, inputPaths, plan.output_path);
-  const args = plan.command.slice(1);
-  const executable = resolveBinary(plan.tool, profile);
-  if (plan.tool !== "soffice") return runBinary(plan.tool, executable, args, options);
-  const isolatedProfile = createSofficeProfile();
+  const timeoutMs = boundedTimeout(options.timeoutMs);
+  const runtime = materializeRuntimeCommands(plan.commands);
+  const isolatedProfile = plan.tool === "soffice" ? createSofficeProfile() : null;
   try {
-    return await runBinary(
-      plan.tool,
-      executable,
-      [isolatedProfile.argument, ...args],
-      options,
-    );
+    enforceManagedPasslogs(runtime.commands, runtime.directory);
+    runtime.commands.forEach((command, index) => validateCommandPaths(
+      plan.tool, command, inputPaths, plan.output_path,
+      { requireOutput: index === runtime.commands.length - 1, temporaryDirectory: runtime.directory },
+    ));
+    const executable = resolveBinary(plan.tool, profile);
+    const results: ExecutionResult[] = [];
+    const started = performance.now();
+    for (const command of runtime.commands) {
+      const remaining = Math.max(1, timeoutMs - Math.round(performance.now() - started));
+      const args = isolatedProfile
+        ? [isolatedProfile.argument, ...command.slice(1)]
+        : command.slice(1);
+      const result = await runBinary(plan.tool, executable, args, { ...options, timeoutMs: remaining });
+      results.push(result);
+      if (!result.ok) break;
+    }
+    return summarizeExecution(results, runtime.commands.length);
   } finally {
-    isolatedProfile.cleanup();
+    isolatedProfile?.cleanup();
+    runtime.cleanup();
   }
 }
 

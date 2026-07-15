@@ -46,11 +46,13 @@ export function validateRecipe(value: unknown): Recipe {
   if (typeof value.monthly_price !== "number" || !Number.isFinite(value.monthly_price) || value.monthly_price < 0) {
     throw new Error("recipe monthly_price is invalid");
   }
-  if (!record(value.command_template) || !exactKeys(value.command_template, ["argv", "output_path"])) {
+  if (!record(value.command_template) || !exactKeys(value.command_template, ["commands", "output_path"])) {
     throw new Error("recipe command_template is invalid");
   }
-  const argv = value.command_template.argv;
-  if (!Array.isArray(argv) || !argv.every(safeString) || !safeString(value.command_template.output_path)) {
+  const commands = value.command_template.commands;
+  if (!Array.isArray(commands) || commands.length === 0 || commands.length > 8 ||
+      !commands.every((argv) => Array.isArray(argv) && argv.length > 0 && argv.every(safeString)) ||
+      !safeString(value.command_template.output_path)) {
     throw new Error("recipe command template strings are invalid");
   }
   if (!value.command_template.output_path.startsWith("{{input_0_dir}}/")) {
@@ -60,7 +62,9 @@ export function validateRecipe(value: unknown): Recipe {
     throw new Error("recipe tool is not allowlisted");
   }
   const tool = value.tool as PlanTool;
-  if (argv[0] !== tool) throw new Error("recipe command must start with its tool");
+  if (!commands.every((argv) => argv[0] === tool)) {
+    throw new Error("every recipe command must start with its tool");
+  }
   const expectedWeight = TOOL_POLICIES[tool].install_weight;
   if (value.install_weight !== expectedWeight) throw new Error("recipe install_weight does not match policy");
   if (!safeString(value.created_at) || !Number.isFinite(Date.parse(value.created_at))) {
@@ -71,7 +75,10 @@ export function validateRecipe(value: unknown): Recipe {
     name: value.name,
     replaced_service: value.replaced_service,
     monthly_price: value.monthly_price,
-    command_template: { argv: [...argv], output_path: value.command_template.output_path },
+    command_template: {
+      commands: commands.map((argv) => [...argv]),
+      output_path: value.command_template.output_path,
+    },
     checks: validateChecks(value.checks),
     created_at: value.created_at,
     arch: value.arch,

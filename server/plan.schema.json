@@ -16,9 +16,14 @@
         }
       ]
     },
-    "command": {
+    "commands": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 },
+        "minItems": 1
+      },
+      "maxItems": 8,
       "minItems": 1
     },
     "output_path": { "type": "string", "minLength": 1 },
@@ -34,14 +39,7 @@
               "size_under",
               "duration_matches",
               "streams_present",
-              "plays",
-              "format_matches",
-              "loudness_matches",
-              "true_peak_under",
-              "audio_stream_present",
-              "file_valid",
-              "page_count_positive",
-              "text_extractable"
+              "plays"
             ]
           },
           "target": {
@@ -57,6 +55,6 @@
       }
     }
   },
-  "required": ["tool", "install_cmd", "command", "output_path", "checks"],
+  "required": ["tool", "install_cmd", "commands", "output_path", "checks"],
   "additionalProperties": false
 }

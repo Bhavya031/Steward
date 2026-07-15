@@ -1,39 +1,53 @@
-# Steward Map
-
-.gitignore: ignores; —
-bun.lockb: lock; —
-bunfig.toml: config; —
-MAP.md: map; —
-GUIDE.md: brain; —
-package.json: tooling; scripts
-README.md: docs; —
-tsconfig.json: TypeScript; —
-recipes/compress-video-under-25mb.json: recipe; —
-server/agent.ts: planner; API
-server/execution-types.ts: execution; types
-server/executor.test.ts: tests; —
-server/executor.ts: processes; API
-server/ffprobe-policy.ts: probes; API
-server/helper-executor.test.ts: tests; —
-server/helper-policy.ts: helpers; API
-server/index.ts: CLI; main
-server/install-policy.ts: installs; API
-server/path-policy.ts: paths; API
-server/plan.schema.json: schema; —
-server/plan.test.ts: tests; —
-server/plan.ts: plans; API
-server/probe.ts: probe; API
-server/process-stream.ts: streams; API
-server/recipe-match.ts: matching; API
-server/recipe-template.ts: slots; API
-server/recipe-types.ts: recipes; types
-server/recipe-validation.ts: validation; API
-server/recipes.test.ts: tests; —
-server/recipes.ts: recipes; API
-server/soffice-profile.ts: LO; API
-server/terminal.ts: display; API
-server/tools.ts: tools; API
-server/verify/index.ts: dispatch; API
-server/verify/types.ts: verification; types
-server/verify/video.test.ts: tests; —
-server/verify/video.ts: video; API
+Codes `purpose/export`: C=config,D=docs,E=execution,P=planning,R=recipes,S=security,T=tests,V=verify; A=API,Y=types,M=main,X=scripts,—=none.
+.gitignore:C—
+bun.lockb:C—
+bunfig.toml:C—
+MAP.md:D—
+GUIDE.md:D—
+package.json:CX
+README.md:D—
+tsconfig.json:C—
+demo-material/repair-run-1.txt:D—
+recipes/compress-video-under-25mb.json:R—
+server/agent.ts:PA
+server/agent-prompts.ts:PA
+server/attempt-types.ts:EY
+server/command-path.ts:SA
+server/execution-types.ts:EY
+server/execution-policy.ts:SA
+server/executor-multi.test.ts:T—
+server/executor.test.ts:T—
+server/executor.ts:EA
+server/failed-output.ts:SA
+server/ffprobe-policy.ts:SA
+server/helper-executor.test.ts:T—
+server/helper-policy.ts:SA
+server/index.ts:EM
+server/install-policy.ts:SA
+server/path-policy.ts:SA
+server/path-error.ts:SY
+server/plan.schema.json:P—
+server/plan.test.ts:T—
+server/plan.ts:PA
+server/probe.ts:SA
+server/process-stream.ts:EA
+server/recipe-match.ts:RA
+server/recipe-runtime.ts:RA
+server/recipe-template.ts:RA
+server/recipe-types.ts:RY
+server/recipe-validation.ts:RA
+server/recipes.test.ts:T—
+server/recipes.ts:RA
+server/repair-integrity.ts:SA
+server/repair-loop.test.ts:T—
+server/repair-loop.ts:EA
+server/runtime-temp.ts:SA
+server/soffice-profile.ts:SA
+server/terminal.ts:DA
+server/tools.ts:SA
+server/two-pass-policy.ts:SA
+server/verify/index.ts:VA
+server/verify/types.ts:VY
+server/verify/video-truncation.test.ts:T—
+server/verify/video.test.ts:T—
+server/verify/video.ts:VA
