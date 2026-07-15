@@ -1,4 +1,5 @@
 import { isAbsolute } from "node:path";
+import { checkSemanticError } from "./check-policy.ts";
 import { DerivationValidationError, validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
 import { IntermediateValidationError, validateIntermediates } from "./intermediate-policy.ts";
 import { ALLOWED_BINARIES, type AllowedBinary } from "./tools.ts";
@@ -30,9 +31,7 @@ const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
 const REQUIRED_PLAN_KEYS = ["tool", "install_cmd", "commands", "output_path", "checks"];
 const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations", "intermediates"];
 export class PlanValidationError extends Error {
-  constructor(message: string) {
-    super(message); this.name = "PlanValidationError";
-  }
+  constructor(message: string) { super(message); this.name = "PlanValidationError"; }
 }
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -133,17 +132,18 @@ export function validatePlan(value: unknown): Plan {
   if (!Array.isArray(value.checks) || value.checks.length === 0) {
     throw new PlanValidationError("checks must be a non-empty array");
   }
+  const checks = value.checks.map(validateCheck);
+  const checkError = checkSemanticError(checks);
+  if (checkError) throw new PlanValidationError(checkError);
   const plan: Plan = {
     tool,
     install_cmd: value.install_cmd as string[] | null,
     commands,
     output_path: value.output_path,
-    checks: value.checks.map(validateCheck),
+    checks,
   };
   if (derivations) plan.derivations = derivations;
   if (intermediates) plan.intermediates = intermediates;
   return plan;
 }
-export function parsePlan(raw: string): Plan {
-  return validatePlan(parseJson(raw));
-}
+export function parsePlan(raw: string): Plan { return validatePlan(parseJson(raw)); }

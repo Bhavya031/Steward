@@ -10,13 +10,16 @@ README.md:D—
 tsconfig.json:C—
 demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
+demo-material/recipe-4-verification-failure.txt:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-media-to-mov.json:R—
 recipes/convert-media-to-mp4.json:R—
+recipes/make-this-markdown-into-a-word-doc.json:R—
 recipes/normalize-audio-to-14-lufs.json:R—
 server/agent.ts:PA
 server/agent-prompts.ts:PA
 server/attempt-types.ts:EY
+server/check-policy.ts:SA
 server/command-path.ts:SA
 server/derivation-runtime.ts:EA
 server/derivations.test.ts:T—

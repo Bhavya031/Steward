@@ -1,0 +1,47 @@
+STEWARD · your computer already knows how.
+No local recipe matched.
+System: macOS 26.4.1 · arm64 · 16 GiB
+Mode: GPT-5.6 planning
+Command: pandoc /tmp/steward-recipe-4/launch-notes.md -o /tmp/steward-recipe-4/launch-notes.docx
+STEWARD_EVENT {"type":"attempt","attempt":1,"plan_summary":{"tool":"pandoc","command_count":1,"output_path":"/tmp/steward-recipe-4/launch-notes.docx","checks":["file_valid","format_matches","text_extractable"],"commands":[["pandoc","/tmp/steward-recipe-4/launch-notes.md","-o","/tmp/steward-recipe-4/launch-notes.docx"]],"intermediates":[],"derivations":null},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":1,"checks_passed":1,"checks_total":3,"failed_checks":[{"name":"file_valid","pass":false,"expected":"supported document format","actual":"invalid expected format: true"},{"name":"text_extractable","pass":false,"expected":"at least 1 non-whitespace characters","actual":"not extractable text: invalid UTF-8"}],"stderr_tail":""}}
+Command: pandoc /tmp/steward-recipe-4/launch-notes.md --from=markdown --to=docx --output=/tmp/steward-recipe-4/launch-notes-repaired.docx
+STEWARD_EVENT {"type":"attempt","attempt":2,"plan_summary":{"tool":"pandoc","command_count":1,"output_path":"/tmp/steward-recipe-4/launch-notes-repaired.docx","checks":["file_valid","format_matches","text_extractable"],"commands":[["pandoc","/tmp/steward-recipe-4/launch-notes.md","--from=markdown","--to=docx","--output=/tmp/steward-recipe-4/launch-notes-repaired.docx"]],"intermediates":[],"derivations":null},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":1,"checks_passed":1,"checks_total":3,"failed_checks":[{"name":"file_valid","pass":false,"expected":"supported document format","actual":"invalid expected format: true"},{"name":"text_extractable","pass":false,"expected":"at least 1 non-whitespace characters","actual":"not extractable text: invalid UTF-8"}],"stderr_tail":""}}
+Command: pandoc /tmp/steward-recipe-4/launch-notes.md --from=markdown --to=html --output=/var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-j6WbFp/launch-notes.html
+Command: pandoc /var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-j6WbFp/launch-notes.html --from=html --to=docx --output=/tmp/steward-recipe-4/launch-notes-repaired-v2.docx
+STEWARD_EVENT {"type":"attempt","attempt":3,"plan_summary":{"tool":"pandoc","command_count":2,"output_path":"/tmp/steward-recipe-4/launch-notes-repaired-v2.docx","checks":["file_valid","format_matches","text_extractable"],"commands":[["pandoc","/tmp/steward-recipe-4/launch-notes.md","--from=markdown","--to=html","--output={{temp_dir}}/launch-notes.html"],["pandoc","{{temp_dir}}/launch-notes.html","--from=html","--to=docx","--output=/tmp/steward-recipe-4/launch-notes-repaired-v2.docx"]],"intermediates":["{{temp_dir}}/launch-notes.html"],"derivations":null},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":2,"checks_passed":1,"checks_total":3,"failed_checks":[{"name":"file_valid","pass":false,"expected":"supported document format","actual":"invalid expected format: true"},{"name":"text_extractable","pass":false,"expected":"at least 1 non-whitespace characters","actual":"not extractable text: invalid UTF-8"}],"stderr_tail":""}}
+Checks:
+  ✗ file_valid
+    expected: supported document format
+    actual:   invalid expected format: true
+  ✓ format_matches
+    expected: output format DOCX
+    actual:   valid DOCX ZIP (found [Content_Types].xml, word/document.xml)
+  ✗ text_extractable
+    expected: at least 1 non-whitespace characters
+    actual:   not extractable text: invalid UTF-8
+Steward failed: all 3 attempts failed; recipe was not saved
+
+--- fresh run 2 ---
+
+STEWARD · your computer already knows how.
+No local recipe matched.
+System: macOS 26.4.1 · arm64 · 16 GiB
+Mode: GPT-5.6 planning
+Command: pandoc /tmp/steward-recipe-4/launch-notes.md -o /tmp/steward-recipe-4/launch-notes.docx
+STEWARD_EVENT {"type":"attempt","attempt":1,"plan_summary":{"tool":"pandoc","command_count":1,"output_path":"/tmp/steward-recipe-4/launch-notes.docx","checks":["file_valid","format_matches","text_extractable"],"commands":[["pandoc","/tmp/steward-recipe-4/launch-notes.md","-o","/tmp/steward-recipe-4/launch-notes.docx"]],"intermediates":[],"derivations":null},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":1,"checks_passed":1,"checks_total":3,"failed_checks":[{"name":"file_valid","pass":false,"expected":"supported document format","actual":"invalid expected format: true"},{"name":"text_extractable","pass":false,"expected":"at least 1 non-whitespace characters","actual":"not extractable text: invalid UTF-8"}],"stderr_tail":""}}
+Command: pandoc /tmp/steward-recipe-4/launch-notes.md --from=markdown --to=docx --output=/tmp/steward-recipe-4/launch-notes-repaired.docx
+STEWARD_EVENT {"type":"attempt","attempt":2,"plan_summary":{"tool":"pandoc","command_count":1,"output_path":"/tmp/steward-recipe-4/launch-notes-repaired.docx","checks":["file_valid","format_matches","text_extractable"],"commands":[["pandoc","/tmp/steward-recipe-4/launch-notes.md","--from=markdown","--to=docx","--output=/tmp/steward-recipe-4/launch-notes-repaired.docx"]],"intermediates":[],"derivations":null},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":1,"checks_passed":1,"checks_total":3,"failed_checks":[{"name":"file_valid","pass":false,"expected":"supported document format","actual":"invalid expected format: true"},{"name":"text_extractable","pass":false,"expected":"at least 1 non-whitespace characters","actual":"not extractable text: invalid UTF-8"}],"stderr_tail":""}}
+Command: pandoc /tmp/steward-recipe-4/launch-notes.md --from=markdown --to=html5 --output=/var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-oLIDfo/launch-notes.html
+Command: pandoc /var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-oLIDfo/launch-notes.html --from=html --to=docx --output=/tmp/steward-recipe-4/launch-notes-repaired.docx
+STEWARD_EVENT {"type":"attempt","attempt":3,"plan_summary":{"tool":"pandoc","command_count":2,"output_path":"/tmp/steward-recipe-4/launch-notes-repaired.docx","checks":["file_valid","format_matches","text_extractable"],"commands":[["pandoc","/tmp/steward-recipe-4/launch-notes.md","--from=markdown","--to=html5","--output={{temp_dir}}/launch-notes.html"],["pandoc","{{temp_dir}}/launch-notes.html","--from=html","--to=docx","--output=/tmp/steward-recipe-4/launch-notes-repaired.docx"]],"intermediates":["{{temp_dir}}/launch-notes.html"],"derivations":null},"outcome":{"status":"verification_failed","exit_code":0,"commands_completed":2,"checks_passed":1,"checks_total":3,"failed_checks":[{"name":"file_valid","pass":false,"expected":"supported document format","actual":"invalid expected format: true"},{"name":"text_extractable","pass":false,"expected":"at least 1 non-whitespace characters","actual":"not extractable text: invalid UTF-8"}],"stderr_tail":""}}
+Checks:
+  ✗ file_valid
+    expected: supported document format
+    actual:   invalid expected format: true
+  ✓ format_matches
+    expected: output format DOCX
+    actual:   valid DOCX ZIP (found [Content_Types].xml, word/document.xml)
+  ✗ text_extractable
+    expected: at least 1 non-whitespace characters
+    actual:   not extractable text: invalid UTF-8
+Steward failed: all 3 attempts failed; recipe was not saved

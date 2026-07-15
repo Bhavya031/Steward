@@ -103,6 +103,20 @@ describe("parsePlan", () => {
     expect(parsePlan(JSON.stringify({ ...validPlan, checks })).checks).toEqual(checks);
   });
 
+  test("rejects invalid document targets before execution", () => {
+    const checks: Plan["checks"] = [
+      { type: "file_valid", target: true },
+      { type: "format_matches", target: "docx" },
+      { type: "text_extractable", target: 1 },
+    ];
+    expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
+      "file_valid target must be pdf/docx/epub/html/md/txt",
+    );
+    expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
+      "text_extractable is not supported for DOCX output",
+    );
+  });
+
   test("rejects install proposals for installed tools", () => {
     const plan = { ...validPlan, install_cmd: ["brew", "install", "ffmpeg"] };
     expect(() => validatePlanForProfile(plan, profile)).toThrow("must be null");

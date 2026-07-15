@@ -1,4 +1,5 @@
 import { CHECK_TYPES, type CheckTarget, type PlanCheck, type PlanCheckType, type PlanTool } from "./plan.ts";
+import { checkSemanticError } from "./check-policy.ts";
 import { validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
 import { validateIntermediates } from "./intermediate-policy.ts";
 import type { Recipe } from "./recipe-types.ts";
@@ -26,7 +27,7 @@ function safeString(value: unknown): value is string {
 
 function validateChecks(value: unknown): PlanCheck[] {
   if (!Array.isArray(value) || value.length === 0) throw new Error("recipe checks must be non-empty");
-  return value.map((check, index) => {
+  const checks = value.map((check, index) => {
     if (!record(check) || !exactKeys(check, ["type", "target"])) {
       throw new Error(`recipe checks[${index}] is malformed`);
     }
@@ -38,6 +39,9 @@ function validateChecks(value: unknown): PlanCheck[] {
     }
     return { type: check.type as PlanCheckType, target: check.target as CheckTarget };
   });
+  const semanticError = checkSemanticError(checks);
+  if (semanticError) throw new Error(`recipe checks are invalid: ${semanticError}`);
+  return checks;
 }
 
 export function validateRecipe(value: unknown): Recipe {

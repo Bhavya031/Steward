@@ -1,0 +1,30 @@
+{
+  "name": "make-this-markdown-into-a-word-doc",
+  "replaced_service": "Single-purpose file SaaS",
+  "monthly_price": 10,
+  "command_template": {
+    "commands": [
+      [
+        "pandoc",
+        "{{input_0}}",
+        "-o",
+        "{{input_0_dir}}/{{input_0_stem}}.docx"
+      ]
+    ],
+    "output_path": "{{input_0_dir}}/{{input_0_stem}}.docx"
+  },
+  "checks": [
+    {
+      "type": "file_valid",
+      "target": "docx"
+    },
+    {
+      "type": "format_matches",
+      "target": "docx"
+    }
+  ],
+  "created_at": "2026-07-15T20:18:35.982Z",
+  "arch": "arm64",
+  "tool": "pandoc",
+  "install_weight": "light"
+}
