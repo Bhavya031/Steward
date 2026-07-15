@@ -88,7 +88,7 @@ function parseJson(raw: string): unknown {
       // Try the next defensive extraction before reporting malformed output.
     }
   }
-  throw new PlanValidationError("Codex returned malformed JSON");
+  throw new PlanValidationError("planner returned malformed JSON");
 }
 
 function validateCheck(value: unknown, index: number): PlanCheck {

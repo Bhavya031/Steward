@@ -10,9 +10,12 @@ import {
 } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import { probeSystem } from "./probe.ts";
+import { writeY4m } from "./test-fixtures.ts";
 
 const directory = mkdtempSync(join(tmpdir(), "steward-executor-"));
 const profile = probeSystem();
+const frame = join(directory, "video.y4m");
+writeY4m(frame, 2, 64, 64, 10);
 let planNumber = 0;
 
 afterAll(() => rmSync(directory, { recursive: true, force: true }));
@@ -24,8 +27,7 @@ function generationPlan(): Plan {
     install_cmd: null,
     commands: [[
       "ffmpeg",
-      "-f", "lavfi",
-      "-i", "testsrc=size=64x64:rate=1",
+      "-i", frame,
       "-t", "1",
       "-c:v", "libx264",
       "-pix_fmt", "yuv420p",
@@ -40,7 +42,7 @@ describe("executor", () => {
   test("executes an allowlisted argv command and streams progress", async () => {
     const events: ExecutionEvent[] = [];
     const plan = generationPlan();
-    const result = await executePlan(plan, profile, [], {
+    const result = await executePlan(plan, profile, [frame], {
       onEvent: (event) => events.push(event),
     });
     expect(result.ok).toBe(true);
@@ -53,7 +55,7 @@ describe("executor", () => {
 
   test("executes only with an exact readable input grant", async () => {
     const sourcePlan = generationPlan();
-    expect((await executePlan(sourcePlan, profile, [])).ok).toBe(true);
+    expect((await executePlan(sourcePlan, profile, [frame])).ok).toBe(true);
     const output = join(directory, `copied-${planNumber++}.mp4`);
     const copyPlan: Plan = {
       ...sourcePlan,
@@ -72,13 +74,13 @@ describe("executor", () => {
   test("rejects ungranted absolute paths", async () => {
     const plan = generationPlan();
     plan.commands[0]!.splice(-1, 0, "/etc/passwd");
-    await expect(executePlan(plan, profile, [])).rejects.toThrow("not explicitly granted");
+    await expect(executePlan(plan, profile, [frame])).rejects.toThrow("not explicitly granted");
   });
 
   test("rejects network input protocols", async () => {
     const plan = generationPlan();
-    plan.commands[0]!.splice(-1, 0, "https://example.com/input.mp4");
-    await expect(executePlan(plan, profile, [])).rejects.toThrow("external protocol");
+    plan.commands[0]![plan.commands[0]!.indexOf(frame)] = "https://example.com/input.mp4";
+    await expect(executePlan(plan, profile, [frame])).rejects.toThrow("absolute");
   });
 
   test("rejects heavy installs without explicit confirmation", async () => {
@@ -111,7 +113,7 @@ describe("executor", () => {
 
   test("caps caller-supplied timeouts at 30 minutes", async () => {
     await expect(
-      executePlan(generationPlan(), profile, [], { timeoutMs: 30 * 60 * 1_000 + 1 }),
+      executePlan(generationPlan(), profile, [frame], { timeoutMs: 30 * 60 * 1_000 + 1 }),
     ).rejects.toThrow(ExecutionError);
   });
 
@@ -119,7 +121,7 @@ describe("executor", () => {
     const plan = generationPlan();
     const command = plan.commands[0]!;
     command[command.indexOf("1", command.indexOf("-t"))] = "10";
-    const result = await executePlan(plan, profile, [], { timeoutMs: 1 });
+    const result = await executePlan(plan, profile, [frame], { timeoutMs: 1 });
     expect(result.ok).toBe(false);
     expect(result.timed_out).toBe(true);
   });
@@ -127,8 +129,10 @@ describe("executor", () => {
   test("returns nonzero exits with stderr evidence", async () => {
     const plan = generationPlan();
     const command = plan.commands[0]!;
-    command[command.indexOf("testsrc=size=64x64:rate=1")] = "not_a_filter";
-    const result = await executePlan(plan, profile, []);
+    const unsupported = join(directory, `unsupported-${planNumber++}.nope`);
+    command[command.length - 1] = unsupported;
+    plan.output_path = unsupported;
+    const result = await executePlan(plan, profile, [frame]);
     expect(result.ok).toBe(false);
     expect(result.exit_code).not.toBe(0);
     expect(result.stderr_tail.length).toBeGreaterThan(0);

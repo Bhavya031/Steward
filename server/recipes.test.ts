@@ -1,10 +1,11 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import type { Plan } from "./plan.ts";
 import { load, match, renderRecipe, save } from "./recipes.ts";
 import type { SaveRecipeInput } from "./recipe-types.ts";
+import { relativeSourceGraph } from "./source-graph.ts";
 import type { VerificationResult } from "./verify/index.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-recipes-"));
@@ -102,27 +103,31 @@ describe("recipes", () => {
     expect(rendered.commands.flat()).toContain("{{temp_dir}}/ffmpeg2pass");
   });
 
-  test("rerun's complete module graph excludes agent.ts", () => {
+  test("rerun's resolved module graph cannot reach the model", async () => {
     const entry = resolve(import.meta.dir, "recipes.ts");
-    const visited = new Set<string>();
-    const visit = (file: string): void => {
-      if (visited.has(file)) return;
-      visited.add(file);
-      const sourceText = readFileSync(file, "utf8");
-      const imports = [
-        ...sourceText.matchAll(/\bfrom\s+["'](\.[^"']+)["']/g),
-        ...sourceText.matchAll(/\bimport\s*\(\s*["'](\.[^"']+)["']\s*\)/g),
-        ...sourceText.matchAll(/\bimport\s+["'](\.[^"']+)["']/g),
-      ];
-      for (const found of imports) {
-        const dependency = resolve(dirname(file), found[1]!);
-        if (dependency.endsWith(".ts") && existsSync(dependency)) visit(dependency);
+    const graph = relativeSourceGraph(entry, resolve(import.meta.dir, ".."));
+    const modules = [...graph.keys()].sort();
+    expect(modules).toContain("server/executor.ts");
+    expect(modules).toContain("server/verify/index.ts");
+    expect(modules).not.toContain("server/index.ts");
+    expect(modules).not.toContain("server/agent.ts");
+    const hazards: string[] = [];
+    for (const [module, sourceText] of graph) {
+      if (/\bcodex\b/i.test(sourceText)) hazards.push(`${module}: codex reference`);
+      if (/node:child_process|\bexecFile(?:Sync)?\b|\bimport(?:\s|\/\*[\s\S]*?\*\/)*\(/.test(sourceText)) {
+        hazards.push(`${module}: indirect process or dynamic import`);
       }
-    };
-    visit(entry);
-    const modules = [...visited].map((path) => basename(path));
-    expect(modules).toContain("executor.ts");
-    expect(modules).toContain("index.ts");
-    expect(modules).not.toContain("agent.ts");
+      if (/\bBun\.spawn(?:Sync)?\s*\(/.test(sourceText) &&
+          module !== "server/executor.ts" && module !== "server/probe.ts") {
+        hazards.push(`${module}: unexpected spawn`);
+      }
+    }
+    expect(hazards).toEqual([]);
+    const bundle = await Bun.build({ entrypoints: [entry], target: "bun" });
+    expect(bundle.success).toBe(true);
+    const bundledSource = await bundle.outputs[0]!.text();
+    expect(bundledSource).not.toContain("server/agent.ts");
+    expect(bundledSource).not.toMatch(/codex\s+exec/i);
+    expect(bundledSource).not.toMatch(/gpt-5\.6|codexPath|runCodex|planTask|repairTask/);
   });
 });

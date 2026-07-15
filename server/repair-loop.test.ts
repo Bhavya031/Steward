@@ -1,23 +1,27 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { executePlan } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import { probeSystem } from "./probe.ts";
 import { runWithRepair } from "./repair-loop.ts";
+import { writeWav, writeY4m } from "./test-fixtures.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-repair-"));
 const profile = probeSystem();
 const source = join(root, "source.mp4");
+const frame = join(root, "video.y4m");
+const tone = join(root, "tone.wav");
+writeY4m(frame, 2);
+writeWav(tone, 2);
 
 function sourcePlan(): Plan {
   return {
     tool: "ffmpeg", install_cmd: null,
     commands: [[
       "ffmpeg", "-loglevel", "error",
-      "-f", "lavfi", "-i", "testsrc=size=96x96:rate=15",
-      "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100",
+      "-i", frame, "-i", tone,
       "-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p",
       "-c:a", "aac", source,
     ]],
@@ -41,7 +45,7 @@ function attemptPlan(output: string, short: boolean): Plan {
 }
 
 beforeAll(async () => {
-  const result = await executePlan(sourcePlan(), profile, []);
+  const result = await executePlan(sourcePlan(), profile, [frame, tone]);
   if (!result.ok) throw new Error(result.stderr_tail);
 });
 
@@ -82,6 +86,7 @@ describe("repair loop", () => {
     expect(run.events).toHaveLength(3);
     expect(run.events.every((event) => event.outcome.status === "verification_failed")).toBe(true);
     expect(run.checks.some((check) => !check.pass)).toBe(true);
+    expect(existsSync(output)).toBe(false);
   });
 
   test("rejects a repair that weakens verification", async () => {

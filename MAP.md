@@ -4,6 +4,7 @@ bun.lockb:C—
 bunfig.toml:C—
 MAP.md:D—
 GUIDE.md:D—
+AUDIT.md:D—
 package.json:CX
 README.md:D—
 tsconfig.json:C—
@@ -20,6 +21,12 @@ server/executor-multi.test.ts:T—
 server/executor.test.ts:T—
 server/executor.ts:EA
 server/failed-output.ts:SA
+server/flag-policy-core.ts:SY
+server/flag-policy-doc.ts:SA
+server/flag-policy-ffmpeg.ts:SA
+server/flag-policy-media.ts:SA
+server/flag-policy.test.ts:T—
+server/flag-policy.ts:SA
 server/ffprobe-policy.ts:SA
 server/helper-executor.test.ts:T—
 server/helper-policy.ts:SA
@@ -27,6 +34,7 @@ server/index.ts:EM
 server/install-policy.ts:SA
 server/loudness-policy.ts:SA
 server/path-policy.ts:SA
+server/path-policy.test.ts:T—
 server/path-error.ts:SY
 server/plan.schema.json:P—
 server/plan.test.ts:T—
@@ -34,6 +42,7 @@ server/plan.ts:PA
 server/probe.ts:SA
 server/process-stream.ts:EA
 server/recipe-match.ts:RA
+server/recipe-cleanup.test.ts:T—
 server/recipe-runtime.ts:RA
 server/recipe-template.ts:RA
 server/recipe-types.ts:RY
@@ -45,7 +54,9 @@ server/repair-loop.test.ts:T—
 server/repair-loop.ts:EA
 server/runtime-temp.ts:SA
 server/soffice-profile.ts:SA
+server/source-graph.ts:TA
 server/terminal.ts:DA
+server/test-fixtures.ts:TA
 server/tools.ts:SA
 server/two-pass-policy.ts:SA
 server/verify/audio.test.ts:T—

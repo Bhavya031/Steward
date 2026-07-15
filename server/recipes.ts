@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { executePlan } from "./executor.ts";
+import { discardFailedOutput } from "./failed-output.ts";
 import { recipeConfidence } from "./recipe-match.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
@@ -90,19 +91,19 @@ export async function rerun(
   const profile = options.profile ?? probeSystem();
   const runtimeSlots = await runtimeRecipeSlots(trustedRecipe, normalizedFiles, profile);
   const plan = renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots);
-  const execution = await executePlan(plan, profile, normalizedFiles, options.executionOptions);
-  const checks = await verifyChecks(plan.checks, {
-    outputPath: plan.output_path,
-    sourcePaths: normalizedFiles,
-    profile,
-  });
-  return {
-    plan,
-    execution,
-    checks,
-    all_pass: execution.ok && checks.length === plan.checks.length && checks.every((check) => check.pass),
-    model_calls: 0,
-  };
+  let allPass = false;
+  try {
+    const execution = await executePlan(plan, profile, normalizedFiles, options.executionOptions);
+    const checks = await verifyChecks(plan.checks, {
+      outputPath: plan.output_path,
+      sourcePaths: normalizedFiles,
+      profile,
+    });
+    allPass = execution.ok && checks.length === plan.checks.length && checks.every((check) => check.pass);
+    return { plan, execution, checks, all_pass: allPass, model_calls: 0 };
+  } finally {
+    if (!allPass) discardFailedOutput(plan.output_path, normalizedFiles);
+  }
 }
 
 export { renderRecipe } from "./recipe-template.ts";

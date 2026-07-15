@@ -1,21 +1,25 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { executePlan, type ExecutionEvent } from "./executor.ts";
 import type { Plan } from "./plan.ts";
 import { probeSystem } from "./probe.ts";
+import { writeY4m } from "./test-fixtures.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-multi-"));
 const profile = probeSystem();
 const source = join(root, "source.mp4");
+const frame = join(root, "video.y4m");
+const corrupt = join(root, "corrupt.mp4");
+writeY4m(frame, 2, 160, 90);
+writeFileSync(corrupt, "not a video");
 
 function fixturePlan(): Plan {
   return {
     tool: "ffmpeg", install_cmd: null,
     commands: [[
-      "ffmpeg", "-loglevel", "error", "-f", "lavfi",
-      "-i", "testsrc2=size=160x90:rate=15", "-t", "2",
+      "ffmpeg", "-loglevel", "error", "-i", frame, "-t", "2",
       "-c:v", "libx264", "-pix_fmt", "yuv420p", source,
     ]],
     output_path: source,
@@ -44,7 +48,7 @@ function twoPass(output: string): Plan {
 }
 
 beforeAll(async () => {
-  const result = await executePlan(fixturePlan(), profile, []);
+  const result = await executePlan(fixturePlan(), profile, [frame]);
   if (!result.ok) throw new Error(result.stderr_tail);
 });
 
@@ -73,8 +77,8 @@ describe("multi-command executor", () => {
     const events: ExecutionEvent[] = [];
     const output = join(root, "must-not-exist.mp4");
     const plan = twoPass(output);
-    plan.commands[0]!.splice(-2, 0, "-vf", "not_a_real_filter");
-    const result = await executePlan(plan, profile, [source], {
+    for (const command of plan.commands) command[command.indexOf(source)] = corrupt;
+    const result = await executePlan(plan, profile, [corrupt], {
       onEvent: (event) => events.push(event),
     });
     const starts = events.filter((event) => event.type === "started");

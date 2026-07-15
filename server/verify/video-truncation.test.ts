@@ -6,26 +6,28 @@ import { executePlan } from "../executor.ts";
 import type { Plan } from "../plan.ts";
 import { probeSystem } from "../probe.ts";
 import { verifyChecks } from "./index.ts";
+import { writeWav, writeY4m } from "../test-fixtures.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-fs-regression-"));
 const profile = probeSystem();
 const source = join(root, "source.mp4");
 const capped = join(root, "forced-fs-cap.mp4");
+const frame = join(root, "video.y4m");
+const tone = join(root, "tone.wav");
+writeY4m(frame, 6, 320, 180, 30);
+writeWav(tone, 6);
 
 function plan(output: string, cap: boolean): Plan {
   const input = cap
     ? ["-i", source]
-    : [
-      "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=30",
-      "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100",
-    ];
+    : ["-i", frame, "-i", tone];
   return {
     tool: "ffmpeg", install_cmd: null,
     commands: [[
       "ffmpeg", "-loglevel", "error", ...input,
       "-t", "6", "-c:v", "libx264", "-preset", "ultrafast", "-b:v", "4M",
       "-c:a", "aac", "-b:a", "128k",
-      ...(cap ? ["-fs", "100000"] : []), output,
+      ...(cap ? ["-fs", "5000"] : []), output,
     ]],
     output_path: output,
     checks: [{ type: "duration_matches", target: source }],
@@ -33,7 +35,7 @@ function plan(output: string, cap: boolean): Plan {
 }
 
 beforeAll(async () => {
-  const generated = await executePlan(plan(source, false), profile, []);
+  const generated = await executePlan(plan(source, false), profile, [frame, tone]);
   if (!generated.ok) throw new Error(generated.stderr_tail);
   const forced = await executePlan(plan(capped, true), profile, [source]);
   if (!forced.ok) throw new Error(forced.stderr_tail);

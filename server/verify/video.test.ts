@@ -6,6 +6,7 @@ import { executePlan } from "../executor.ts";
 import type { Plan } from "../plan.ts";
 import { probeSystem } from "../probe.ts";
 import { verifyChecks, type VerificationContext } from "./index.ts";
+import { writeWav, writeY4m } from "../test-fixtures.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-video-verify-"));
 const profile = probeSystem();
@@ -14,15 +15,19 @@ const valid = join(root, "valid.mp4");
 const longer = join(root, "longer.mp4");
 const videoOnly = join(root, "video-only.mp4");
 const truncated = join(root, "truncated.mp4");
+const frame = join(root, "video.y4m");
+const tone = join(root, "tone.wav");
+writeY4m(frame, 2, 64, 64, 10);
+writeWav(tone, 2);
 
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 function fixturePlan(output: string, duration: number, audio: boolean): Plan {
   const command = [
     "ffmpeg", "-loglevel", "error",
-    "-f", "lavfi", "-i", "testsrc=size=64x64:rate=10",
+    "-i", frame,
   ];
-  if (audio) command.push("-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100");
+  if (audio) command.push("-i", tone);
   command.push("-t", String(duration), "-c:v", "libx264", "-pix_fmt", "yuv420p");
   if (audio) command.push("-c:a", "aac");
   command.push(output);
@@ -41,13 +46,17 @@ beforeAll(async () => {
     fixturePlan(longer, 2, true),
     fixturePlan(videoOnly, 1, false),
   ]) {
-    const execution = await executePlan(plan, profile, []);
+    const execution = await executePlan(plan, profile, audioInputs(plan));
     if (!execution.ok) throw new Error(`fixture generation failed: ${execution.stderr_tail}`);
   }
   copyFileSync(source, valid);
   copyFileSync(source, truncated);
   truncateSync(truncated, Math.floor(statSync(truncated).size / 3));
 });
+
+function audioInputs(plan: Plan): string[] {
+  return plan.commands[0]?.includes(tone) ? [frame, tone] : [frame];
+}
 
 function context(outputPath: string, sourcePaths = [source]): VerificationContext {
   return { outputPath, sourcePaths, profile };

@@ -88,6 +88,7 @@ export async function runWithRepair(options: RepairLoopOptions): Promise<Attempt
       return { plan, execution, checks, all_pass: true, events };
     }
     if (attempt === MAX_ATTEMPTS) {
+      discardFailedOutput(plan.output_path, options.inputPaths);
       return { plan, execution, checks, all_pass: false, events };
     }
     discardFailedOutput(plan.output_path, options.inputPaths);

@@ -2,9 +2,9 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { executePlan, type ExecutionEvent } from "../executor.ts";
-import type { Plan } from "../plan.ts";
+import type { ExecutionEvent } from "../executor.ts";
 import { probeSystem } from "../probe.ts";
+import { writePdf } from "../test-fixtures.ts";
 import { verifyChecks, type VerificationContext } from "./index.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-pdf-verify-"));
@@ -15,28 +15,9 @@ const fakePdf = join(root, "fake.pdf");
 const brokenPdf = join(root, "broken.pdf");
 const empty = join(root, "empty.txt");
 
-function pdfPlan(output: string, code: string): Plan {
-  return {
-    tool: "gs", install_cmd: null,
-    commands: [[
-      "gs", "-q", "-dBATCH", "-dNOPAUSE", "-sDEVICE=pdfwrite",
-      `-sOutputFile=${output}`, "-c", code,
-    ]],
-    output_path: output,
-    checks: [{ type: "file_valid", target: "pdf" }],
-  };
-}
-
-beforeAll(async () => {
-  const textCode = [
-    "<</PageSize [400 300]>> setpagedevice", "/Helvetica findfont 18 scalefont setfont",
-    "30 150 moveto (Steward searchable document verification text) show showpage",
-  ].join(" ");
-  const blankCode = "<</PageSize [400 300]>> setpagedevice 40 40 200 160 rectfill showpage";
-  for (const plan of [pdfPlan(realPdf, textCode), pdfPlan(textlessPdf, blankCode)]) {
-    const execution = await executePlan(plan, profile, []);
-    if (!execution.ok) throw new Error(`PDF fixture failed: ${execution.stderr_tail}`);
-  }
+beforeAll(() => {
+  writePdf(realPdf, "Steward searchable document verification text");
+  writePdf(textlessPdf, null);
   writeFileSync(fakePdf, "plain UTF-8 text wearing a PDF extension");
   writeFileSync(brokenPdf, "%PDF-1.7\nthis is not a PDF structure");
   writeFileSync(empty, "");

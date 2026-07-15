@@ -6,6 +6,7 @@ import { executePlan, type ExecutionEvent } from "../executor.ts";
 import type { Plan } from "../plan.ts";
 import { probeSystem } from "../probe.ts";
 import { verifyChecks, type VerificationContext } from "./index.ts";
+import { writeWav, writeY4m } from "../test-fixtures.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-audio-verify-"));
 const profile = probeSystem();
@@ -14,6 +15,7 @@ const normalized = join(root, "normalized.wav");
 const loud = join(root, "loud.wav");
 const silent = join(root, "silent.wav");
 const videoOnly = join(root, "video-only.mp4");
+const frame = join(root, "video.y4m");
 
 function plan(output: string, args: string[]): Plan {
   return {
@@ -30,24 +32,17 @@ async function generate(output: string, args: string[], inputs: string[] = []): 
 }
 
 beforeAll(async () => {
-  await generate(source, [
-    "-f", "lavfi", "-i", "sine=frequency=1000:sample_rate=48000:duration=3",
-    "-c:a", "pcm_s24le",
-  ]);
+  writeWav(source, 3, { frequency: 1_000, amplitude: 0.2 });
+  writeWav(loud, 2, { frequency: 800, amplitude: 0.99 });
+  writeWav(silent, 2, { amplitude: 0, channels: 2 });
+  writeY4m(frame, 2);
   await generate(normalized, [
     "-i", source, "-af", "loudnorm=I=-14:TP=-2:LRA=7", "-c:a", "pcm_s24le",
   ], [source]);
-  await generate(loud, [
-    "-f", "lavfi", "-i", "sine=frequency=800:sample_rate=48000:duration=2",
-    "-af", "volume=8", "-c:a", "pcm_s16le",
-  ]);
-  await generate(silent, [
-    "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-t", "2", "-c:a", "pcm_s16le",
-  ]);
   await generate(videoOnly, [
-    "-f", "lavfi", "-i", "testsrc=size=96x96:rate=10",
+    "-i", frame,
     "-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-  ]);
+  ], [frame]);
 });
 
 afterAll(() => rmSync(root, { recursive: true, force: true }));
