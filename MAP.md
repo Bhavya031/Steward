@@ -3,25 +3,30 @@
 File | Purpose | Exports
 --- | --- | ---
 .gitignore | exclusions | —
-bun.lockb | dependency lock | —
-bunfig.toml | binary-lock config | —
+bun.lockb | lockfile | —
+bunfig.toml | lock config | —
 MAP.md | file index | —
 GUIDE.md | project brain | —
-package.json | tooling | probe/test/typecheck
+package.json | tooling | scripts
 README.md | public stub | —
-tsconfig.json | strict TS | —
-server/agent.ts | Codex planner | planning/auth API
-server/execution-types.ts | contracts | timeout/result/events/options/error
+tsconfig.json | TS config | —
+server/agent.ts | planning | auth/plan APIs
+server/execution-types.ts | execution contracts | types/error
 server/executor.test.ts | boundary tests | —
-server/executor.ts | sole process boundary | plan/install/helper APIs, contracts
+server/executor.ts | process boundary | plan/install/helper/probe APIs
+server/ffprobe-policy.ts | fixed probes | builder/validator/types
 server/helper-executor.test.ts | helper tests | —
-server/helper-policy.ts | helper tier/grants | paths/types/validator
-server/install-policy.ts | install policy | validator/types
+server/helper-policy.ts | helper grants | paths/types/validator
+server/install-policy.ts | installs | validator/types
 server/path-policy.ts | path grants | validator/types/error
 server/plan.schema.json | plan schema | —
 server/plan.test.ts | plan tests | —
-server/plan.ts | plan validation | catalog/parser/validator/types/error
-server/probe.ts | system probe | probe/types
-server/process-stream.ts | bounded streams | consumer
+server/plan.ts | plans | catalog/parser/validator/types/error
+server/probe.ts | system probe | API/types
+server/process-stream.ts | output streams | consumer
 server/soffice-profile.ts | LO isolation | factory/type
-server/tools.ts | primary policy | binaries/policies/weights
+server/tools.ts | tool policy | catalog/weights
+server/verify/index.ts | dispatcher | verifier/types
+server/verify/types.ts | contracts | result/context
+server/verify/video.test.ts | video tests | —
+server/verify/video.ts | video checks | verifier/types

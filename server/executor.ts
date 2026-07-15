@@ -1,6 +1,7 @@
 import { constants, accessSync } from "node:fs";
 import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult } from "./execution-types.ts";
 import { HELPER_PATHS, validateHelperStep } from "./helper-policy.ts";
+import { buildFfprobeCommand, type FfprobeQuery } from "./ffprobe-policy.ts";
 import { validateInstallProposal } from "./install-policy.ts";
 import type { SystemProfile } from "./probe.ts";
 import { validatePlan, type Plan } from "./plan.ts";
@@ -135,4 +136,14 @@ export async function executeHelperStep(
     throw new ExecutionError(`${step.tool} is not executable at ${executable}`);
   }
   return runBinary(step.tool, executable, step.command.slice(1), options);
+}
+
+export async function executeFfprobe(
+  query: FfprobeQuery,
+  inputPath: unknown,
+  profile: SystemProfile,
+  options: ExecutionOptions = {},
+): Promise<ExecutionResult> {
+  const command = buildFfprobeCommand(query, inputPath);
+  return runBinary("ffprobe", resolveBinary("ffprobe", profile), command.slice(1), options);
 }

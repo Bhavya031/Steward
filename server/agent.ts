@@ -62,7 +62,7 @@ Rules:
 - If it is missing, install_cmd may only propose ["brew","install",...] using its official package; LibreOffice uses --cask.
 - An install proposal is never permission to execute it. Heavy tools/models require a separate explicit user confirmation.
 - Check types may only be: size_under, duration_matches, streams_present, plays, format_matches, loudness_matches, true_peak_under, audio_stream_present, file_valid, page_count_positive, text_extractable.
-- For video compression use size_under (target bytes), duration_matches (target input path), streams_present (target required streams), and plays (target true).
+- For video compression use size_under (target bytes), duration_matches (target input path), streams_present (comma-separated target such as "video,audio"), and plays (target true).
 - Checks must objectively verify the requested result. Do not claim that any command ran.
 
 System profile:
