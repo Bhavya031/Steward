@@ -12,7 +12,8 @@ size=N/A time=00:00:07.50 bitrate=N/A speed=17.2x
   "input_thresh" : "-31.65",
   "output_i" : "-23.96",
   "output_tp" : "-20.07",
-  "normalization_type" : "dynamic"
+  "normalization_type" : "dynamic",
+  "target_offset" : "-0.05"
 }
 [out#0/null @ 0x95ac28300] video:0KiB audio:3000KiB
 size=N/A time=00:00:08.00 bitrate=N/A speed=17.2x
@@ -23,6 +24,9 @@ describe("loudnorm stderr parser", () => {
     expect(parseLoudnessStats(FFMPEG_8_STDERR)).toEqual({
       inputI: -21.65,
       inputTp: -17.71,
+      inputLra: 0,
+      inputThresh: -31.65,
+      targetOffset: -0.05,
     });
   });
 

@@ -11,6 +11,7 @@ tsconfig.json:C—
 demo-material/repair-run-1.txt:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-video-audio.json:R—
+recipes/normalize-audio-to-14-lufs.json:R—
 server/agent.ts:PA
 server/agent-prompts.ts:PA
 server/attempt-types.ts:EY
@@ -33,6 +34,8 @@ server/helper-executor.test.ts:T—
 server/helper-policy.ts:SA
 server/index.ts:EM
 server/install-policy.ts:SA
+server/loudness-recipe.test.ts:T—
+server/loudness-recipe.ts:RA
 server/loudness-policy.ts:SA
 server/media-formats.ts:RY
 server/media-recipe.test.ts:T—

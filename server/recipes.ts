@@ -96,7 +96,7 @@ export async function rerun(
   const normalizedFiles = files.map((file) => resolve(file));
   const profile = options.profile ?? probeSystem();
   const runtimeSlots = await runtimeRecipeSlots(
-    trustedRecipe, normalizedFiles, profile, options.taskDescription,
+    trustedRecipe, normalizedFiles, profile, options.taskDescription, options.executionOptions,
   );
   const plan = renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots);
   let allPass = false;

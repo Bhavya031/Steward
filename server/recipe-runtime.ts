@@ -1,5 +1,7 @@
 import { executeFfprobe } from "./executor.ts";
+import { loudnessRecipeSlots } from "./loudness-recipe.ts";
 import { mediaRecipeSlots } from "./media-recipe.ts";
+import type { ExecutionOptions } from "./execution-types.ts";
 import type { SystemProfile } from "./probe.ts";
 import type { Recipe } from "./recipe-types.ts";
 import type { RecipeSlotValue } from "./recipe-template.ts";
@@ -29,8 +31,12 @@ export async function runtimeRecipeSlots(
   files: string[],
   profile: SystemProfile,
   taskDescription?: string,
+  executionOptions: ExecutionOptions = {},
 ): Promise<Record<string, RecipeSlotValue>> {
-  const slots = await mediaRecipeSlots(recipe, files, profile, taskDescription);
+  const slots = {
+    ...await mediaRecipeSlots(recipe, files, profile, taskDescription),
+    ...await loudnessRecipeSlots(recipe, files, profile, executionOptions),
+  };
   const needsBitrate = recipe.command_template.commands.flat().some((argument) =>
     argument.includes(BITRATE_SLOT)
   );

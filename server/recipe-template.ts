@@ -37,6 +37,9 @@ export function templatizePlan(plan: Plan, inputPaths: string[], recipeName: str
     check.type === "format_matches" && mediaFormat(check.target)
   );
   const dynamicMedia = plan.tool === "ffmpeg" && Boolean(targetFormat) && inputPaths.length === 1;
+  const dynamicLoudness = plan.tool === "ffmpeg" && inputPaths.length === 1 &&
+    plan.checks.some((check) => check.type === "loudness_matches") &&
+    plan.checks.some((check) => check.type === "true_peak_under");
   const output = portableOutput(plan, inputPaths[0]!, recipeName, dynamicMedia);
   const replacements: Array<[string, string]> = [
     [plan.output_path, output],
@@ -46,6 +49,8 @@ export function templatizePlan(plan: Plan, inputPaths: string[], recipeName: str
   const template = (value: string): string => replaceAll(value, replacements);
   const commands = dynamicMedia
     ? [["ffmpeg", "-i", `{{input_0}}`, "{{media_args}}", output]]
+    : dynamicLoudness
+      ? [["ffmpeg", "-i", "{{input_0}}", "-af", "{{loudnorm_filter}}", output]]
     : plan.commands.map((command) => command.map(template));
   return {
     command_template: {

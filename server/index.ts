@@ -48,6 +48,9 @@ function identityFor(task: string, plan: Plan): RecipeIdentity {
   if (formatCheck) {
     return { name: "convert-video-audio", replaced_service: "CloudConvert", monthly_price: 9 };
   }
+  if (plan.checks.some((check) => check.type === "loudness_matches" && check.target === -14)) {
+    return { name: "normalize-audio-to-14-lufs", replaced_service: "Podcast loudness SaaS", monthly_price: 10 };
+  }
   return {
     name: slug(task) || `${plan.tool}-recipe`,
     replaced_service: "Single-purpose file SaaS",

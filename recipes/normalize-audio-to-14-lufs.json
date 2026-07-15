@@ -1,0 +1,40 @@
+{
+  "name": "normalize-audio-to-14-lufs",
+  "replaced_service": "Podcast loudness SaaS",
+  "monthly_price": 10,
+  "command_template": {
+    "commands": [
+      [
+        "ffmpeg",
+        "-i",
+        "{{input_0}}",
+        "-af",
+        "{{loudnorm_filter}}",
+        "{{input_0_dir}}/{{input_0_stem}}-normalized.wav"
+      ]
+    ],
+    "output_path": "{{input_0_dir}}/{{input_0_stem}}-normalized.wav"
+  },
+  "checks": [
+    {
+      "type": "audio_stream_present",
+      "target": true
+    },
+    {
+      "type": "loudness_matches",
+      "target": -14
+    },
+    {
+      "type": "true_peak_under",
+      "target": -1
+    },
+    {
+      "type": "duration_matches",
+      "target": "{{input_0}}"
+    }
+  ],
+  "created_at": "2026-07-15T18:41:57.923Z",
+  "arch": "arm64",
+  "tool": "ffmpeg",
+  "install_weight": "light"
+}
