@@ -1,25 +1,21 @@
 import { constants, accessSync } from "node:fs";
 import { totalmem } from "node:os";
 import { delimiter, join } from "node:path";
-
-export type CuratedTool =
-  | "ffmpeg"
-  | "ffprobe"
-  | "pandoc"
-  | "imagemagick"
-  | "ocrmypdf"
-  | "whisper.cpp"
-  | "ghostscript";
+import { installWeightFor, type AllowedBinary, type InstallWeight } from "./tools.ts";
+type ProbedBinary = Exclude<AllowedBinary, "brew">;
 
 export interface ToolStatus {
-  name: CuratedTool;
+  name: ProbedBinary;
   installed: boolean;
+  install_weight: InstallWeight;
   binary: string | null;
   version: string | null;
 }
 
 export interface BrewStatus {
+  name: "brew";
   installed: boolean;
+  install_weight: InstallWeight;
   binary: string | null;
   version: string | null;
   expectedPrefix: "/opt/homebrew" | "/usr/local";
@@ -36,7 +32,7 @@ export interface SystemProfile {
 }
 
 interface ToolDefinition {
-  name: CuratedTool;
+  name: ProbedBinary;
   binaries: string[];
   versionArgs: string[] | null;
   brewFormula?: string;
@@ -46,15 +42,16 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
   { name: "ffmpeg", binaries: ["ffmpeg"], versionArgs: ["-version"] },
   { name: "ffprobe", binaries: ["ffprobe"], versionArgs: ["-version"] },
   { name: "pandoc", binaries: ["pandoc"], versionArgs: ["--version"] },
-  { name: "imagemagick", binaries: ["magick"], versionArgs: ["--version"] },
+  { name: "magick", binaries: ["magick"], versionArgs: ["--version"] },
   { name: "ocrmypdf", binaries: ["ocrmypdf"], versionArgs: ["--version"] },
   {
-    name: "whisper.cpp",
+    name: "whisper-cli",
     binaries: ["whisper-cli", "whisper-cpp"],
     versionArgs: null,
     brewFormula: "whisper-cpp",
   },
-  { name: "ghostscript", binaries: ["gs"], versionArgs: ["--version"] },
+  { name: "gs", binaries: ["gs"], versionArgs: ["--version"] },
+  { name: "soffice", binaries: ["soffice"], versionArgs: ["--version"] },
 ];
 
 function runFixed(argv: string[]): string | null {
@@ -84,6 +81,7 @@ function executableAt(path: string): boolean {
 function searchDirectories(expectedBrewPrefix: string): string[] {
   const fromPath = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
   return [
+    "/Applications/LibreOffice.app/Contents/MacOS",
     join(expectedBrewPrefix, "bin"),
     "/opt/homebrew/bin",
     "/usr/local/bin",
@@ -114,6 +112,7 @@ function probeTool(
   return {
     name: definition.name,
     installed: binary !== null,
+    install_weight: installWeightFor(definition.name),
     binary,
     version:
       formulaVersion ??
@@ -136,7 +135,9 @@ export function probeSystem(): SystemProfile {
     architecture,
     ram: { bytes: ramBytes, gib: Number((ramBytes / 1024 ** 3).toFixed(1)) },
     brew: {
+      name: "brew",
       installed: brewBinary !== null,
+      install_weight: installWeightFor("brew"),
       binary: brewBinary,
       version: brewBinary ? runFixed([brewBinary, "--version"]) : null,
       expectedPrefix,
