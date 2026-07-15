@@ -13,6 +13,7 @@ server/agent.ts:PA
 server/agent-prompts.ts:PA
 server/attempt-types.ts:EY
 server/command-path.ts:SA
+server/document-policy.ts:SA
 server/execution-types.ts:EY
 server/execution-policy.ts:SA
 server/executor-multi.test.ts:T—
@@ -50,10 +51,18 @@ server/two-pass-policy.ts:SA
 server/verify/audio.test.ts:T—
 server/verify/audio.ts:VA
 server/verify/common.ts:VA
+server/verify/doc.ts:VA
+server/verify/document-format.test.ts:T—
+server/verify/file-format.ts:VA
 server/verify/index.ts:VA
 server/verify/loudness-parser.test.ts:T—
 server/verify/loudness-parser.ts:VA
+server/verify/pdf-parser.test.ts:T—
+server/verify/pdf.test.ts:T—
+server/verify/pdf.ts:VA
+server/verify/text-inspector.ts:VA
 server/verify/types.ts:VY
 server/verify/video-truncation.test.ts:T—
 server/verify/video.test.ts:T—
 server/verify/video.ts:VA
+server/verify/zip-inspector.ts:VA

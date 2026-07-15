@@ -1,6 +1,7 @@
 import { constants, accessSync } from "node:fs";
 import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 import { boundedTimeout, resolveBinary, summarizeExecution } from "./execution-policy.ts";
+import { buildGhostscriptDocumentCommand, type GhostscriptDocumentQuery } from "./document-policy.ts";
 import { HELPER_PATHS, validateHelperStep } from "./helper-policy.ts";
 import { buildFfprobeCommand, type FfprobeQuery } from "./ffprobe-policy.ts";
 import { validateInstallProposal } from "./install-policy.ts";
@@ -16,10 +17,7 @@ import { enforceManagedPasslogs } from "./two-pass-policy.ts";
 export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 
 async function runBinary(
-  binary: string,
-  executable: string,
-  args: string[],
-  options: ExecutionOptions,
+  binary: string, executable: string, args: string[], options: ExecutionOptions,
 ): Promise<ExecutionResult> {
   const timeoutMs = boundedTimeout(options.timeoutMs);
   const emit = options.onEvent ?? (() => undefined);
@@ -104,10 +102,7 @@ export async function executePlan(
 }
 
 export async function executeInstall(
-  tool: unknown,
-  proposedArgv: unknown,
-  profile: SystemProfile,
-  heavyConfirmed: unknown,
+  tool: unknown, proposedArgv: unknown, profile: SystemProfile, heavyConfirmed: unknown,
   options: ExecutionOptions = {},
 ): Promise<ExecutionResult> {
   const install = validateInstallProposal(tool, proposedArgv, profile, heavyConfirmed);
@@ -115,8 +110,7 @@ export async function executeInstall(
 }
 
 export async function executeHelperStep(
-  untrustedStep: unknown,
-  grants: unknown,
+  untrustedStep: unknown, grants: unknown,
   options: ExecutionOptions = {},
 ): Promise<ExecutionResult> {
   const step = validateHelperStep(untrustedStep, grants);
@@ -130,9 +124,7 @@ export async function executeHelperStep(
 }
 
 export async function executeFfprobe(
-  query: FfprobeQuery,
-  inputPath: unknown,
-  profile: SystemProfile,
+  query: FfprobeQuery, inputPath: unknown, profile: SystemProfile,
   options: ExecutionOptions = {},
 ): Promise<ExecutionResult> {
   const command = buildFfprobeCommand(query, inputPath);
@@ -140,10 +132,17 @@ export async function executeFfprobe(
 }
 
 export async function executeLoudnessScan(
-  inputPath: unknown,
-  profile: SystemProfile,
+  inputPath: unknown, profile: SystemProfile,
   options: ExecutionOptions = {},
 ): Promise<ExecutionResult> {
   const command = buildLoudnessCommand(inputPath);
   return runBinary("ffmpeg", resolveBinary("ffmpeg", profile), command.slice(1), options);
+}
+
+export async function executeGhostscriptDocument(
+  query: GhostscriptDocumentQuery, inputPath: unknown, profile: SystemProfile,
+  options: ExecutionOptions = {},
+): Promise<ExecutionResult> {
+  const command = buildGhostscriptDocumentCommand(query, inputPath);
+  return runBinary("gs", resolveBinary("gs", profile), command.slice(1), options);
 }

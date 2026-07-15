@@ -75,8 +75,6 @@ describe("parsePlan", () => {
   test("rejects checks the verifier cannot dispatch", () => {
     const unknown = { ...validPlan, checks: [{ type: "looks_good", target: true }] };
     expect(() => parsePlan(JSON.stringify(unknown))).toThrow("not supported");
-    const future = { ...validPlan, checks: [{ type: "format_matches", target: "mp4" }] };
-    expect(() => parsePlan(JSON.stringify(future))).toThrow("not supported");
   });
 
   test("accepts the registered audio checks", () => {
@@ -90,6 +88,16 @@ describe("parsePlan", () => {
       checks,
     };
     expect(parsePlan(JSON.stringify(audio)).checks).toEqual(checks);
+  });
+
+  test("accepts the registered document checks", () => {
+    const checks: Plan["checks"] = [
+      { type: "file_valid", target: "pdf" },
+      { type: "page_count_positive", target: 1 },
+      { type: "text_extractable", target: 20 },
+      { type: "format_matches", target: "pdf" },
+    ];
+    expect(parsePlan(JSON.stringify({ ...validPlan, checks })).checks).toEqual(checks);
   });
 
   test("rejects install proposals for installed tools", () => {

@@ -11,9 +11,10 @@ const RULES = `Rules:
 - If the selected tool is installed, install_cmd must be null.
 - If it is missing, install_cmd may only propose ["brew","install",...] using its official package; LibreOffice uses --cask.
 - An install proposal is never permission to execute it. Heavy tools/models require a separate explicit user confirmation.
-- Check types may only be: size_under, duration_matches, streams_present, plays, audio_stream_present, loudness_matches, true_peak_under.
+- Check types may only be: size_under, duration_matches, streams_present, plays, audio_stream_present, loudness_matches, true_peak_under, file_valid, page_count_positive, text_extractable, format_matches.
 - For video compression use size_under (target bytes), duration_matches (target input path), streams_present (comma-separated target such as "video,audio"), and plays (target true).
 - For audio work, audio_stream_present targets true, loudness_matches targets LUFS, true_peak_under targets dBTP, and duration_matches targets the input path.
+- For documents, file_valid and format_matches target pdf/docx/epub/html/md/txt; page_count_positive targets a minimum page integer; text_extractable targets minimum non-whitespace characters.
 - Checks must objectively verify the requested result. Do not claim that any command ran.`;
 
 function boundary(profile: SystemProfile): string {
