@@ -1,5 +1,8 @@
 import { extname } from "node:path";
+import { mediaTargetFromConversionPhrase } from "./media-formats.ts";
 import type { Recipe } from "./recipe-types.ts";
+
+export type RecipeIntent = "compression" | "conversion";
 
 const STOP = new Set(["a", "an", "and", "for", "my", "please", "than", "the", "this", "to"]);
 const CANONICAL: Record<string, string> = {
@@ -25,6 +28,23 @@ function tokens(value: string): Set<string> {
   return new Set(separated);
 }
 
+export function recipeIntent(recipe: Recipe): RecipeIntent | null {
+  if (recipe.checks.some((check) => check.type === "size_under")) return "compression";
+  const hasTargetFormat = recipe.checks.some((check) => check.target === "{{target_format}}") ||
+    recipe.command_template.output_path.includes("{{target_format}}");
+  return hasTargetFormat ? "conversion" : null;
+}
+
+export function taskIntent(task: string): RecipeIntent | null {
+  const compression = /\b(?:compress(?:ed|ing|ion)?|smaller|shrink)\b/i.test(task) ||
+    /\b\d+(?:\.\d+)?\s*(?:kb|mb|gb)\b/i.test(task);
+  const conversionVerb = /\b(?:convert|turn)\b/i.test(task);
+  const conversionTarget = mediaTargetFromConversionPhrase(task) !== null;
+  if (compression && (conversionVerb || conversionTarget)) return null;
+  if (conversionTarget) return "conversion";
+  return compression ? "compression" : null;
+}
+
 export function recipeConfidence(recipe: Recipe, taskDescription: string, files: string[]): number {
   const query = tokens(taskDescription);
   if (query.size === 0) return 0;
@@ -37,5 +57,10 @@ export function recipeConfidence(recipe: Recipe, taskDescription: string, files:
   const precision = overlap / Math.max(1, recipeWords.size);
   const fileKind = files.map((file) => FILE_KINDS[extname(file).toLowerCase()]).find(Boolean);
   const compatibility = fileKind && recipeWords.has(fileKind) ? 0.05 : 0;
-  return Math.min(1, Number((coverage * 0.85 + precision * 0.15 + compatibility).toFixed(3)));
+  const lexical = Math.min(1, coverage * 0.85 + precision * 0.15 + compatibility);
+  const requested = taskIntent(taskDescription);
+  if (!requested) return Number(lexical.toFixed(3));
+  const capability = recipeIntent(recipe);
+  const scored = capability === requested ? 0.7 + lexical * 0.3 : lexical * 0.3;
+  return Number(Math.min(1, scored).toFixed(3));
 }

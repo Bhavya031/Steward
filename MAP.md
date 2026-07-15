@@ -45,6 +45,7 @@ server/plan.test.ts:T—
 server/plan.ts:PA
 server/probe.ts:SA
 server/process-stream.ts:EA
+server/recipe-match.test.ts:T—
 server/recipe-match.ts:RA
 server/recipe-cleanup.test.ts:T—
 server/recipe-runtime.ts:RA

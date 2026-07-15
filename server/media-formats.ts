@@ -17,6 +17,7 @@ export const MEDIA_PROFILES: Record<MediaFormat, MediaProfile> = {
   wav: { kind: "audio", audioCodec: "pcm_s16le" },
   webm: { kind: "video", videoCodec: "libvpx-vp9", audioCodec: "libopus" },
 };
+const MEDIA_PATTERN = "avi|flac|m4a|mkv|mov|mp3|mp4|ogg|wav|webm";
 
 export function mediaFormat(value: unknown): MediaFormat | null {
   if (typeof value !== "string") return null;
@@ -26,6 +27,14 @@ export function mediaFormat(value: unknown): MediaFormat | null {
 
 export function mediaTargetFromTask(task: string): MediaFormat | null {
   const normalized = task.toLowerCase().replace(/quicktime/g, "mov");
-  const matches = [...normalized.matchAll(/\b(avi|flac|m4a|mkv|mov|mp3|mp4|ogg|wav|webm)\b/g)];
+  const matches = [...normalized.matchAll(new RegExp(`\\b(${MEDIA_PATTERN})\\b`, "g"))];
   return matches.length ? mediaFormat(matches.at(-1)?.[1]) : null;
+}
+
+export function mediaTargetFromConversionPhrase(task: string): MediaFormat | null {
+  const normalized = task.toLowerCase().replace(/quicktime/g, "mov");
+  const match = normalized.match(new RegExp(
+    `\\b(?:to|into)\\s+(?:an?\\s+)?\\.?(${MEDIA_PATTERN})\\b`, "i",
+  ));
+  return mediaFormat(match?.[1]);
 }

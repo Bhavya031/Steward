@@ -3,7 +3,7 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync
 import { join, resolve } from "node:path";
 import { executePlan } from "./executor.ts";
 import { discardFailedOutput } from "./failed-output.ts";
-import { recipeConfidence } from "./recipe-match.ts";
+import { recipeConfidence, recipeIntent, taskIntent } from "./recipe-match.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
 import type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
@@ -14,6 +14,7 @@ import { verifyChecks } from "./verify/index.ts";
 
 export const RECIPES_DIRECTORY = join(import.meta.dir, "..", "recipes");
 const MATCH_THRESHOLD = 0.45;
+const MATCH_LEAD = 0.15;
 
 export function save(
   input: SaveRecipeInput,
@@ -73,12 +74,17 @@ export function match(
   files: string[],
   directory = RECIPES_DIRECTORY,
 ): RecipeMatch | null {
-  let best: RecipeMatch | null = null;
-  for (const recipe of load(directory)) {
-    const confidence = recipeConfidence(recipe, taskDescription, files);
-    if (!best || confidence > best.confidence) best = { recipe, confidence };
-  }
-  return best && best.confidence >= MATCH_THRESHOLD ? best : null;
+  const ranked = load(directory)
+    .map((recipe) => ({ recipe, confidence: recipeConfidence(recipe, taskDescription, files) }))
+    .sort((left, right) => right.confidence - left.confidence);
+  const best = ranked[0];
+  if (!best || best.confidence < MATCH_THRESHOLD) return null;
+  const lead = best.confidence - (ranked[1]?.confidence ?? 0);
+  if (lead < MATCH_LEAD) return null;
+  const requested = taskIntent(taskDescription);
+  const capability = recipeIntent(best.recipe);
+  if ((requested || capability) && requested !== capability) return null;
+  return best;
 }
 
 export async function rerun(
