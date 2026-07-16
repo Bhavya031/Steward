@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 2 Step 12 pre-tag audit (2026-07-16). `server/` is currently a CLI; there is no HTTP/WS listener or session-token surface until Phase 3.
+Last updated: Phase 3 P3.1 pre-approval audit (2026-07-16). The Phase 2 CLI remains available; the UI server adds the first HTTP/WS listener surface.
 
 ## Current execution surface
 
@@ -12,7 +12,8 @@ Last updated: Phase 2 Step 12 pre-tag audit (2026-07-16). `server/` is currently
 - Helpers: exact helper tier and granted roots; helpers cannot be primary recipe tools or install steps.
 - Writes: final task outputs stay beside inputs; ordinary intermediate outputs require exact model declarations that are resolved/revalidated only inside the executor-owned temp root. Reads require an earlier declared write. Recipes use atomic temp+rename; failed outputs and every temp root are removed.
 - Shelf claims: canonical names are model-authored but task-slug echoes fail closed. Replacement service/prices come only from the curated `(tool, check type)` map; unknown classes omit both fields, and kill totals deduplicate service names.
-- Listener: none. Phase 3 must add `127.0.0.1`, random port, and per-session token checks before any request handling.
+- Listener: Bun binds `127.0.0.1` on a random free port. A 256-bit per-session token is required by query or HttpOnly SameSite cookie for every static request and by query for `/ws`; missing/wrong tokens return 401 before routing. Static real paths remain inside `ui/dist`.
+- Browser launch: startup may invoke fixed `/usr/bin/open` with only the generated loopback URL. It accepts no task/model input and is outside the recipe module graph; tests disable it.
 
 ## Input-to-command trace
 
@@ -34,7 +35,7 @@ Last updated: Phase 2 Step 12 pre-tag audit (2026-07-16). `server/` is currently
 | Executor artifacts | ffmpeg passlogs/null sinks and isolated LibreOffice profiles stay in executor-owned temp roots and are cleaned. |
 | Recipe JSON | Green runs only; atomic exclusive temp write + rename under `recipes/`. |
 | Failed output cleanup | Regular files only, never inputs or symlinks; invoked after failed reruns and terminal repair exhaustion. |
-| Network listener | None in Phase 2. Phase 3 listener remains blocked on loopback/random-port/session-token controls. |
+| Network listener | Loopback only, random port, per-session token before static routing or WS upgrade; no routes beyond static files and `/ws`. |
 
 ## Closed critical findings
 
@@ -48,6 +49,7 @@ Last updated: Phase 2 Step 12 pre-tag audit (2026-07-16). `server/` is currently
 | High | Generic runtime slots could hide code-invented behavior or bake measurements from one input into every rerun. | Every non-path slot requires a serialized model-declared named derivation with closed typed args; unknown/unused derivations and baked loudnorm measurements fail closed. |
 | High | Type-correct but meaningless check targets could create false evidence or make repair futile (`file_valid: true`, DOCX text extraction). | Check targets and cross-check compatibility are validated before execution and again when loading recipes; invalid plans use the existing defensive re-ask. |
 | Medium | Model/task wording and guessed SaaS prices could make shelf claims misleading. | Canonical names reject task-slug echoes; service/price claims are code-curated, unknown classes render no claim, and shared services count once. |
+| High | A localhost UI listener could expose execution controls to DNS rebinding/CSRF or serve files outside its build root. | Loopback/random-port binding plus a 256-bit token gates every HTTP/WS request; static paths are decoded, confined, and realpath-checked after symlinks. |
 
 ## Deferred to Day 5 audit
 

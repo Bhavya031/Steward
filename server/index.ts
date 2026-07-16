@@ -1,5 +1,6 @@
 import { constants, accessSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { startLocalServer } from "./local-server.ts";
 import { probeSystem, type SystemProfile } from "./probe.ts";
 import { runWithRepair } from "./repair-loop.ts";
 import { match, rerun, save, type Recipe } from "./recipes.ts";
@@ -78,8 +79,18 @@ export async function main(argv = Bun.argv.slice(2)): Promise<void> {
   return runPlanned(task, files);
 }
 
+export function serveUi(openBrowser = true): void {
+  const running = startLocalServer({ openBrowser });
+  console.log(`Steward UI: ${running.url}`);
+}
+
 if (import.meta.main) {
-  main().catch((error) => {
+  const args = Bun.argv.slice(2);
+  const serving = args.length === 0 || args[0] === "--serve";
+  const action = serving
+    ? Promise.resolve().then(() => serveUi(!args.includes("--no-open")))
+    : main(args);
+  action.catch((error) => {
     console.error(`Steward failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   });

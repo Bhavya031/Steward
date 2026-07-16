@@ -1,5 +1,6 @@
 Codes `purpose/export`: C=config,D=docs,E=execution,P=planning,R=recipes,S=security,T=tests,V=verify; A=API,Y=types,M=main,X=scripts,—=none.
 .gitignore:C—
+BRAND.md:D—
 bun.lockb:C—
 bunfig.toml:C—
 MAP.md:D—
@@ -11,6 +12,7 @@ tsconfig.json:C—
 demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
 demo-material/recipe-4-verification-failure.txt:D—
+docs/PHASE_3_UI.md:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-media-to-mov.json:R—
 recipes/convert-media-to-mp4.json:R—
@@ -45,6 +47,8 @@ server/intermediate-policy.test.ts:T—
 server/intermediate-policy.ts:SY
 server/index.ts:EM
 server/install-policy.ts:SA
+server/local-server.test.ts:T—
+server/local-server.ts:SA
 server/loudness-policy.ts:SA
 server/media-formats.ts:RY
 server/path-policy.ts:SA
@@ -75,6 +79,7 @@ server/repair-policy.test.ts:T—
 server/repair-loop.test.ts:T—
 server/repair-loop.ts:EA
 server/runtime-temp.ts:SA
+server/security.ts:SA
 server/soffice-profile.ts:SA
 server/source-graph.ts:TA
 server/terminal.ts:DA
