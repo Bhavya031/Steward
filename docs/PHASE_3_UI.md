@@ -47,7 +47,7 @@ RecipeCard: recipe name (serif) · the real command in mono (visible, this teach
 
 ## Steps (one at a time, gate after each)
 - [x] P3.1 Server: loopback + random port + token + static serving + /ws echo. Show: curl without token → 401, with token → 200.
-- [ ] P3.2 Engine→WS bridge: engine events emitted as typed WS events for a real run. Show: raw WS event log from a real compression run.
+- [x] P3.2 Engine→WS bridge: engine events emitted as typed WS events for a real run. Show: raw WS event log from a real compression run.
 - [ ] P3.3 Svelte scaffold: Vite build, ws.ts (token from URL), stores wired to event types, app.css with all tokens. Show: build output + events landing in stores (console).
 - [ ] P3.4 Components: ActivityStream + VerifyPanel first (demo moment 1). Show: screenshot of a live run.
 - [ ] P3.5 Components: Shelf + RecipeCard + KillCounter (demo moment 2, prices from replacement-prices.ts via a WS snapshot event on connect). Show: screenshot with struck prices + counter.

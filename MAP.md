@@ -12,6 +12,7 @@ tsconfig.json:C—
 demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
 demo-material/recipe-4-verification-failure.txt:D—
+demo-material/p3.2-ws-compression.txt:D—
 docs/PHASE_3_UI.md:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-media-to-mov.json:R—
@@ -106,3 +107,8 @@ server/verify/video-truncation.test.ts:T—
 server/verify/video.test.ts:T—
 server/verify/video.ts:VA
 server/verify/zip-inspector.ts:VA
+server/ws-bridge.test.ts:T—
+server/ws-bridge.ts:SA
+server/ws-engine.ts:EA
+server/ws-events.ts:EY
+server/ws-run-events.ts:EA

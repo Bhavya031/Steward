@@ -5,6 +5,7 @@ import { probeSystem, type SystemProfile } from "./probe.ts";
 import { runWithRepair } from "./repair-loop.ts";
 import { match, rerun, save, type Recipe } from "./recipes.ts";
 import { executionReporter, printAttemptEvent, printChecks, printRecipeCard } from "./terminal.ts";
+import { createWsBridge } from "./ws-bridge.ts";
 
 function filesFrom(argv: string[]): string[] {
   if (argv.length === 0) throw new Error("usage: bun run server/index.ts \"<task>\" <file> [file...]");
@@ -80,7 +81,7 @@ export async function main(argv = Bun.argv.slice(2)): Promise<void> {
 }
 
 export function serveUi(openBrowser = true): void {
-  const running = startLocalServer({ openBrowser });
+  const running = startLocalServer({ openBrowser, onWebSocketMessage: createWsBridge() });
   console.log(`Steward UI: ${running.url}`);
 }
 

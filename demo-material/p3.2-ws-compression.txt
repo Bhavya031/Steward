@@ -1,0 +1,46 @@
+{"type":"run_started","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","action":"task","files":["/tmp/steward-p3.2-live/source-a.mkv"]}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"Checking the local recipe shelf."}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"No saved recipe matched. Reading the local system profile."}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"macOS 26.4.1 · arm64 · 16 GiB."}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"Planning a local command."}
+{"type":"check_pending","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"size_under"}
+{"type":"check_pending","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"duration_matches"}
+{"type":"check_pending","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"streams_present"}
+{"type":"check_pending","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"plays"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"$ ffmpeg -i /tmp/steward-p3.2-live/source-a.mkv -map 0:v:0 -map 0:a:0 -c:v libx264 -preset slow -pix_fmt yuv420p -b:v 2816k -c:a aac -b:a 64k /tmp/steward-p3.2-live/source-a-compressed.mkv"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.59"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.16"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.76"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:02.35"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:02.93"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:03.54"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:04.11"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    0 fps=0.0 q=0.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:04.70"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=    9 fps=1.7 q=23.0 size=       1KiB time=00:00:00.23 bitrate=  26.1kbits/s speed=0.0448x elapsed=0:00:05.20"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"frame=   91 fps= 14 q=22.0 size=       1KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:06.28"}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"Command exited 0 in 8119 ms."}
+{"type":"activity","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","message":"Attempt 1: passed."}
+{"type":"check_result","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"size_under","pass":true,"expected":"under 1.91 MB (2,000,000 bytes)","actual":"1.67 MB (1,754,420 bytes)"}
+{"type":"check_result","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"duration_matches","pass":true,"expected":"5.000 s ±0.500 s","actual":"5.021 s (Δ 0.021 s)"}
+{"type":"check_result","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"streams_present","pass":true,"expected":"video, audio","actual":"video (h264), audio (aac)"}
+{"type":"check_result","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","name":"plays","pass":true,"expected":"full frame scan with no decode errors","actual":"video=150 frames, audio=235 frames; ffprobe exit 0; no decode errors"}
+{"type":"recipe_saved","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","recipe":{"name":"compress-video-under-size","command_template":{"commands":[["ffmpeg","-i","{{input_0}}","-map","0:v:0","-map","0:a:0","-c:v","libx264","-preset","slow","-pix_fmt","yuv420p","-b:v","{{video_bitrate_kbps}}","-c:a","aac","-b:a","64k","{{input_0_dir}}/{{input_0_stem}}-compressed.mkv"]],"output_path":"{{input_0_dir}}/{{input_0_stem}}-compressed.mkv"},"checks":[{"type":"size_under","target":2000000},{"type":"duration_matches","target":"{{input_0}}"},{"type":"streams_present","target":"video,audio"},{"type":"plays","target":true}],"created_at":"2026-07-16T16:51:49.291Z","arch":"arm64","tool":"ffmpeg","install_weight":"light","replaced_service":"Clideo","monthly_price":9,"derivations":{"video_bitrate_kbps":{"name":"size_target_video_bitrate","args":{"target_bytes":2000000,"audio_kbps":64,"safety_factor":0.9}}}}}
+{"type":"run_complete","run_id":"48b37233-6bc4-4ed8-bd23-c635bf896c9b","success":true,"output_path":"/tmp/steward-p3.2-live/source-a-compressed.mkv"}
+{"type":"run_started","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","action":"task","files":["/tmp/steward-p3.2-live/source-b.mkv"]}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"Checking the local recipe shelf."}
+{"type":"recipe_matched","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"compress-video-under-size","score":0.88,"model_calls":0}
+{"type":"check_pending","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"size_under"}
+{"type":"check_pending","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"duration_matches"}
+{"type":"check_pending","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"streams_present"}
+{"type":"check_pending","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"plays"}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"Running the saved recipe locally."}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"$ ffmpeg -i /tmp/steward-p3.2-live/source-b.mkv -map 0:v:0 -map 0:a:0 -c:v libx264 -preset slow -pix_fmt yuv420p -b:v 1736k -c:a aac -b:a 64k /tmp/steward-p3.2-live/source-b-compressed.mkv"}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"frame=   60 fps=0.0 q=28.0 size=       1KiB time=00:00:01.96 bitrate=   3.1kbits/s speed=3.89x elapsed=0:00:00.50"}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"frame=  180 fps=178 q=28.0 size=    1024KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.00"}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"frame=  233 fps=154 q=-1.0 size=    1024KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.51"}
+{"type":"activity","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","message":"Command exited 0 in 1965 ms."}
+{"type":"check_result","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"size_under","pass":true,"expected":"under 1.91 MB (2,000,000 bytes)","actual":"1.72 MB (1,803,029 bytes)"}
+{"type":"check_result","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"duration_matches","pass":true,"expected":"8.000 s ±0.500 s","actual":"8.021 s (Δ 0.021 s)"}
+{"type":"check_result","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"streams_present","pass":true,"expected":"video, audio","actual":"video (h264), audio (aac)"}
+{"type":"check_result","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","name":"plays","pass":true,"expected":"full frame scan with no decode errors","actual":"video=240 frames, audio=375 frames; ffprobe exit 0; no decode errors"}
+{"type":"run_complete","run_id":"1f949fdc-88e7-4bf9-b105-6ab4bb138bb1","success":true,"output_path":"/tmp/steward-p3.2-live/source-b-compressed.mkv","model_calls":0}

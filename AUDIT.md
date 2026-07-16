@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 3 P3.1 pre-approval audit (2026-07-16). The Phase 2 CLI remains available; the UI server adds the first HTTP/WS listener surface.
+Last updated: Phase 3 P3.2 audit (2026-07-16). The Phase 2 CLI remains available; the authenticated WS bridge now exposes the same engine path.
 
 ## Current execution surface
 
@@ -13,6 +13,7 @@ Last updated: Phase 3 P3.1 pre-approval audit (2026-07-16). The Phase 2 CLI rema
 - Writes: final task outputs stay beside inputs; ordinary intermediate outputs require exact model declarations that are resolved/revalidated only inside the executor-owned temp root. Reads require an earlier declared write. Recipes use atomic temp+rename; failed outputs and every temp root are removed.
 - Shelf claims: canonical names are model-authored but task-slug echoes fail closed. Replacement service/prices come only from the curated `(tool, check type)` map; unknown classes omit both fields, and kill totals deduplicate service names.
 - Listener: Bun binds `127.0.0.1` on a random free port. A 256-bit per-session token is required by query or HttpOnly SameSite cookie for every static request and by query for `/ws`; missing/wrong tokens return 401 before routing. Static real paths remain inside `ui/dist`.
+- WS bridge: client JSON is capped at 64 KiB and must exactly match `run_task` or `run_recipe`; file grants are absolute, readable regular files. One run per socket prevents overlapping mutations. Task runs match locally before importing the planner; recipe matches emit and retain `model_calls: 0` through completion.
 - Browser launch: startup may invoke fixed `/usr/bin/open` with only the generated loopback URL. It accepts no task/model input and is outside the recipe module graph; tests disable it.
 
 ## Input-to-command trace
@@ -21,6 +22,7 @@ Last updated: Phase 3 P3.1 pre-approval audit (2026-07-16). The Phase 2 CLI rema
 | --- | --- | --- |
 | CLI task text | `index` → agent prompt | Treated as quoted data; never interpolated into argv. |
 | CLI file paths | `filesFrom` → plan grants | Resolve + readable regular-file check; every later path is role-classified, real-path confined, and checked against the exact grant. |
+| WS task/name/files | typed parser → WS engine bridge | Exact event keys/types, bounded strings/files, one active run/socket, absolute readable grants; then the identical match/plan/rerun paths below. |
 | Model plan or repair | plan → repair loop → executor | Strict keys/types, one primary tool, argv arrays only, semantic check targets, canonical name, declared slots/intermediates, per-tool flags, output confinement, timeout. |
 | Saved recipe JSON | load → slot render → executor | Strict recipe validation; only path slots and serialized derivations; rendered plan is revalidated; no agent-reachable module. |
 | Derivation input | first granted file → ffprobe duration | Fixed ffprobe argv through executor, closed named formula, typed model-authored args. |
@@ -35,7 +37,7 @@ Last updated: Phase 3 P3.1 pre-approval audit (2026-07-16). The Phase 2 CLI rema
 | Executor artifacts | ffmpeg passlogs/null sinks and isolated LibreOffice profiles stay in executor-owned temp roots and are cleaned. |
 | Recipe JSON | Green runs only; atomic exclusive temp write + rename under `recipes/`. |
 | Failed output cleanup | Regular files only, never inputs or symlinks; invoked after failed reruns and terminal repair exhaustion. |
-| Network listener | Loopback only, random port, per-session token before static routing or WS upgrade; no routes beyond static files and `/ws`. |
+| Network listener | Loopback only, random port, per-session token before static routing or WS upgrade; no routes beyond static files and `/ws`; typed WS messages are size/shape bounded and serialized server events carry run IDs. |
 
 ## Closed critical findings
 

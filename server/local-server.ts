@@ -1,11 +1,14 @@
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { resolve, sep } from "node:path";
+import type { ServerWebSocket } from "bun";
 import { createSessionToken, requestHasSessionToken, sessionCookie } from "./security.ts";
 
-interface SocketData { authenticated: true }
+export interface SocketData { authenticated: true }
+export type LocalSocket = ServerWebSocket<SocketData>;
 export interface LocalServerOptions {
   staticRoot?: string;
   openBrowser?: boolean;
+  onWebSocketMessage?: (socket: LocalSocket, message: string) => void | Promise<void>;
 }
 
 function inside(root: string, path: string): boolean {
@@ -62,7 +65,17 @@ export function startLocalServer(options: LocalServerOptions = {}) {
       return new Response(Bun.file(path), { headers });
     },
     websocket: {
-      message(socket, message) { socket.send(message); },
+      message(socket, message) {
+        if (!options.onWebSocketMessage) {
+          socket.send(message);
+          return;
+        }
+        const text = typeof message === "string" ? message : message.toString("utf8");
+        void Promise.resolve(options.onWebSocketMessage(socket, text)).catch((error) => {
+          console.error(`WebSocket handler failed: ${error instanceof Error ? error.message : String(error)}`);
+          socket.close(1011, "Internal bridge failure");
+        });
+      },
     },
   });
   const origin = `http://127.0.0.1:${server.port}`;
