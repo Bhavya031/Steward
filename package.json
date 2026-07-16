@@ -5,10 +5,17 @@
   "scripts": {
     "probe": "bun run server/probe.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ui:build": "vite build --config ui/vite.config.ts",
+    "ui:check": "svelte-check --tsconfig ui/tsconfig.json",
+    "ui:dev": "vite --config ui/vite.config.ts"
   },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
     "@types/bun": "1.2.8",
-    "typescript": "5.8.2"
+    "svelte": "^5.56.5",
+    "svelte-check": "^4.7.3",
+    "typescript": "5.8.2",
+    "vite": "^8.1.5"
   }
 }

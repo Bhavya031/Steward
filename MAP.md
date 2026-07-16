@@ -1,4 +1,4 @@
-Codes `purpose/export`: C=config,D=docs,E=execution,P=planning,R=recipes,S=security,T=tests,V=verify; A=API,Y=types,M=main,X=scripts,—=none.
+Codes `purpose/export`: C=config,D=docs,E=execution,P=planning,R=recipes,S=security,T=tests,U=UI,V=verify; A=API,Y=types,M=main,X=scripts,—=none.
 .gitignore:C—
 BRAND.md:D—
 bun.lockb:C—
@@ -19,6 +19,17 @@ recipes/convert-media-to-mov.json:R—
 recipes/convert-media-to-mp4.json:R—
 recipes/convert-markdown-to-docx.json:R—
 recipes/normalize-audio-to-14-lufs.json:R—
+ui/index.html:U—
+ui/svelte.config.js:C—
+ui/tsconfig.json:C—
+ui/vite.config.ts:C—
+ui/src/App.svelte:UM
+ui/src/app.css:U—
+ui/src/main.ts:UM
+ui/src/lib/stores.test.ts:T—
+ui/src/lib/stores.ts:UA
+ui/src/lib/ws.test.ts:T—
+ui/src/lib/ws.ts:UA
 server/agent.ts:PA
 server/agent-prompts.ts:PA
 server/attempt-types.ts:EY
