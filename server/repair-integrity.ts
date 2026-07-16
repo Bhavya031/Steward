@@ -1,6 +1,9 @@
 import { PlanValidationError, type Plan } from "./plan.ts";
 
 export function enforceRepairIntegrity(original: Plan, revised: Plan): Plan {
+  if (revised.name !== original.name) {
+    throw new PlanValidationError("repair must preserve the canonical recipe name");
+  }
   if (JSON.stringify(revised.checks) !== JSON.stringify(original.checks)) {
     throw new PlanValidationError("repair must preserve every verification check and target");
   }

@@ -16,6 +16,7 @@ writeY4m(frame, 1);
 
 beforeAll(async () => {
   const fixture: Plan = {
+    name: "generate-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-i", frame, "-t", "1",
       "-c:v", "libx264", "-pix_fmt", "yuv420p", source]],
@@ -31,13 +32,14 @@ describe("failed recipe output cleanup", () => {
   test("removes failed output and permits the same input to retry", async () => {
     const output = join(root, "source-short.mp4");
     const plan: Plan = {
+      name: "failed-output-cleanup",
       tool: "ffmpeg", install_cmd: null,
       commands: [["ffmpeg", "-i", source, "-t", "0.2", "-c", "copy", output]],
       output_path: output,
       checks: [{ type: "duration_matches", target: source }, { type: "plays", target: true }],
     };
     const recipe = save({
-      name: "failed-output-cleanup", replaced_service: "Cleanup test", monthly_price: 1,
+      replaced_service: "Cleanup test", monthly_price: 1,
       plan, inputPaths: [source], arch: profile.architecture,
       verification: plan.checks.map((check) => ({
         name: check.type, pass: true, expected: "fixture", actual: "fixture",

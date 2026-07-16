@@ -11,11 +11,9 @@ export const CHECK_TYPES = [
   "file_valid", "page_count_positive", "text_extractable", "format_matches",
 ] as const;
 export type PlanCheckType = (typeof CHECK_TYPES)[number];
-export interface PlanCheck {
-  type: PlanCheckType;
-  target: CheckTarget;
-}
+export interface PlanCheck { type: PlanCheckType; target: CheckTarget }
 export interface Plan {
+  name: string;
   tool: PlanTool;
   install_cmd: string[] | null;
   commands: string[][];
@@ -28,11 +26,10 @@ const PLAN_TOOLS = new Set<PlanTool>(
   ALLOWED_BINARIES.filter((binary): binary is PlanTool => binary !== "brew"),
 );
 const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
-const REQUIRED_PLAN_KEYS = ["tool", "install_cmd", "commands", "output_path", "checks"];
+const REQUIRED_PLAN_KEYS = ["name", "tool", "install_cmd", "commands", "output_path", "checks"];
 const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations", "intermediates"];
-export class PlanValidationError extends Error {
-  constructor(message: string) { super(message); this.name = "PlanValidationError"; }
-}
+const RECIPE_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export class PlanValidationError extends Error { constructor(message: string) { super(message); this.name = "PlanValidationError"; } }
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -101,6 +98,9 @@ export function validatePlan(value: unknown): Plan {
       `plan must contain ${REQUIRED_PLAN_KEYS.join(", ")} and optional derivations/intermediates only`,
     );
   }
+  if (!isSafeString(value.name) || value.name.length > 64 || !RECIPE_NAME.test(value.name)) {
+    throw new PlanValidationError("name must be a canonical kebab-case recipe name up to 64 characters");
+  }
   if (!isSafeString(value.tool) || !PLAN_TOOLS.has(value.tool as PlanTool)) {
     throw new PlanValidationError("tool is not an allowlisted task binary");
   }
@@ -136,6 +136,7 @@ export function validatePlan(value: unknown): Plan {
   const checkError = checkSemanticError(checks);
   if (checkError) throw new PlanValidationError(checkError);
   const plan: Plan = {
+    name: value.name,
     tool,
     install_cmd: value.install_cmd as string[] | null,
     commands,

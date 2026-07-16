@@ -16,6 +16,7 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 function plan(extra: string[] = []): Plan {
   return {
+    name: "repair-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-loglevel", "error", "-i", input, ...extra,
       "-c:v", "libx264", "-pix_fmt", "yuv420p", output]],

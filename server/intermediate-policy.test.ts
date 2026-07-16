@@ -8,6 +8,7 @@ const input = "/tmp/steward-input/source.mp4";
 const output = "/tmp/steward-input/output.mp4";
 const stage = `${TEMP_DIR_SLOT}/stage.mkv`;
 const plan: Plan = {
+  name: "convert-video",
   tool: "ffmpeg", install_cmd: null,
   commands: [
     ["ffmpeg", "-i", input, "-c", "copy", stage],

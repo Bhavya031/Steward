@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { buildPlannerPrompt, buildRepairPrompt } from "./agent-prompts.ts";
-import { validatePlanForProfile } from "./agent.ts";
+import { validatePlanForProfile, validatePlanNameForTask } from "./agent.ts";
 import { parsePlan, PlanValidationError, type Plan } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
 
 const validPlan: Plan = {
+  name: "compress-video",
   tool: "ffmpeg",
   install_cmd: null,
   commands: [["ffmpeg", "-i", "/tmp/input.mp4", "/tmp/output.mp4"]],
@@ -57,6 +58,12 @@ describe("parsePlan", () => {
   test("rejects extra fields", () => {
     expect(() => parsePlan(JSON.stringify({ ...validPlan, note: "trust me" }))).toThrow(
       PlanValidationError,
+    );
+  });
+
+  test("requires a canonical kebab-case recipe name", () => {
+    expect(() => parsePlan(JSON.stringify({ ...validPlan, name: "Make this smaller" }))).toThrow(
+      "canonical kebab-case",
     );
   });
 
@@ -117,6 +124,17 @@ describe("parsePlan", () => {
     );
   });
 
+  test("rejects a recipe name copied from the task wording", () => {
+    const echoed = { ...validPlan, name: "make-this-markdown-into-a-word-doc" };
+    expect(() => validatePlanNameForTask(echoed, "make this markdown into a Word doc")).toThrow(
+      "not repeat the task wording",
+    );
+    expect(validatePlanNameForTask(
+      { ...validPlan, name: "convert-markdown-to-docx" },
+      "make this markdown into a Word doc",
+    ).name).toBe("convert-markdown-to-docx");
+  });
+
   test("rejects install proposals for installed tools", () => {
     const plan = { ...validPlan, install_cmd: ["brew", "install", "ffmpeg"] };
     expect(() => validatePlanForProfile(plan, profile)).toThrow("must be null");
@@ -150,6 +168,8 @@ describe("parsePlan", () => {
     expect(prompts[0]).toContain("size_target_video_bitrate");
     expect(prompts[0]).toContain("Code runs only the derivation name and exact args declared");
     expect(prompts[0]).toContain("earlier ordinary file outputs must be declared in intermediates");
+    expect(prompts[0]).toContain("canonical transformation in concise kebab-case");
+    expect(prompts[0]).toContain("never the user's wording merely slugified");
     expect(prompts[1]).toContain("10.000 s ±0.500 s");
     expect(prompts[1]).toContain("measured stderr");
   });

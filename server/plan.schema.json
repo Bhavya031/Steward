@@ -2,6 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
     "tool": {
       "type": "string",
       "enum": ["ffmpeg", "ffprobe", "pandoc", "magick", "ocrmypdf", "whisper-cli", "gs", "soffice"]
@@ -103,6 +108,6 @@
       ]
     }
   },
-  "required": ["tool", "install_cmd", "commands", "output_path", "checks", "derivations", "intermediates"],
+  "required": ["name", "tool", "install_cmd", "commands", "output_path", "checks", "derivations", "intermediates"],
   "additionalProperties": false
 }

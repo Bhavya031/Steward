@@ -27,14 +27,14 @@ function replaceAll(value: string, replacements: Array<[string, string]>): strin
   );
 }
 
-export function templatizePlan(plan: Plan, inputPaths: string[], recipeName: string): TemplatedPlan {
+export function templatizePlan(plan: Plan, inputPaths: string[]): TemplatedPlan {
   if (inputPaths.length === 0 || inputPaths.some((path) => !isAbsolute(path))) {
     throw new Error("recipe inputs must be absolute paths");
   }
   if (plan.commands.flat().some((argument) => BAKED_LOUDNESS.test(argument))) {
     throw new Error("recipe refused: plan contains file-specific loudnorm measured values");
   }
-  const output = portableOutput(plan, inputPaths[0]!, recipeName);
+  const output = portableOutput(plan, inputPaths[0]!, plan.name);
   const replacements: Array<[string, string]> = [
     [plan.output_path, output],
     ...inputPaths.map((path, index) => [path, `{{input_${index}}}`] as [string, string]),
@@ -93,6 +93,7 @@ export function renderRecipe(
 ): Plan {
   const slots = { ...runtimeSlots, ...slotValues(files) };
   return validatePlan({
+    name: recipe.name,
     tool: recipe.tool,
     install_cmd: null,
     commands: recipe.command_template.commands.map((command) => command.map((argument) => fill(argument, slots))),

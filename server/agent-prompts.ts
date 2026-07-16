@@ -4,6 +4,7 @@ import type { SystemProfile } from "./probe.ts";
 import type { VerificationResult } from "./verify/index.ts";
 
 const RULES = `Rules:
+- name is the canonical transformation in concise kebab-case (for example convert-markdown-to-docx), never the user's wording merely slugified.
 - tool and every commands[n][0] must be one of: ffmpeg, ffprobe, pandoc, magick, ocrmypdf, whisper-cli, gs, soffice.
 - commands is an ordered list of argv arrays; install_cmd is one argv array. Never return shell strings, sh, bash, zsh, eval, pipes, redirects, or command substitution.
 - All commands must use the selected tool. Only the final command may write output_path; earlier ordinary file outputs must be declared in intermediates.

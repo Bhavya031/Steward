@@ -19,6 +19,7 @@ const frame = join(root, "video.y4m");
 
 function plan(output: string, args: string[]): Plan {
   return {
+    name: "verify-audio",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-loglevel", "error", ...args, output]],
     output_path: output,

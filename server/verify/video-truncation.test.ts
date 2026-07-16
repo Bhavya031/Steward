@@ -22,6 +22,7 @@ function plan(output: string, cap: boolean): Plan {
     ? ["-i", source]
     : ["-i", frame, "-i", tone];
   return {
+    name: "truncate-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [[
       "ffmpeg", "-loglevel", "error", ...input,

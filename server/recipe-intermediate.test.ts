@@ -14,6 +14,7 @@ writeFileSync(source, "fixture");
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 const plan: Plan = {
+  name: "intermediate-media",
   tool: "ffmpeg", install_cmd: null,
   commands: [
     ["ffmpeg", "-i", source, "-c", "copy", stage],
@@ -27,7 +28,7 @@ describe("recipe intermediates", () => {
   test("stores the authored declarations and renders them unchanged", () => {
     const directory = join(root, "recipes");
     const recipe = save({
-      name: "intermediate-media", replaced_service: "File converter", monthly_price: 9,
+      replaced_service: "File converter", monthly_price: 9,
       plan, inputPaths: [source], arch: "arm64",
       verification: [{ name: "plays", pass: true, expected: "decodes", actual: "decoded" }],
     }, directory);

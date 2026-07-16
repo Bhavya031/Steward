@@ -14,7 +14,7 @@ demo-material/recipe-4-verification-failure.txt:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-media-to-mov.json:R—
 recipes/convert-media-to-mp4.json:R—
-recipes/make-this-markdown-into-a-word-doc.json:R—
+recipes/convert-markdown-to-docx.json:R—
 recipes/normalize-audio-to-14-lufs.json:R—
 server/agent.ts:PA
 server/agent-prompts.ts:PA

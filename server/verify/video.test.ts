@@ -32,6 +32,7 @@ function fixturePlan(output: string, duration: number, audio: boolean): Plan {
   if (audio) command.push("-c:a", "aac");
   command.push(output);
   return {
+    name: "verify-video",
     tool: "ffmpeg",
     install_cmd: null,
     commands: [command],

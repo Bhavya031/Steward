@@ -27,9 +27,9 @@ export function save(
       check.pass && check.name === input.plan.checks[index]?.type
     );
   if (!checksGreen) return null;
-  const templated = templatizePlan(input.plan, input.inputPaths, input.name);
+  const templated = templatizePlan(input.plan, input.inputPaths);
   const recipe = validateRecipe({
-    name: input.name,
+    name: input.plan.name,
     replaced_service: input.replaced_service,
     monthly_price: input.monthly_price,
     command_template: templated.command_template,

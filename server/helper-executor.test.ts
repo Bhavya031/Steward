@@ -43,6 +43,7 @@ describe("helper executor tier", () => {
 
   test("rejects helpers as recipe-forming primary tools", async () => {
     const invalidPrimary = {
+      name: "create-directory",
       tool: "mkdir",
       install_cmd: null,
       commands: [["mkdir", join(root, "primary")]],

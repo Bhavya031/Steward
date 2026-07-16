@@ -23,6 +23,7 @@ afterAll(() => rmSync(directory, { recursive: true, force: true }));
 function generationPlan(): Plan {
   const output = join(directory, `generated-${planNumber++}.mp4`);
   return {
+    name: "generate-video",
     tool: "ffmpeg",
     install_cmd: null,
     commands: [[

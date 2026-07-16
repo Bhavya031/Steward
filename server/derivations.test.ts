@@ -9,6 +9,7 @@ const declaration = {
   },
 } as const;
 const plan: Plan = {
+  name: "compress-video",
   tool: "ffmpeg", install_cmd: null,
   commands: [["ffmpeg", "-i", "/tmp/input.mp4", "/tmp/output.mp4"]],
   output_path: "/tmp/output.mp4", checks: [{ type: "plays", target: true }],

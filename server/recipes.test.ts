@@ -17,6 +17,7 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 function plan(): Plan {
   return {
+    name: "compress-video-under-25mb",
     tool: "ffmpeg",
     install_cmd: null,
     commands: [["ffmpeg", "-i", source, "-c:v", "libx264", output]],
@@ -41,7 +42,6 @@ function evidence(pass = true): VerificationResult[] {
 
 function input(verification = evidence()): SaveRecipeInput {
   return {
-    name: "compress-video-under-25mb",
     replaced_service: "Video compressor SaaS",
     monthly_price: 12,
     plan: plan(),

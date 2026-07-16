@@ -8,7 +8,6 @@ import { match, rerun, save, type Recipe } from "./recipes.ts";
 import { executionReporter, printAttemptEvent, printChecks, printRecipeCard } from "./terminal.ts";
 
 interface RecipeIdentity {
-  name: string;
   replaced_service: string;
   monthly_price: number;
 }
@@ -27,17 +26,10 @@ function filesFrom(argv: string[]): string[] {
   });
 }
 
-function slug(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64);
-}
-
-function identityFor(task: string, plan: Plan): RecipeIdentity {
+function identityFor(plan: Plan): RecipeIdentity {
   const sizeCheck = plan.checks.find((check) => check.type === "size_under");
-  const statedLimit = task.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(kb|mb|gb)\b/);
   if (sizeCheck) {
-    const limit = statedLimit ? `${statedLimit[1]}${statedLimit[2]}` : "target-size";
     return {
-      name: `compress-video-under-${slug(limit)}`,
       replaced_service: "Video compressor SaaS",
       monthly_price: 12,
     };
@@ -49,15 +41,13 @@ function identityFor(task: string, plan: Plan): RecipeIdentity {
     const targetFormat = mediaFormat(formatCheck.target);
     if (!targetFormat) throw new Error("media format identity lost its validated target");
     return {
-      name: `convert-media-to-${targetFormat}`,
       replaced_service: "CloudConvert", monthly_price: 9,
     };
   }
   if (plan.checks.some((check) => check.type === "loudness_matches" && check.target === -14)) {
-    return { name: "normalize-audio-to-14-lufs", replaced_service: "Podcast loudness SaaS", monthly_price: 10 };
+    return { replaced_service: "Podcast loudness SaaS", monthly_price: 10 };
   }
   return {
-    name: slug(task) || `${plan.tool}-recipe`,
     replaced_service: "Single-purpose file SaaS",
     monthly_price: 10,
   };
@@ -84,7 +74,7 @@ async function runPlanned(task: string, files: string[]): Promise<void> {
   console.log("Mode: GPT-5.6 planning");
   const { planTask, repairTask } = await import("./agent.ts");
   const planningTask = `${task}\nInput files (absolute paths): ${JSON.stringify(files)}`;
-  const initialPlan = await planTask(profile, planningTask);
+  const initialPlan = await planTask(profile, planningTask, task);
   if (initialPlan.install_cmd) {
     throw new Error(`install requires confirmation before execution: ${JSON.stringify(initialPlan.install_cmd)}`);
   }
@@ -101,7 +91,7 @@ async function runPlanned(task: string, files: string[]): Promise<void> {
     if (!run.execution.ok) console.error(`Executor stderr: ${run.execution.stderr_tail}`);
     throw new Error(`all ${run.events.length} attempts failed; recipe was not saved`);
   }
-  const identity = identityFor(task, run.plan);
+  const identity = identityFor(run.plan);
   const recipe = save({
     ...identity,
     plan: run.plan,

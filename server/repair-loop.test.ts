@@ -18,6 +18,7 @@ writeWav(tone, 2);
 
 function sourcePlan(): Plan {
   return {
+    name: "repair-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [[
       "ffmpeg", "-loglevel", "error",
@@ -33,6 +34,7 @@ function sourcePlan(): Plan {
 function attemptPlan(output: string, short: boolean): Plan {
   const duration = short ? ["-t", "0.3"] : [];
   return {
+    name: "repair-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-loglevel", "error", "-i", source, ...duration, "-c", "copy", output]],
     output_path: output,
@@ -127,5 +129,13 @@ describe("repair loop", () => {
         checks: [{ type: "plays", target: true }],
       }),
     })).rejects.toThrow("preserve every verification check");
+  });
+
+  test("rejects a repair that renames the recipe", async () => {
+    const output = join(root, "renamed.mp4");
+    await expect(runWithRepair({
+      initialPlan: attemptPlan(output, true), profile, inputPaths: [source],
+      repair: async () => ({ ...attemptPlan(output, false), name: "renamed-recipe" }),
+    })).rejects.toThrow("preserve the canonical recipe name");
   });
 });

@@ -17,6 +17,7 @@ const brokenZip = join(root, "broken.docx");
 
 function pandocPlan(output: string): Plan {
   return {
+    name: "convert-markdown",
     tool: "pandoc", install_cmd: null,
     commands: [["pandoc", markdown, "-o", output]],
     output_path: output,

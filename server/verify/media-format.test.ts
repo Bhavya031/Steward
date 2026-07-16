@@ -20,6 +20,7 @@ writeWav(audio, 1);
 
 function plan(output: string, videoCodec: string, audioCodec: string): Plan {
   return {
+    name: "convert-media",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-i", video, "-i", audio,
       "-c:v", videoCodec, "-c:a", audioCodec, output]],

@@ -95,16 +95,31 @@ function parseForProfile(raw: string, profile: SystemProfile): Plan {
   return validatePlanForProfile(parsePlan(raw), profile);
 }
 
-export async function planTask(profile: SystemProfile, task: string): Promise<Plan> {
+function taskSlug(task: string): string {
+  return task.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64);
+}
+
+export function validatePlanNameForTask(plan: Plan, taskDescription: string): Plan {
+  if (plan.name === taskSlug(taskDescription)) {
+    throw new PlanValidationError("name must describe the transformation, not repeat the task wording as a slug");
+  }
+  return plan;
+}
+
+export async function planTask(
+  profile: SystemProfile,
+  task: string,
+  taskDescription = task,
+): Promise<Plan> {
   if (!task.trim()) throw new AgentError("Task must not be empty");
   confirmCodexAuth();
   const first = await runCodex(buildPlannerPrompt(profile, task));
   try {
-    return parseForProfile(first, profile);
+    return validatePlanNameForTask(parseForProfile(first, profile), taskDescription);
   } catch (error) {
     if (!(error instanceof PlanValidationError)) throw error;
     const second = await runCodex(buildPlannerPrompt(profile, task, error.message));
-    return parseForProfile(second, profile);
+    return validatePlanNameForTask(parseForProfile(second, profile), taskDescription);
   }
 }
 

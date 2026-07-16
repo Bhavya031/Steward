@@ -16,6 +16,7 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 function plan(filter: string): Plan {
   return {
+    name: "normalize-audio-to-14-lufs",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-i", source, "-af", filter, output]],
     output_path: output,
@@ -30,7 +31,7 @@ function plan(filter: string): Plan {
 
 function savePlan(candidate: Plan, directory: string) {
   return save({
-    name: "normalize-audio-to-14-lufs", replaced_service: "Podcast loudness SaaS",
+    replaced_service: "Podcast loudness SaaS",
     monthly_price: 10, plan: candidate, inputPaths: [source], arch: "arm64",
     verification: candidate.checks.map((check) => ({
       name: check.type, pass: true, expected: "expected", actual: "measured",
@@ -60,6 +61,7 @@ describe("recipe plan integrity", () => {
 
   test("stores a concrete media plan without inventing formats, streams, or codecs", () => {
     const mediaPlan: Plan = {
+      name: "convert-media-to-mp4",
       tool: "ffmpeg", install_cmd: null,
       commands: [["ffmpeg", "-i", mediaSource, mediaOutput]], output_path: mediaOutput,
       checks: [
@@ -69,7 +71,7 @@ describe("recipe plan integrity", () => {
       ],
     };
     const recipe = save({
-      name: "convert-media-to-mp4", replaced_service: "CloudConvert", monthly_price: 9,
+      replaced_service: "CloudConvert", monthly_price: 9,
       plan: mediaPlan, inputPaths: [mediaSource], arch: "arm64",
       verification: mediaPlan.checks.map((check) => ({
         name: check.type, pass: true, expected: "expected", actual: "measured",

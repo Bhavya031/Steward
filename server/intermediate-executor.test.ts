@@ -16,6 +16,7 @@ writeY4m(frame, 2, 160, 90);
 
 function sourcePlan(): Plan {
   return {
+    name: "generate-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [["ffmpeg", "-loglevel", "error", "-i", frame,
       "-c:v", "libx264", "-pix_fmt", "yuv420p", source]],
@@ -26,6 +27,7 @@ function sourcePlan(): Plan {
 function intermediatePlan(output: string): Plan {
   const stage = `${TEMP_DIR_SLOT}/stage.mkv`;
   return {
+    name: "convert-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [
       ["ffmpeg", "-loglevel", "error", "-i", source, "-c", "copy", stage],

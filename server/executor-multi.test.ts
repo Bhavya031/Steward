@@ -17,6 +17,7 @@ writeFileSync(corrupt, "not a video");
 
 function fixturePlan(): Plan {
   return {
+    name: "generate-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [[
       "ffmpeg", "-loglevel", "error", "-i", frame, "-t", "2",
@@ -30,6 +31,7 @@ function fixturePlan(): Plan {
 function twoPass(output: string): Plan {
   const video = ["-map", "0:v:0", "-c:v", "libx264", "-b:v", "300k"];
   return {
+    name: "compress-video",
     tool: "ffmpeg", install_cmd: null,
     commands: [
       [

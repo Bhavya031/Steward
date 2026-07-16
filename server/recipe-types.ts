@@ -20,7 +20,6 @@ export interface Recipe {
 }
 
 export interface SaveRecipeInput {
-  name: string;
   replaced_service: string;
   monthly_price: number;
   plan: Plan;
