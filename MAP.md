@@ -62,6 +62,8 @@ server/recipe-intermediate.test.ts:T—
 server/recipe-match.test.ts:T—
 server/recipe-match.ts:RA
 server/recipe-cleanup.test.ts:T—
+server/replacement-prices.test.ts:T—
+server/replacement-prices.ts:RA
 server/recipe-runtime.ts:RA
 server/recipe-template.ts:RA
 server/recipe-types.ts:RY

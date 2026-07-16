@@ -6,10 +6,12 @@ import type { Recipe } from "./recipe-types.ts";
 import { TOOL_POLICIES, type InstallWeight } from "./tools.ts";
 
 const REQUIRED_RECIPE_KEYS = [
-  "name", "replaced_service", "monthly_price", "command_template", "checks",
+  "name", "command_template", "checks",
   "created_at", "arch", "tool", "install_weight",
 ];
-const RECIPE_KEYS = [...REQUIRED_RECIPE_KEYS, "derivations", "intermediates"];
+const RECIPE_KEYS = [
+  ...REQUIRED_RECIPE_KEYS, "replaced_service", "monthly_price", "derivations", "intermediates",
+];
 const CHECK_TYPE_SET = new Set<string>(CHECK_TYPES);
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -52,8 +54,12 @@ export function validateRecipe(value: unknown): Recipe {
   if (!safeString(value.name) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.name)) {
     throw new Error("recipe name must be a lowercase slug");
   }
-  if (!safeString(value.replaced_service)) throw new Error("recipe replaced_service is invalid");
-  if (typeof value.monthly_price !== "number" || !Number.isFinite(value.monthly_price) || value.monthly_price < 0) {
+  const hasService = Object.hasOwn(value, "replaced_service");
+  const hasPrice = Object.hasOwn(value, "monthly_price");
+  if (hasService !== hasPrice) throw new Error("recipe replacement claim must include service and price");
+  if (hasService && !safeString(value.replaced_service)) throw new Error("recipe replaced_service is invalid");
+  if (hasPrice && (typeof value.monthly_price !== "number" ||
+      !Number.isFinite(value.monthly_price) || value.monthly_price < 0)) {
     throw new Error("recipe monthly_price is invalid");
   }
   if (!record(value.command_template) || !exactKeys(value.command_template, ["commands", "output_path"])) {
@@ -90,8 +96,6 @@ export function validateRecipe(value: unknown): Recipe {
   if (!safeString(value.arch)) throw new Error("recipe arch is invalid");
   const recipe: Recipe = {
     name: value.name,
-    replaced_service: value.replaced_service,
-    monthly_price: value.monthly_price,
     command_template: {
       commands: commands.map((argv) => [...argv]),
       output_path: value.command_template.output_path,
@@ -102,6 +106,10 @@ export function validateRecipe(value: unknown): Recipe {
     tool,
     install_weight: value.install_weight as InstallWeight,
   };
+  if (hasService && hasPrice) {
+    recipe.replaced_service = value.replaced_service as string;
+    recipe.monthly_price = value.monthly_price as number;
+  }
   if (derivations) recipe.derivations = derivations;
   if (intermediates) recipe.intermediates = intermediates;
   return recipe;

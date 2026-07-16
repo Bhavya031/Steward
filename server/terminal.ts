@@ -45,14 +45,16 @@ export function printRecipeCard(
   checks: VerificationResult[],
   saved: boolean,
 ): void {
-  const price = `$${recipe.monthly_price}/mo`;
-  const struck = process.stdout.isTTY ? `\u001b[9m${price}\u001b[29m` : `~~${price}~~`;
   console.log("\n┌─ STEWARD RECIPE");
   console.log(`│ ${recipe.name}`);
   plan.commands.forEach((command, index) =>
     console.log(`│ ${plan.commands.length > 1 ? `${index + 1}. ` : ""}${displayArgv(command)}`)
   );
-  console.log(`│ Replaces ${recipe.replaced_service}: ${struck}`);
+  if (recipe.replaced_service !== undefined && recipe.monthly_price !== undefined) {
+    const price = `$${recipe.monthly_price}/mo`;
+    const struck = process.stdout.isTTY ? `\u001b[9m${price}\u001b[29m` : `~~${price}~~`;
+    console.log(`│ Replaces ${recipe.replaced_service}: ${struck}`);
+  }
   console.log(`│ ${saved ? "Saved permanently" : "Re-ran locally"} · model calls: ${saved ? "planning complete" : "0"}`);
   console.log("└─ your computer already knows how.\n");
   printChecks(checks);

@@ -10,6 +10,7 @@ import { runtimeRecipeSlots } from "./recipe-runtime.ts";
 import type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
 import { validateRecipe } from "./recipe-validation.ts";
 import { probeSystem } from "./probe.ts";
+import { replacementClaimFor } from "./replacement-prices.ts";
 import { installWeightFor } from "./tools.ts";
 import { verifyChecks } from "./verify/index.ts";
 
@@ -28,10 +29,10 @@ export function save(
     );
   if (!checksGreen) return null;
   const templated = templatizePlan(input.plan, input.inputPaths);
+  const replacement = replacementClaimFor(input.plan) ?? {};
   const recipe = validateRecipe({
     name: input.plan.name,
-    replaced_service: input.replaced_service,
-    monthly_price: input.monthly_price,
+    ...replacement,
     command_template: templated.command_template,
     checks: templated.checks,
     created_at: input.createdAt ?? new Date().toISOString(),

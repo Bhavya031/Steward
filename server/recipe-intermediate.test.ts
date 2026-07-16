@@ -28,7 +28,6 @@ describe("recipe intermediates", () => {
   test("stores the authored declarations and renders them unchanged", () => {
     const directory = join(root, "recipes");
     const recipe = save({
-      replaced_service: "File converter", monthly_price: 9,
       plan, inputPaths: [source], arch: "arm64",
       verification: [{ name: "plays", pass: true, expected: "decodes", actual: "decoded" }],
     }, directory);

@@ -7,8 +7,8 @@ import type { VerificationResult } from "./verify/index.ts";
 
 export interface Recipe {
   name: string;
-  replaced_service: string;
-  monthly_price: number;
+  replaced_service?: string;
+  monthly_price?: number;
   command_template: { commands: string[][]; output_path: string };
   checks: PlanCheck[];
   created_at: string;
@@ -20,8 +20,6 @@ export interface Recipe {
 }
 
 export interface SaveRecipeInput {
-  replaced_service: string;
-  monthly_price: number;
   plan: Plan;
   inputPaths: string[];
   verification: VerificationResult[];

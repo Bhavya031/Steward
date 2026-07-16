@@ -42,8 +42,6 @@ function evidence(pass = true): VerificationResult[] {
 
 function input(verification = evidence()): SaveRecipeInput {
   return {
-    replaced_service: "Video compressor SaaS",
-    monthly_price: 12,
     plan: plan(),
     inputPaths: [source],
     verification,
@@ -69,6 +67,19 @@ describe("recipes", () => {
       "arch", "checks", "command_template", "created_at", "install_weight",
       "monthly_price", "name", "replaced_service", "tool",
     ]);
+  });
+
+  test("stores no replacement claim when the plan has no curated class", () => {
+    const unknownPlan: Plan = {
+      ...plan(), name: "play-video", checks: [{ type: "plays", target: true }],
+    };
+    const saved = save({
+      plan: unknownPlan, inputPaths: [source], arch: "arm64",
+      verification: [{ name: "plays", pass: true, expected: "decodes", actual: "decoded" }],
+    }, join(root, "unpriced"));
+    expect(saved).not.toBeNull();
+    expect(Object.hasOwn(saved!, "replaced_service")).toBe(false);
+    expect(Object.hasOwn(saved!, "monthly_price")).toBe(false);
   });
 
   test("fills commands, output, and check slots for a new input", () => {

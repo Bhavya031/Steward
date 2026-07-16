@@ -1,16 +1,9 @@
 import { constants, accessSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { mediaFormat } from "./media-formats.ts";
-import type { Plan } from "./plan.ts";
 import { probeSystem, type SystemProfile } from "./probe.ts";
 import { runWithRepair } from "./repair-loop.ts";
 import { match, rerun, save, type Recipe } from "./recipes.ts";
 import { executionReporter, printAttemptEvent, printChecks, printRecipeCard } from "./terminal.ts";
-
-interface RecipeIdentity {
-  replaced_service: string;
-  monthly_price: number;
-}
 
 function filesFrom(argv: string[]): string[] {
   if (argv.length === 0) throw new Error("usage: bun run server/index.ts \"<task>\" <file> [file...]");
@@ -24,33 +17,6 @@ function filesFrom(argv: string[]): string[] {
     }
     return path;
   });
-}
-
-function identityFor(plan: Plan): RecipeIdentity {
-  const sizeCheck = plan.checks.find((check) => check.type === "size_under");
-  if (sizeCheck) {
-    return {
-      replaced_service: "Video compressor SaaS",
-      monthly_price: 12,
-    };
-  }
-  const formatCheck = plan.checks.find((check) =>
-    check.type === "format_matches" && mediaFormat(check.target)
-  );
-  if (formatCheck) {
-    const targetFormat = mediaFormat(formatCheck.target);
-    if (!targetFormat) throw new Error("media format identity lost its validated target");
-    return {
-      replaced_service: "CloudConvert", monthly_price: 9,
-    };
-  }
-  if (plan.checks.some((check) => check.type === "loudness_matches" && check.target === -14)) {
-    return { replaced_service: "Podcast loudness SaaS", monthly_price: 10 };
-  }
-  return {
-    replaced_service: "Single-purpose file SaaS",
-    monthly_price: 10,
-  };
 }
 
 function printSystem(profile: SystemProfile): void {
@@ -91,9 +57,7 @@ async function runPlanned(task: string, files: string[]): Promise<void> {
     if (!run.execution.ok) console.error(`Executor stderr: ${run.execution.stderr_tail}`);
     throw new Error(`all ${run.events.length} attempts failed; recipe was not saved`);
   }
-  const identity = identityFor(run.plan);
   const recipe = save({
-    ...identity,
     plan: run.plan,
     inputPaths: files,
     verification: run.checks,

@@ -1,7 +1,7 @@
 {
   "name": "convert-markdown-to-docx",
-  "replaced_service": "Single-purpose file SaaS",
-  "monthly_price": 10,
+  "replaced_service": "Convertio",
+  "monthly_price": 6.99,
   "command_template": {
     "commands": [
       [

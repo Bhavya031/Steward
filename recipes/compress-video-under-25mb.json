@@ -1,7 +1,7 @@
 {
   "name": "compress-video-under-25mb",
-  "replaced_service": "Video compressor SaaS",
-  "monthly_price": 12,
+  "replaced_service": "Clideo",
+  "monthly_price": 9,
   "command_template": {
     "commands": [
       [

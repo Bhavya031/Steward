@@ -1,7 +1,7 @@
 {
   "name": "convert-media-to-mov",
   "replaced_service": "CloudConvert",
-  "monthly_price": 9,
+  "monthly_price": 8,
   "command_template": {
     "commands": [
       [

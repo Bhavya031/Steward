@@ -39,7 +39,6 @@ describe("failed recipe output cleanup", () => {
       checks: [{ type: "duration_matches", target: source }, { type: "plays", target: true }],
     };
     const recipe = save({
-      replaced_service: "Cleanup test", monthly_price: 1,
       plan, inputPaths: [source], arch: profile.architecture,
       verification: plan.checks.map((check) => ({
         name: check.type, pass: true, expected: "fixture", actual: "fixture",

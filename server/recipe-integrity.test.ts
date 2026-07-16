@@ -31,8 +31,7 @@ function plan(filter: string): Plan {
 
 function savePlan(candidate: Plan, directory: string) {
   return save({
-    replaced_service: "Podcast loudness SaaS",
-    monthly_price: 10, plan: candidate, inputPaths: [source], arch: "arm64",
+    plan: candidate, inputPaths: [source], arch: "arm64",
     verification: candidate.checks.map((check) => ({
       name: check.type, pass: true, expected: "expected", actual: "measured",
     })),
@@ -71,7 +70,6 @@ describe("recipe plan integrity", () => {
       ],
     };
     const recipe = save({
-      replaced_service: "CloudConvert", monthly_price: 9,
       plan: mediaPlan, inputPaths: [mediaSource], arch: "arm64",
       verification: mediaPlan.checks.map((check) => ({
         name: check.type, pass: true, expected: "expected", actual: "measured",
