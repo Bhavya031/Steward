@@ -53,6 +53,8 @@ ui/src/lib/detail-view.test.ts:T—
 ui/src/lib/detail-view.ts:U—
 ui/src/lib/stores.test.ts:T—
 ui/src/lib/stores.ts:UA
+ui/src/lib/task-entry.test.ts:T—
+ui/src/lib/task-entry.ts:UA
 ui/src/lib/ws.test.ts:T—
 ui/src/lib/ws.ts:UA
 server/agent.ts:PA
@@ -85,6 +87,7 @@ server/intermediate-policy.ts:SY
 server/installation-runtime.ts:EA
 server/index.ts:EM
 server/install-policy.ts:SA
+server/input-staging.ts:SA
 server/local-server.test.ts:T—
 server/local-server.ts:SA
 server/loudness-policy.ts:SA

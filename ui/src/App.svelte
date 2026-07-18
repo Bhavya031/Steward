@@ -9,6 +9,7 @@
     selectedRecipeName, type Recipe,
   } from "./lib/stores.ts";
   import { runAgainEvent } from "./lib/detail-view.ts";
+  import type { RunTaskEvent } from "./lib/task-entry.ts";
   import {
     connectWebSocket, disconnectWebSocket, sendClientEvent,
   } from "./lib/ws.ts";
@@ -39,6 +40,10 @@
 
   function confirmInstall(runId: string): void {
     sendClientEvent({ type: "confirm_install", run_id: runId, confirm: true });
+  }
+
+  function runTask(event: RunTaskEvent): void {
+    sendClientEvent(event);
   }
 
   $: if ($runState.status !== "idle" && showEntry && !entryLeaving) {
@@ -97,6 +102,6 @@
 
 {#if showEntry}
   <main class:entry-departing={entryLeaving} class="entry-shell" aria-label="Steward task entry">
-    <DropSurface />
+    <DropSurface onRunTask={runTask} />
   </main>
 {/if}

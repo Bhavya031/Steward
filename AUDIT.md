@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 3 entry-state pre-approval audit (2026-07-17). The Phase 2 CLI remains available; the new entry composition is visual-only and adds no enabled input-to-command route.
+Last updated: Phase 3 visible task-input audit (2026-07-18). The Phase 2 CLI remains available; the browser entry now reaches the existing typed task engine only through authenticated local input staging.
 
 ## Current execution surface
 
@@ -12,10 +12,10 @@ Last updated: Phase 3 entry-state pre-approval audit (2026-07-17). The Phase 2 C
 - Helpers: exact helper tier and granted roots; helpers cannot be primary recipe tools or install steps.
 - Writes: final task outputs stay beside inputs; ordinary intermediate outputs require exact model declarations that are resolved/revalidated only inside the executor-owned temp root. Reads require an earlier declared write. Recipes use atomic temp+rename; failed outputs and every temp root are removed.
 - Shelf claims: canonical names are model-authored but task-slug echoes fail closed. Replacement service/prices come only from the curated `(tool, check type)` map; unknown classes omit both fields, and kill totals deduplicate service names.
-- Listener: Bun binds `127.0.0.1` on a random free port. A 256-bit per-session token is required by query or HttpOnly SameSite cookie for every static request and by query for `/ws`; missing/wrong tokens return 401 before routing. Static real paths remain inside `ui/dist`.
-- WS bridge: client JSON is capped at 64 KiB and must exactly match `run_task` or `run_recipe`; file grants are absolute, readable regular files. One run per socket prevents overlapping mutations. Task runs match locally before importing the planner; recipe matches emit and retain `model_calls: 0` through completion.
-- Browser client: one module-scoped WebSocket takes the per-session token from the startup URL and connects only to same-origin `/ws`. Registered server events flow through one exhaustive store reducer; client-side typing is convenience only, while the server parser remains the command-boundary enforcement.
-- Entry surface: poster art is bundled under authenticated static serving. Its textarea, add control, run control, and example chips have no handlers and emit no WS event; P3.6 must audit and test that new route before enabling it. The art disappears when `run_started` moves the store out of idle.
+- Listener: Bun binds `127.0.0.1` on a random free port. A 256-bit per-session token is required by query or HttpOnly SameSite cookie for static and staging requests and by query for `/ws`; missing/wrong tokens return 401 before routing. Static real paths remain inside `ui/dist`.
+- WS bridge: client JSON is capped at 64 KiB and must exactly match `run_task`, `run_recipe`, or `confirm_install`; file grants are absolute, readable regular files. One run per socket prevents overlapping mutations. Task runs match locally before importing the planner; recipe matches emit and retain `model_calls: 0` through completion.
+- Browser client: one module-scoped WebSocket takes the per-session token from the startup URL and connects only to same-origin `/ws`. Selected file bytes use the same token on the loopback staging route; only the returned server path enters `run_task`. Registered server events flow through one exhaustive store reducer; client-side typing is convenience only, while the server parser remains the command-boundary enforcement.
+- Entry surface: the existing textarea, add control, run control, drop surface, and example chips are wired without changing the composition. Empty/fileless/busy submissions stay disabled. Browser files are copied to UUID-prefixed exclusive files under a server-owned temporary input root; filename traversal is rejected and no browser path is guessed. The art disappears when `run_started` moves the store out of idle.
 - Operational panels: ActivityStream and VerifyPanel accept store props only. Svelte text interpolation escapes command/evidence strings; no raw HTML or component path reaches execution. Pending rows show no invented evidence; expected/actual appear only when measured results arrive.
 - Browser launch: startup may invoke fixed `/usr/bin/open` with only the generated loopback URL. It accepts no task/model input and is outside the recipe module graph; tests disable it.
 
@@ -26,8 +26,9 @@ Last updated: Phase 3 entry-state pre-approval audit (2026-07-17). The Phase 2 C
 | CLI task text | `index` → agent prompt | Treated as quoted data; never interpolated into argv. |
 | CLI file paths | `filesFrom` → plan grants | Resolve + readable regular-file check; every later path is role-classified, real-path confined, and checked against the exact grant. |
 | WS task/name/files | typed parser → WS engine bridge | Exact event keys/types, bounded strings/files, one active run/socket, absolute readable grants; then the identical match/plan/rerun paths below. |
+| Browser-selected file | authenticated `POST /api/stage-input` → Steward temp input | Token checked before routing; plain filename only; safe UUID-prefixed direct child; exclusive `0600` creation; streamed bytes; returned real path must remain inside the staging root. |
 | Browser client event | singleton `ws.ts` → authenticated `/ws` | TypeScript narrows UI callers; security does not trust it. The server re-parses exact runtime keys/types and reapplies every file/plan policy. |
-| Idle entry controls | no route | Visual-only in this step: no handlers, file reads, or WS messages. P3.6 must add and audit the route before controls become active. |
+| Idle entry controls | `task-entry` → stage selected bytes → `run_task` | Trimmed non-empty task plus at least one staged file; picker and drop share the same byte-staging route; example chips set task text only. |
 | Model plan or repair | plan → repair loop → executor | Strict keys/types, one primary tool, argv arrays only, semantic check targets, canonical name, declared slots/intermediates, per-tool flags, output confinement, timeout. |
 | Saved recipe JSON | load → slot render → executor | Strict recipe validation; only path slots and serialized derivations; rendered plan is revalidated; no agent-reachable module. |
 | Derivation input | first granted file → ffprobe duration | Fixed ffprobe argv through executor, closed named formula, typed model-authored args. |
@@ -38,11 +39,12 @@ Last updated: Phase 3 entry-state pre-approval audit (2026-07-17). The Phase 2 C
 | Surface | Policy |
 | --- | --- |
 | Final output | One declared output, confined beside the input; existing outputs and output symlinks fail closed. |
+| Browser-staged input | Unique direct child of a per-server system-temp root, created exclusively with mode `0600`; traversal names fail before creation and partial writes are removed. |
 | Ordinary intermediates | Declared direct children of one per-run Steward temp root; write-before-read enforced; root removed on pass/fail. |
 | Executor artifacts | ffmpeg passlogs/null sinks and isolated LibreOffice profiles stay in executor-owned temp roots and are cleaned. |
 | Recipe JSON | Green runs only; atomic exclusive temp write + rename under `recipes/`. |
 | Failed output cleanup | Regular files only, never inputs or symlinks; invoked after failed reruns and terminal repair exhaustion. |
-| Network listener | Loopback only, random port, per-session token before static routing or WS upgrade; no routes beyond static files and `/ws`; typed WS messages are size/shape bounded and serialized server events carry run IDs. |
+| Network listener | Loopback only, random port, per-session token before static, staging, or WS routing; routes are static files, one staging POST, and `/ws`; typed WS messages are size/shape bounded and serialized server events carry run IDs. |
 
 ## Closed critical findings
 
@@ -56,7 +58,7 @@ Last updated: Phase 3 entry-state pre-approval audit (2026-07-17). The Phase 2 C
 | High | Generic runtime slots could hide code-invented behavior or bake measurements from one input into every rerun. | Every non-path slot requires a serialized model-declared named derivation with closed typed args; unknown/unused derivations and baked loudnorm measurements fail closed. |
 | High | Type-correct but meaningless check targets could create false evidence or make repair futile (`file_valid: true`, DOCX text extraction). | Check targets and cross-check compatibility are validated before execution and again when loading recipes; invalid plans use the existing defensive re-ask. |
 | Medium | Model/task wording and guessed SaaS prices could make shelf claims misleading. | Canonical names reject task-slug echoes; service/price claims are code-curated, unknown classes render no claim, and shared services count once. |
-| High | A localhost UI listener could expose execution controls to DNS rebinding/CSRF or serve files outside its build root. | Loopback/random-port binding plus a 256-bit token gates every HTTP/WS request; static paths are decoded, confined, and realpath-checked after symlinks. |
+| High | A localhost UI listener could expose execution controls to DNS rebinding/CSRF, write attacker-chosen paths, or serve files outside its build root. | Loopback/random-port binding plus a 256-bit token gates every HTTP/WS request; static paths are realpath-confined, and staging uses rejected traversal names plus exclusive UUID direct children of a private temp root. |
 
 ## Deferred to Day 5 audit
 
