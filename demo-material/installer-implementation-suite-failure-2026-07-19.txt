@@ -1,0 +1,78 @@
+Steward installer implementation suite failure
+Date: 2026-07-19
+Starting commit: aae4cb6463ac4e530c6e7d4e5176176b0d068ac2
+Branch: integration/submission
+Result: STOPPED BEFORE INSTALLER COMMIT
+
+Implementation completed but not committed
+- Root install.sh
+- Focused installer tests
+- GUIDE.md installation/startup documentation
+- MAP.md entries
+
+Focused installer checks
+- Bash syntax: PASS
+- Tests: 7 passed, 0 failed
+- Assertions: 26
+- Covered platform rejection, ARM/Intel Homebrew prefixes, missing prerequisites,
+  consented Homebrew Bun installation, failure propagation, idempotency, and
+  forbidden alternate-shell/download paths.
+
+Complete repository suite
+- Files: 42
+- Tests: 222 total, 220 passed, 2 failed
+- Assertions: 615
+- Duration: 100.79 seconds
+
+Exact failure 1
+server/verify/srt.test.ts:
+error: Test "measures valid cues and monotonic timestamps with objective evidence"
+timed out after 5000ms (killed 1 dangling process)
+      at runFixed
+        (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/probe.ts:59:24)
+      at probeTool
+        (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/probe.ts:110:9)
+      at map (1:11)
+      at probeSystem
+        (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/probe.ts:146:29)
+      at <anonymous>
+        (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/verify/srt.test.ts:23:56)
+(fail) SRT verification > measures valid cues and monotonic timestamps with objective evidence
+[5002.83ms]
+
+Exact failure 2
+ui/src/lib/pacing.test.ts:
+error: expect(received).toEqual(expected)
+
+  [
+    "run_started",
+    "Planning a local command.",
++   "Plan ready. Preparing local execution."
+-   "Plan ready. Preparing local execution.",
+-   "command_started"
+  ]
+
+(fail) run pacing > holds the plan-ready handoff before execution [123.77ms]
+
+Final suite summary
+2 tests failed:
+(fail) SRT verification > measures valid cues and monotonic timestamps with objective evidence
+[5002.83ms]
+(fail) run pacing > holds the plan-ready handoff before execution [123.77ms]
+
+ 220 pass
+ 2 fail
+ 615 expect() calls
+Ran 222 tests across 42 files. [100.79s]
+
+Stopped checks
+- TypeScript: NOT RUN
+- Svelte diagnostics: NOT RUN
+- Production build gate: NOT RUN
+- Installer commit: NOT CREATED
+- Disposable clone installation: NOT RUN
+- Production startup/authentication proof: NOT RUN
+- Second installer/idempotency proof: NOT RUN
+
+No failure was retried or fixed. No clean-machine state, real Steward state, global
+tools, caches, saved workflows, model resources, or existing worktrees were modified.
