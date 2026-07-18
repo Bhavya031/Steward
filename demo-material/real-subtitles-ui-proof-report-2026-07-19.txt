@@ -1,0 +1,124 @@
+REAL SUBTITLES UI PROOF
+Date: 2026-07-19
+Baseline: 430e6dd85e32b25a388630fb915587b633afca3a
+Result: stopped on saved-rerun recipe-match product bug
+
+Isolation
+---------
+Resource directory:
+/tmp/steward-real-subtitles-ui-proof.HKxTrI/resources
+
+The isolated resource and recipe directories began empty. The existing real
+cache entry was not deleted, copied, or modified. Its before/after identity was:
+
+inode: 201995653
+size: 1624555275
+mtime: 1784394151
+
+First input
+-----------
+Source: /tmp/steward-r6-recipe6-real/first.mp4
+SHA-256: 760c11d395644f2698599cda6dc3ff5db4970c46bbef8ce035302f2e17af56d4
+Duration: 6.917007 seconds
+Streams: H.264 video, mono AAC audio
+Visible task: Create accurate SRT subtitles from this speech video
+
+The visible file chooser and composer were used.
+
+Model installation
+------------------
+install_required:
+  id: whisper-large-v3-turbo
+  bytes: 1624555275
+  source: ggerganov/whisper.cpp
+  pinned SHA-256:
+  1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69
+
+User confirmation:
+  confirm_install: true
+
+The event stream records every integer percentage from 0 through 100, beginning
+at 16384 / 1624555275 bytes and ending at 1624555275 / 1624555275 bytes.
+
+Independent installed-resource validation:
+  bytes: 1624555275
+  SHA-256:
+  1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69
+
+install_complete:
+  Installation verified. Continuing automatically.
+
+The next events are the pending checks and execution of FFmpeg followed by
+Whisper, proving automatic continuation without another user action.
+
+First run
+---------
+Observed model planning operations: 1
+Repair attempts: 0
+Execution attempt: 1, passed
+
+The planned-run receipt renders an em dash rather than a numeric model-call
+field. The single planning operation is established by the one GPT-5.6 plan
+stage followed by Attempt 1 passing without a repair.
+
+Pipeline:
+  ffmpeg input MP4 -> managed mono 16 kHz PCM WAV
+  whisper-cli isolated pinned model + managed WAV -> SRT
+
+Output:
+/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first-subtitles.srt
+
+Checks:
+  srt_valid: pass; 2 structurally valid cues
+  cue_count: pass; 2 cues
+  timestamps_monotonic: pass; 2 cues, timestamps monotonic
+
+Cues:
+  00:00:00,000 --> 00:00:03,620
+  Stuart turns local work into a tool you keep.
+
+  00:00:03,620 --> 00:00:07,040
+  This subtitle file was generated and verified on this Mac.
+
+Saved Detail
+------------
+The Detail view was opened and was non-blank. It showed:
+  ARGV 01: FFmpeg input -> {{temp_dir}}/audio.wav
+  ARGV 02: Whisper pinned resource + WAV -> SRT output prefix
+  srt_valid target true
+  cue_count target 1
+  timestamps_monotonic target true
+  verified first-run history with all actual evidence
+
+Saved-rerun blocker
+-------------------
+Second source: /tmp/steward-r6-recipe6-real/second.mp4
+SHA-256: 95b36206c8c63457dc1f4b5eb390064f4f181a0320c2fcfca5bce757f8aabc7b
+Duration: 5.019002 seconds
+Streams: H.264 video, mono AAC audio
+
+The second file was selected through the visible file chooser. The exact same
+task text was submitted after the first run had saved:
+/tmp/steward-real-subtitles-ui-proof.HKxTrI/recipes/transcribe-video-to-srt.json
+
+Expected:
+  recipe_matched
+  model_calls: 0
+  execution of the saved FFmpeg -> WAV -> Whisper pipeline
+
+Actual:
+  No saved recipe matched. Reading the local system profile.
+  Planning a local command.
+  A fresh GPT-5.6 plan ran.
+
+The just-saved recipe scores 0.323 for the exact repeated task, below the 0.45
+match threshold. Consequently, no recipe_matched event and no model_calls: 0
+event were emitted. This is a product bug: an identical user request does not
+match the command it just saved.
+
+The short fresh-planned execution completed before server termination and
+produced a valid two-cue monotonic SRT while reusing the isolated model, but it
+does not qualify as the required saved rerun because it invoked planning.
+
+The proof was stopped at this product bug. No workaround, product-code change,
+or further task category was attempted.

@@ -1,0 +1,162 @@
+STEWARD_UI_SERVER {"origin":"http://127.0.0.1:50591","recipeDirectory":"/tmp/steward-real-subtitles-ui-proof.HKxTrI/recipes","stagingRoot":"/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged","resourceDirectory":"/tmp/steward-real-subtitles-ui-proof.HKxTrI/resources"}
+STEWARD_UI_CLIENT {"type":"run_task","task":"Create accurate SRT subtitles from this speech video","files":["/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first.mp4"]}
+STEWARD_UI_EVENT {"type":"run_started","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","action":"task","files":["/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first.mp4"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Checking the local recipe shelf."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"No saved recipe matched. Reading the local system profile."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"macOS 26.4.1 · arm64 · 16 GiB."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Planning a local command."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Plan ready. Preparing local execution."}
+STEWARD_UI_EVENT {"type":"install_required","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","tool":null,"command":null,"resources":[{"id":"whisper-large-v3-turbo","bytes":1624555275,"sha256":"1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69","source":"ggerganov/whisper.cpp"}]}
+STEWARD_UI_CLIENT {"type":"confirm_install","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","confirm":true}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Confirmed. Installing the declared local requirements."}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":16384,"total":1624555275,"percent":0}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":16261450,"total":1624555275,"percent":1}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":32499909,"total":1624555275,"percent":2}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":48737231,"total":1624555275,"percent":3}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":65014871,"total":1624555275,"percent":4}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":81240988,"total":1624555275,"percent":5}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":97480441,"total":1624555275,"percent":6}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":113736707,"total":1624555275,"percent":7}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":129993243,"total":1624555275,"percent":8}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":146213403,"total":1624555275,"percent":9}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":162462569,"total":1624555275,"percent":10}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":178715497,"total":1624555275,"percent":11}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":194962644,"total":1624555275,"percent":12}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":211198206,"total":1624555275,"percent":13}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":227445226,"total":1624555275,"percent":14}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":243692500,"total":1624555275,"percent":15}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":259944401,"total":1624555275,"percent":16}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":276183896,"total":1624555275,"percent":17}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":292424074,"total":1624555275,"percent":18}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":308675471,"total":1624555275,"percent":19}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":324912015,"total":1624555275,"percent":20}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":341168871,"total":1624555275,"percent":21}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":357405415,"total":1624555275,"percent":22}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":373673838,"total":1624555275,"percent":23}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":389893998,"total":1624555275,"percent":24}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":406151464,"total":1624555275,"percent":25}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":422391148,"total":1624555275,"percent":26}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":438630440,"total":1624555275,"percent":27}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":454879125,"total":1624555275,"percent":28}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":471124487,"total":1624555275,"percent":29}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":487376701,"total":1624555275,"percent":30}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":503620901,"total":1624555275,"percent":31}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":519870980,"total":1624555275,"percent":32}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":536106948,"total":1624555275,"percent":33}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":552353082,"total":1624555275,"percent":34}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":568609776,"total":1624555275,"percent":35}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":584850182,"total":1624555275,"percent":36}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":601091630,"total":1624555275,"percent":37}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":617340308,"total":1624555275,"percent":38}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":633585480,"total":1624555275,"percent":39}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":649833651,"total":1624555275,"percent":40}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":666080372,"total":1624555275,"percent":41}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":682316916,"total":1624555275,"percent":42}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":698569844,"total":1624555275,"percent":43}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":714815153,"total":1624555275,"percent":44}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":731065960,"total":1624555275,"percent":45}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":747309841,"total":1624555275,"percent":46}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":763636704,"total":1624555275,"percent":47}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":779791328,"total":1624555275,"percent":48}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":796044256,"total":1624555275,"percent":49}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":812526560,"total":1624555275,"percent":50}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":828529295,"total":1624555275,"percent":51}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":844779299,"total":1624555275,"percent":52}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":861020362,"total":1624555275,"percent":53}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":877273290,"total":1624555275,"percent":54}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":893512287,"total":1624555275,"percent":55}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":909759546,"total":1624555275,"percent":56}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":926011474,"total":1624555275,"percent":57}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":942245214,"total":1624555275,"percent":58}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":958659657,"total":1624555275,"percent":59}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":974742173,"total":1624555275,"percent":60}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":990979450,"total":1624555275,"percent":61}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1007241824,"total":1624555275,"percent":62}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1023477786,"total":1624555275,"percent":63}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1039730714,"total":1624555275,"percent":64}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1055968583,"total":1624555275,"percent":65}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1072210864,"total":1624555275,"percent":66}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1088463792,"total":1624555275,"percent":67}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1104700336,"total":1624555275,"percent":68}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1120952009,"total":1624555275,"percent":69}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1137194784,"total":1624555275,"percent":70}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1153444972,"total":1624555275,"percent":71}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1169693538,"total":1624555275,"percent":72}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1185926419,"total":1624555275,"percent":73}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1202183988,"total":1624555275,"percent":74}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1218421839,"total":1624555275,"percent":75}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1234663192,"total":1624555275,"percent":76}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1250908145,"total":1624555275,"percent":77}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1267153579,"total":1624555275,"percent":78}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1283402070,"total":1624555275,"percent":79}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1299645980,"total":1624555275,"percent":80}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1315893650,"total":1624555275,"percent":81}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1332146781,"total":1624555275,"percent":82}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1348383325,"total":1624555275,"percent":83}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1364636253,"total":1624555275,"percent":84}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1380872797,"total":1624555275,"percent":85}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1397121911,"total":1624555275,"percent":86}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1413374839,"total":1624555275,"percent":87}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1429611383,"total":1624555275,"percent":88}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1445864311,"total":1624555275,"percent":89}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1462264695,"total":1624555275,"percent":90}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1478353783,"total":1624555275,"percent":91}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1494603521,"total":1624555275,"percent":92}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1510841334,"total":1624555275,"percent":93}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1527096325,"total":1624555275,"percent":94}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1543342638,"total":1624555275,"percent":95}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1559586724,"total":1624555275,"percent":96}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1575823268,"total":1624555275,"percent":97}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1592075554,"total":1624555275,"percent":98}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1608311867,"total":1624555275,"percent":99}
+STEWARD_UI_EVENT {"type":"install_progress","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","id":"whisper-large-v3-turbo","received":1624555275,"total":1624555275,"percent":100}
+STEWARD_UI_EVENT {"type":"install_complete","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Installation verified. Continuing automatically."}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","name":"srt_valid"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","name":"cue_count"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","name":"timestamps_monotonic"}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","argv":["ffmpeg","-i","/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first.mp4","-vn","-ac","1","-ar","16000","-c:a","pcm_s16le","-f","wav","/var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-jsb1aJ/audio.wav"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"$ ffmpeg -i /private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first.mp4 -vn -ac 1 -ar 16000 -c:a pcm_s16le -f wav /var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-jsb1aJ/audio.wav"}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"size=     216KiB time=00:00:06.91 bitrate= 256.1kbits/s speed=1.19e+03x elapsed=0:00:00.00"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","exit_code":0,"duration_ms":90}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Command exited 0 in 90 ms."}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","argv":["whisper-cli","-m","/tmp/steward-real-subtitles-ui-proof.HKxTrI/resources/ggml-large-v3-turbo.bin","-f","/var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-jsb1aJ/audio.wav","-l","auto","-osrt","--print-progress","-of","/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first-subtitles"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"$ whisper-cli -m /tmp/steward-real-subtitles-ui-proof.HKxTrI/resources/ggml-large-v3-turbo.bin -f /var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-jsb1aJ/audio.wav -l auto -osrt --print-progress -of /private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first-subtitles"}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"whisper_print_progress_callback: progress = 100%"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","exit_code":0,"duration_ms":5395}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Command exited 0 in 5395 ms."}
+STEWARD_UI_EVENT {"type":"verification_started","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab"}
+STEWARD_UI_EVENT {"type":"verification_completed","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","duration_ms":6}
+STEWARD_UI_EVENT {"type":"activity","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","message":"Attempt 1: passed."}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","name":"srt_valid","pass":true,"expected":"valid UTF-8 SRT with sequential non-empty cues","actual":"2 structurally valid cues"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","name":"cue_count","pass":true,"expected":"at least 1 cue","actual":"2 cues"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","name":"timestamps_monotonic","pass":true,"expected":"cue timestamps are nondecreasing and every end follows its start","actual":"2 cues; timestamps monotonic"}
+STEWARD_UI_EVENT {"type":"recipe_saved","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","recipe":{"name":"transcribe-video-to-srt","command_template":{"commands":[["ffmpeg","-i","{{input_0}}","-vn","-ac","1","-ar","16000","-c:a","pcm_s16le","-f","wav","{{temp_dir}}/audio.wav"],["whisper-cli","-m","{{resource_whisper_large_v3_turbo}}","-f","{{temp_dir}}/audio.wav","-l","auto","-osrt","--print-progress","-of","{{input_0_dir}}/{{input_0_stem}}-subtitles"]],"output_path":"{{input_0_dir}}/{{input_0_stem}}-subtitles.srt"},"checks":[{"type":"srt_valid","target":true},{"type":"cue_count","target":1},{"type":"timestamps_monotonic","target":true}],"created_at":"2026-07-18T21:07:31.289Z","arch":"arm64","tool":"whisper-cli","install_weight":"heavy","intermediates":["{{temp_dir}}/audio.wav"],"resources":["whisper-large-v3-turbo"]}}
+STEWARD_UI_EVENT {"type":"run_complete","run_id":"488d41b6-32ad-4422-bc65-6523db4798ab","success":true,"output_path":"/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/19d088f9-4acc-4b4c-b1b1-180754de06cc-first-subtitles.srt"}
+STEWARD_UI_CLIENT {"type":"run_task","task":"Create accurate SRT subtitles from this speech video","files":["/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second.mp4"]}
+STEWARD_UI_EVENT {"type":"run_started","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","action":"task","files":["/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second.mp4"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"Checking the local recipe shelf."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"No saved recipe matched. Reading the local system profile."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"macOS 26.4.1 · arm64 · 16 GiB."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"Planning a local command."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"Plan ready. Preparing local execution."}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","name":"srt_valid"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","name":"cue_count"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","name":"timestamps_monotonic"}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","argv":["ffmpeg","-i","/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second.mp4","-vn","-ac","1","-ar","16000","-c:a","pcm_s16le","-f","wav","/var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-YUTfjQ/audio.wav"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"$ ffmpeg -i /private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second.mp4 -vn -ac 1 -ar 16000 -c:a pcm_s16le -f wav /var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-YUTfjQ/audio.wav"}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"size=     158KiB time=00:00:05.06 bitrate= 256.1kbits/s speed=1.61e+03x elapsed=0:00:00.00"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","exit_code":0,"duration_ms":68}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"Command exited 0 in 68 ms."}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","argv":["whisper-cli","-m","/tmp/steward-real-subtitles-ui-proof.HKxTrI/resources/ggml-large-v3-turbo.bin","-f","/var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-YUTfjQ/audio.wav","-l","auto","-osrt","--print-progress","-of","/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"$ whisper-cli -m /tmp/steward-real-subtitles-ui-proof.HKxTrI/resources/ggml-large-v3-turbo.bin -f /var/folders/bg/3bm_3hsx1zbgfxycpbhkvsy80000gn/T/steward-run-YUTfjQ/audio.wav -l auto -osrt --print-progress -of /private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second"}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"whisper_print_progress_callback: progress = 100%"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","exit_code":0,"duration_ms":5209}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"Command exited 0 in 5209 ms."}
+STEWARD_UI_EVENT {"type":"verification_started","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0"}
+STEWARD_UI_EVENT {"type":"verification_completed","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","duration_ms":0}
+STEWARD_UI_EVENT {"type":"activity","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","message":"Attempt 1: passed."}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","name":"srt_valid","pass":true,"expected":"valid UTF-8 SRT with sequential non-empty cues","actual":"2 structurally valid cues"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","name":"cue_count","pass":true,"expected":"at least 1 cue","actual":"2 cues"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","name":"timestamps_monotonic","pass":true,"expected":"cue timestamps are nondecreasing and every end follows its start","actual":"2 cues; timestamps monotonic"}
+STEWARD_UI_EVENT {"type":"recipe_saved","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","recipe":{"name":"transcribe-video-to-srt","command_template":{"commands":[["ffmpeg","-i","{{input_0_dir}}/{{input_0_stem}}.mp4","-vn","-ac","1","-ar","16000","-c:a","pcm_s16le","-f","wav","{{temp_dir}}/audio.wav"],["whisper-cli","-m","{{resource_whisper_large_v3_turbo}}","-f","{{temp_dir}}/audio.wav","-l","auto","-osrt","--print-progress","-of","{{input_0_dir}}/{{input_0_stem}}"]],"output_path":"{{input_0_dir}}/{{input_0_stem}}.srt"},"checks":[{"type":"srt_valid","target":true},{"type":"cue_count","target":1},{"type":"timestamps_monotonic","target":true}],"created_at":"2026-07-18T21:09:30.410Z","arch":"arm64","tool":"whisper-cli","install_weight":"heavy","intermediates":["{{temp_dir}}/audio.wav"],"resources":["whisper-large-v3-turbo"]}}
+STEWARD_UI_EVENT {"type":"run_complete","run_id":"d104ab6f-667a-4eb4-8b89-25c841f3d3a0","success":true,"output_path":"/private/tmp/steward-real-subtitles-ui-proof.HKxTrI/staged/8adbeaa5-8aee-4ad3-8e59-e08cb7bc04f2-second.srt"}
