@@ -1,0 +1,62 @@
+Steward strict full release-suite report
+Date: 2026-07-19
+Base commit: f471ea03c4f0b876e9086aa8b820401aa3ca9f4d
+Branch: integration/submission
+
+Pre-test repository state
+- Tracked changes: none
+- Untracked changes: none
+
+Complete repository test suite
+- Command: bun test
+- Result: FAIL
+- Test files: 41
+- Tests: 215 total, 214 passed, 1 failed
+- Assertions: 582
+- Duration: 21.65 seconds
+
+Coverage completed by the full command
+- Complete server/engine tests: completed
+- Complete UI/store tests: completed
+- Security and path-policy tests: passed
+- Flag-policy tests: passed
+- Resource-policy and trusted-resource tests: passed
+- Saved-workflow schema, integrity, compatibility, and committed-workflow validation: passed
+
+Exact failing output
+71 |     };
+72 |     const events: ExecutionEvent[] = [];
+73 |     const run = await runWithRepair({
+74 |       initialPlan: authored, profile, inputPaths: [source],
+75 |       executionOptions: { onEvent: (event) => events.push(event) },
+76 |       repair: async () => { throw new Error("repair should not run"); },
+                                       ^
+error: repair should not run
+      at <anonymous> (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/repair-loop.test.ts:76:35)
+      at repair (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/repair-loop.test.ts:76:27)
+      at <anonymous> (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/repair-loop.ts:135:63)
+      at runWithRepair (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/repair-loop.ts:78:37)
+      at <anonymous> (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/repair-loop.test.ts:73:23)
+      at <anonymous> (/Users/bhavya/Developer/side-projects/hakathons/openai/Steward-integration/server/repair-loop.test.ts:57:76)
+(fail) repair loop > materializes a declared derivation but retains the authored plan [1.81ms]
+
+1 tests failed:
+(fail) repair loop > materializes a declared derivation but retains the authored plan [1.81ms]
+
+ 214 pass
+ 1 fail
+ 582 expect() calls
+Ran 215 tests across 41 files. [21.65s]
+
+Stop-on-failure gates
+- TypeScript: NOT RUN
+- Svelte diagnostics: NOT RUN
+- Production build: NOT RUN
+- git diff --check: NOT RUN
+- Clean-machine test: NOT RUN
+
+Post-test repository state before adding this report
+- Tracked changes: none
+- Untracked changes: none
+
+No product code was modified.
