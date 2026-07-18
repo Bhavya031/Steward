@@ -7,7 +7,7 @@
   import {
     formatClock, raycastDeeplink, scriptText, stepTool,
   } from "../lib/receipt-view.ts";
-  import type { CheckItem, Recipe } from "../lib/stores.ts";
+  import type { CheckItem, Recipe, RunHistoryItem } from "../lib/stores.ts";
   import ReceiptPipeline from "./ReceiptPipeline.svelte";
   import ReceiptShelf from "./ReceiptShelf.svelte";
 
@@ -20,11 +20,15 @@
     killTotal: number;
     outputPath?: string;
     now: number;
+    recipes: Recipe[];
+    history: RunHistoryItem[];
+    onOpenRecipe: (recipe: Recipe) => void;
   }
 
   let {
     progress, checks, savedRecipe, matchedRecipe,
     modelCalls, killTotal, outputPath, now,
+    recipes, history, onOpenRecipe,
   }: Props = $props();
   let copied = $state(false);
   let copyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -133,7 +137,9 @@
       </button>
     </div>
 
-    <ReceiptShelf />
+    {#if recipes.length > 0}
+      <ReceiptShelf {recipes} {history} onOpen={onOpenRecipe} />
+    {/if}
 
     <footer class="receipt-footer">
       <span>{modelCalls ?? "—"} model calls · {total} total · verified on this Mac</span>

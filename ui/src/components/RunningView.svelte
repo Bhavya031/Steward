@@ -6,7 +6,7 @@
   import {
     STEP_ART, STEP_TITLES, activeTool, stepDuration, stepLines, toolMark,
   } from "../lib/run-view.ts";
-  import type { CheckItem, InstallRequest, Recipe } from "../lib/stores.ts";
+  import type { CheckItem, InstallRequest, Recipe, RunHistoryItem } from "../lib/stores.ts";
   import RunReceipt from "./RunReceipt.svelte";
   import StepTile from "./StepTile.svelte";
 
@@ -21,6 +21,9 @@
   export let killTotal = 0;
   export let installRequest: InstallRequest | null = null;
   export let onConfirmInstall: (runId: string) => void = () => undefined;
+  export let recipes: Recipe[] = [];
+  export let history: RunHistoryItem[] = [];
+  export let onOpenRecipe: (recipe: Recipe) => void = () => {};
 
   const GLIDE_MS = 900;
   const OUTRO_MS = 650;
@@ -113,6 +116,7 @@
       <RunReceipt
         {progress} {checks} {savedRecipe} {matchedRecipe}
         {modelCalls} {killTotal} {outputPath} {now}
+        {recipes} {history} {onOpenRecipe}
       />
     {:else}
       {#if installRequest}
