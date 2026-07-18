@@ -55,7 +55,7 @@ function durationFrom(value: unknown): number {
   return duration;
 }
 
-function grantedSource(target: string, context: VerificationContext): string | null {
+export function grantedSource(target: string, context: VerificationContext): string | null {
   if (target.includes("\0") || !isAbsolute(target)) return null;
   const normalized = resolve(target);
   const granted = context.sourcePaths.find((path) =>

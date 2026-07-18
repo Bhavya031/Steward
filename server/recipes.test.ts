@@ -95,6 +95,40 @@ describe("recipes", () => {
     expect(JSON.stringify(recipe)).not.toContain(source);
   });
 
+  test("stores the exact verified OCR argv and source-bound checks", () => {
+    const scanned = join(root, "scanned.pdf");
+    const searchable = join(root, "scanned-searchable.pdf");
+    writeFileSync(scanned, "fixture");
+    const ocrPlan: Plan = {
+      name: "ocr-scanned-pdf",
+      tool: "ocrmypdf",
+      install_cmd: null,
+      commands: [["ocrmypdf", scanned, searchable]],
+      output_path: searchable,
+      checks: [
+        { type: "file_valid", target: "pdf" },
+        { type: "text_extractable", target: scanned },
+        { type: "page_count_positive", target: scanned },
+      ],
+    };
+    const recipe = save({
+      plan: ocrPlan,
+      inputPaths: [scanned],
+      verification: ocrPlan.checks.map((check) => ({
+        name: check.type, pass: true, expected: "expected", actual: "measured",
+      })),
+      arch: "arm64",
+    }, join(root, "ocr"));
+    expect(recipe?.command_template.commands).toEqual([[
+      "ocrmypdf", "{{input_0}}", "{{input_0_dir}}/{{input_0_stem}}-searchable.pdf",
+    ]]);
+    expect(recipe?.checks).toEqual([
+      { type: "file_valid", target: "pdf" },
+      { type: "text_extractable", target: "{{input_0}}" },
+      { type: "page_count_positive", target: "{{input_0}}" },
+    ]);
+  });
+
   test("matches a paraphrased task locally", () => {
     const directory = join(root, "match");
     save(input(), directory);

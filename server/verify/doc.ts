@@ -1,6 +1,7 @@
 import type { CheckTarget } from "../plan.ts";
 import { result } from "./common.ts";
 import { documentFormat, hasPdfHeader, validateDocumentFormat } from "./file-format.ts";
+import { verifyOcrTextAdded, verifyPdfPageCountPreserved } from "./pdf-ocr.ts";
 import { extractPdfText, measurePdfPages, type PdfTextEvidence } from "./pdf.ts";
 import { inspectUtf8 } from "./text-inspector.ts";
 import type { VerificationResult, VerificationRunContext } from "./types.ts";
@@ -28,6 +29,7 @@ async function pageCountPositive(
   target: CheckTarget,
   context: VerificationRunContext,
 ): Promise<VerificationResult> {
+  if (typeof target === "string") return verifyPdfPageCountPreserved(target, context);
   if (typeof target !== "number" || !Number.isInteger(target) || target < 1) {
     return result("page_count_positive", false, "positive integer page minimum", `invalid target: ${String(target)}`);
   }
@@ -63,6 +65,7 @@ async function textExtractable(
   target: CheckTarget,
   context: VerificationRunContext,
 ): Promise<VerificationResult> {
+  if (typeof target === "string") return verifyOcrTextAdded(target, context);
   if (typeof target !== "number" || !Number.isInteger(target) || target < 1) {
     return result("text_extractable", false, "positive integer character minimum", `invalid target: ${String(target)}`);
   }

@@ -1,0 +1,25 @@
+STEWARD · your computer already knows how.
+No local recipe matched.
+System: macOS 26.4.1 · arm64 · 16 GiB
+Mode: GPT-5.6 planning
+Command: ocrmypdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-final.pdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-final-searchable.pdf
+STEWARD_EVENT {"type":"attempt","attempt":1,"plan_summary":{"tool":"ocrmypdf","command_count":1,"output_path":"/tmp/steward-recipe-5-ocr-20260718/steward-scan-final-searchable.pdf","checks":["file_valid","text_extractable","page_count_positive"],"commands":[["ocrmypdf","/tmp/steward-recipe-5-ocr-20260718/steward-scan-final.pdf","/tmp/steward-recipe-5-ocr-20260718/steward-scan-final-searchable.pdf"]],"intermediates":[],"derivations":null},"outcome":{"status":"passed","exit_code":0,"commands_completed":1,"checks_passed":3,"checks_total":3,"failed_checks":[],"stderr_tail":""}}
+
+┌─ STEWARD RECIPE
+│ ocr-scanned-pdf
+│ ocrmypdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-final.pdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-final-searchable.pdf
+│ Replaces iLovePDF: ~~$5/mo~~
+│ Saved permanently · model calls: planning complete
+└─ your computer already knows how.
+
+Checks:
+  ✓ file_valid
+    expected: valid PDF
+    actual:   valid PDF 1.7 (2 pages)
+  ✓ text_extractable
+    expected: before=false on granted source; after=true on output
+    actual:   before=false (0 non-whitespace chars); after=true (82 non-whitespace chars; sample "STEWARD OCR PROOF SCANNED PAGE ONE LOCAL")
+  ✓ page_count_positive
+    expected: 2 pages on granted source
+    actual:   2 pages on output
+Saved: recipes/ocr-scanned-pdf.json

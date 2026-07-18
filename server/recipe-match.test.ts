@@ -9,7 +9,8 @@ const recipes = load();
 const compress = recipes.find((recipe) => recipe.name === "compress-video-under-25mb");
 const mp4 = recipes.find((recipe) => recipe.name === "convert-media-to-mp4");
 const mov = recipes.find((recipe) => recipe.name === "convert-media-to-mov");
-if (!compress || !mp4 || !mov) throw new Error("curated media recipes are missing");
+const ocr = recipes.find((recipe) => recipe.name === "ocr-scanned-pdf");
+if (!compress || !mp4 || !mov || !ocr) throw new Error("curated recipes are missing");
 const isolated = mkdtempSync(join(tmpdir(), "steward-target-match-"));
 writeFileSync(join(isolated, "convert-media-to-mp4.json"), JSON.stringify(mp4));
 afterAll(() => rmSync(isolated, { recursive: true, force: true }));
@@ -19,6 +20,8 @@ const cases = [
   ["convert this to mp4", "/tmp/input.mkv", mp4.name],
   ["make this smaller for Discord", "/tmp/input.mp4", compress.name],
   ["turn this mkv into a mov", "/tmp/input.mkv", mov.name],
+  ["turn this scanned PDF into a searchable PDF", "/tmp/scan.pdf", ocr.name],
+  ["make this PDF searchable", "/tmp/scan.pdf", ocr.name],
 ] as const;
 
 describe("precision-biased recipe matching", () => {

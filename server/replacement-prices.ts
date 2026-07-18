@@ -6,13 +6,18 @@ type PriceKey = `${Plan["tool"]}:${PlanCheckType}`;
 
 // Pricing basis: lowest advertised per-month price at the annual billing rate,
 // verified July 16, 2026. Never mix monthly-billed and annual-equivalent rates.
+// OCR evidence: https://www.ilovepdf.com/pricing, verified July 18, 2026:
+// Premium includes PDF to Word (OCR) at $5/month, $60 billed annually.
 const PRICE_MAP: Partial<Record<PriceKey, ReplacementClaim>> = {
   "ffmpeg:size_under": { replaced_service: "Clideo", monthly_price: 9 },
   "ffmpeg:format_matches": { replaced_service: "CloudConvert", monthly_price: 8 },
   "ffmpeg:loudness_matches": { replaced_service: "Auphonic", monthly_price: 11 },
   "pandoc:format_matches": { replaced_service: "Convertio", monthly_price: 6.99 },
+  "ocrmypdf:text_extractable": { replaced_service: "iLovePDF", monthly_price: 5 },
 };
-const CLASS_PRIORITY: PlanCheckType[] = ["size_under", "loudness_matches", "format_matches"];
+const CLASS_PRIORITY: PlanCheckType[] = [
+  "size_under", "loudness_matches", "text_extractable", "format_matches",
+];
 
 export function replacementClaimFor(plan: Pick<Plan, "tool" | "checks">): ReplacementClaim | null {
   for (const type of CLASS_PRIORITY) {
