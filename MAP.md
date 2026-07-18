@@ -13,6 +13,8 @@ demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
 demo-material/recipe-4-verification-failure.txt:D—
 demo-material/p3.2-ws-compression.txt:D—
+demo-material/p3-entry-reference.jpg:D—
+demo-material/p3-entry-tile-hover.jpg:D—
 docs/PHASE_3_UI.md:D—
 recipes/compress-video-under-25mb.json:R—
 recipes/convert-media-to-mov.json:R—
@@ -23,8 +25,17 @@ ui/index.html:U—
 ui/svelte.config.js:C—
 ui/tsconfig.json:C—
 ui/vite.config.ts:C—
+ui/public/art/06-orange-key-tile-transparent.png:U—
+ui/public/art/07-blue-shears-tile-transparent.png:U—
+ui/public/art/08-green-olive-tile-transparent.png:U—
+ui/public/art/complete_flower_plant_transparent.png:U—
+ui/public/art/olive-branch-transparent.png:U—
+ui/public/art/refreence.png:D—
 ui/src/App.svelte:UM
 ui/src/app.css:U—
+ui/src/components/ActivityStream.svelte:U—
+ui/src/components/DropSurface.svelte:U—
+ui/src/components/VerifyPanel.svelte:U—
 ui/src/main.ts:UM
 ui/src/lib/stores.test.ts:T—
 ui/src/lib/stores.ts:UA

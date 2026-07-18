@@ -1,0 +1,180 @@
+<script lang="ts">
+  import {
+    RUN_STEPS, type RunProgress, type RunStepName,
+  } from "../lib/run-progress.ts";
+  import {
+    STEP_ART, STEP_TITLES, activeTool, stepDuration, stepLines, toolMark,
+  } from "../lib/run-view.ts";
+  import type { CheckItem, Recipe } from "../lib/stores.ts";
+  import RunReceipt from "./RunReceipt.svelte";
+  import StepTile from "./StepTile.svelte";
+
+  export let progress: RunProgress;
+  export let now: number;
+  export let status: "running" | "complete" | "failed";
+  export let outputPath: string | undefined = undefined;
+  export let checks: CheckItem[] = [];
+  export let savedRecipe: Recipe | undefined = undefined;
+  export let matchedRecipe: string | undefined = undefined;
+  export let modelCalls: 0 | undefined = undefined;
+  export let killTotal = 0;
+
+  const GLIDE_MS = 900;
+  const reducedMotion = typeof matchMedia === "function"
+    && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let landed: RunStepName | undefined;
+  let landTarget: RunStepName | undefined;
+  let landTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function settle(next: RunStepName | undefined, instant: boolean): void {
+    if (next === landTarget) {
+      if (instant && landed !== next) {
+        clearTimeout(landTimer);
+        landed = next;
+      }
+      return;
+    }
+    landTarget = next;
+    clearTimeout(landTimer);
+    if (next === undefined || next === "plan" || instant || reducedMotion) {
+      landed = next;
+      return;
+    }
+    landed = undefined;
+    landTimer = setTimeout(() => {
+      landed = next;
+    }, GLIDE_MS);
+  }
+
+  $: active = [...RUN_STEPS].reverse()
+    .find((name) => progress.steps[name].status === "active");
+  $: settle(active, status !== "running");
+  $: activeIndex = active ? RUN_STEPS.indexOf(active) : RUN_STEPS.length;
+  $: completed = RUN_STEPS.filter((name, index) =>
+    progress.steps[name].status === "complete" && index < activeIndex);
+  $: kindOf = (name: RunStepName): "complete" | "live" | "ghost" =>
+    completed.includes(name) ? "complete"
+      : name === active && name === landed ? "live" : "ghost";
+  $: slotIndex = (index: number) => index > activeIndex ? 4 - index : index;
+  $: file = progress.request?.files[0]?.split(/[\\/]/).at(-1) ?? "local file";
+  $: description = progress.request?.description ?? "Local file task";
+  $: tool = activeTool(progress);
+  $: statusText = status === "complete"
+    ? "Local run complete"
+    : status === "failed" ? "Local run stopped" : "Running locally";
+</script>
+
+<main class="running-stage" aria-label="Steward running locally">
+  <section class="running-card">
+    <header class="running-header">
+      <div class="running-wordmark">Steward<span aria-hidden="true">*</span></div>
+      <div class="running-status">
+        <span class="running-dot" aria-hidden="true"></span>
+        <span>{statusText}</span>
+      </div>
+    </header>
+
+    <div class="running-task-strip">
+      <span class="running-file-chip">
+        <span class="running-file-glyph" aria-hidden="true"></span>
+        <span>{file}</span>
+      </span>
+      <span class="running-task-text">{description}</span>
+    </div>
+
+    {#if status === "complete"}
+      <RunReceipt
+        {progress} {checks} {savedRecipe} {matchedRecipe}
+        {modelCalls} {killTotal} {outputPath} {now}
+      />
+    {:else}
+      <div class="run-shelf">
+        <div class="run-items">
+          {#each RUN_STEPS as name, index (name)}
+            <div
+              class="shelf-slot"
+              class:anchor-right={index > activeIndex}
+              style="--i: {slotIndex(index)}"
+            >
+              {#if kindOf(name) === "complete"}
+                <StepTile
+                  {name}
+                  art={STEP_ART[name]}
+                  duration={stepDuration(progress, name, now)}
+                  tool={name === "execute" ? tool : ""}
+                  lines={stepLines(progress, name, checks, matchedRecipe)}
+                />
+              {:else if kindOf(name) === "live"}
+                <div
+                  class="run-tile-slot run-tile-live run-step-{name}"
+                  class:run-tile-stopped={status === "failed"}
+                >
+                  <img src={STEP_ART[name]} alt="" aria-hidden="true" />
+                </div>
+              {:else}
+                <div class="run-tile-slot run-ghost-tile run-step-{name}">
+                  <img src={STEP_ART[name]} alt="" aria-hidden="true" />
+                </div>
+              {/if}
+            </div>
+          {/each}
+
+          {#if active}
+            <div class="shelf-slot shelf-slot-panel" style="--i: {activeIndex + 1}">
+              <section class="run-active-panel" aria-live="polite">
+                <div class="run-panel-heading">
+                  <h1>{status === "failed" ? "Run stopped" : STEP_TITLES[active]}</h1>
+                  {#if active === "execute" && tool}
+                    <span class="run-tool-identity" aria-label="Active tool: {tool}">
+                      <span class="run-tool-mark" aria-hidden="true">{toolMark(tool)}</span>
+                      <span>{tool}</span>
+                    </span>
+                  {/if}
+                </div>
+                <p class="run-command">{progress.command || progress.activity}</p>
+                {#if status === "running" || progress.progress}
+                  <div class="run-progress-line">
+                    <span>
+                      {progress.command
+                        ? progress.progress || progress.activity
+                        : progress.progress}
+                    </span>
+                    {#if status === "running"}
+                      <span class="run-pinwheel" aria-hidden="true"></span>
+                    {/if}
+                  </div>
+                {/if}
+              </section>
+            </div>
+          {/if}
+        </div>
+
+        <div class="run-shelf-bar" aria-hidden="true"></div>
+        <div class="run-labels">
+          {#each RUN_STEPS as name, index (name)}
+            <div
+              class="shelf-slot"
+              class:anchor-right={index > activeIndex}
+              style="--i: {slotIndex(index)}"
+            >
+              {#if kindOf(name) === "ghost"}
+                <div class="run-step-chip run-ghost-chip">
+                  <span class="run-step-square"></span><strong>{name}</strong>
+                </div>
+              {:else}
+                <div class="run-step-chip" data-step={name}>
+                  <span class="run-step-square"></span>
+                  <span>
+                    <strong>{name}</strong>
+                    <small>{stepDuration(progress, name, now)}</small>
+                  </span>
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </section>
+</main>

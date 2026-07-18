@@ -1,7 +1,10 @@
-import { derived, writable } from "svelte/store";
-import type { ServerEvent } from "../../../server/ws-events.ts";
+import { derived, readable, writable } from "svelte/store";
+import type { ClientEvent, ServerEvent } from "../../../server/ws-events.ts";
+import {
+  createRunProgress, reduceClientEvent, reduceServerEvent,
+} from "./run-progress.ts";
 
-type Recipe = Extract<ServerEvent, { type: "recipe_saved" }>["recipe"];
+export type Recipe = Extract<ServerEvent, { type: "recipe_saved" }>["recipe"];
 type RepairEvent = Extract<ServerEvent, { type: "repair_attempt" }>;
 
 export interface ActivityItem {
@@ -26,6 +29,7 @@ export interface RunState {
   modelCalls?: 0;
   matchedRecipe?: string;
   matchScore?: number;
+  savedRecipe?: Recipe;
 }
 
 export const activity = writable<ActivityItem[]>([]);
@@ -34,6 +38,11 @@ export const recipes = writable<Recipe[]>([]);
 export const repairs = writable<RepairEvent[]>([]);
 export const errors = writable<ActivityItem[]>([]);
 export const runState = writable<RunState>({ status: "idle" });
+export const runProgress = writable(createRunProgress());
+export const runClock = readable(Date.now(), (set) => {
+  const timer = window.setInterval(() => set(Date.now()), 100);
+  return () => window.clearInterval(timer);
+});
 
 export const killTotal = derived(recipes, ($recipes) => {
   const services = new Map<string, number>();
@@ -66,7 +75,12 @@ function upsertRecipe(recipe: Recipe): void {
   });
 }
 
-export function applyServerEvent(event: ServerEvent): void {
+export function applyClientEvent(event: ClientEvent): void {
+  runProgress.update((state) => reduceClientEvent(state, event));
+}
+
+export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): void {
+  runProgress.update((state) => reduceServerEvent(state, event, receivedAt));
   switch (event.type) {
     case "run_started":
       activity.set([]);
@@ -97,6 +111,9 @@ export function applyServerEvent(event: ServerEvent): void {
       return;
     case "recipe_saved":
       upsertRecipe(event.recipe);
+      runState.update((state) => state.id === event.run_id
+        ? { ...state, savedRecipe: event.recipe }
+        : state);
       append({
         runId: event.run_id,
         message: "Recipe saved. Future runs use zero model calls.",
@@ -146,4 +163,5 @@ export function resetStores(): void {
   repairs.set([]);
   errors.set([]);
   runState.set({ status: "idle" });
+  runProgress.set(createRunProgress());
 }

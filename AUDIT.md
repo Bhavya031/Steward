@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 3 P3.3 audit (2026-07-16). The Phase 2 CLI remains available; the browser scaffold consumes the authenticated WS bridge without a second listener.
+Last updated: Phase 3 entry-state pre-approval audit (2026-07-17). The Phase 2 CLI remains available; the new entry composition is visual-only and adds no enabled input-to-command route.
 
 ## Current execution surface
 
@@ -15,6 +15,8 @@ Last updated: Phase 3 P3.3 audit (2026-07-16). The Phase 2 CLI remains available
 - Listener: Bun binds `127.0.0.1` on a random free port. A 256-bit per-session token is required by query or HttpOnly SameSite cookie for every static request and by query for `/ws`; missing/wrong tokens return 401 before routing. Static real paths remain inside `ui/dist`.
 - WS bridge: client JSON is capped at 64 KiB and must exactly match `run_task` or `run_recipe`; file grants are absolute, readable regular files. One run per socket prevents overlapping mutations. Task runs match locally before importing the planner; recipe matches emit and retain `model_calls: 0` through completion.
 - Browser client: one module-scoped WebSocket takes the per-session token from the startup URL and connects only to same-origin `/ws`. Registered server events flow through one exhaustive store reducer; client-side typing is convenience only, while the server parser remains the command-boundary enforcement.
+- Entry surface: poster art is bundled under authenticated static serving. Its textarea, add control, run control, and example chips have no handlers and emit no WS event; P3.6 must audit and test that new route before enabling it. The art disappears when `run_started` moves the store out of idle.
+- Operational panels: ActivityStream and VerifyPanel accept store props only. Svelte text interpolation escapes command/evidence strings; no raw HTML or component path reaches execution. Pending rows show no invented evidence; expected/actual appear only when measured results arrive.
 - Browser launch: startup may invoke fixed `/usr/bin/open` with only the generated loopback URL. It accepts no task/model input and is outside the recipe module graph; tests disable it.
 
 ## Input-to-command trace
@@ -25,6 +27,7 @@ Last updated: Phase 3 P3.3 audit (2026-07-16). The Phase 2 CLI remains available
 | CLI file paths | `filesFrom` → plan grants | Resolve + readable regular-file check; every later path is role-classified, real-path confined, and checked against the exact grant. |
 | WS task/name/files | typed parser → WS engine bridge | Exact event keys/types, bounded strings/files, one active run/socket, absolute readable grants; then the identical match/plan/rerun paths below. |
 | Browser client event | singleton `ws.ts` → authenticated `/ws` | TypeScript narrows UI callers; security does not trust it. The server re-parses exact runtime keys/types and reapplies every file/plan policy. |
+| Idle entry controls | no route | Visual-only in this step: no handlers, file reads, or WS messages. P3.6 must add and audit the route before controls become active. |
 | Model plan or repair | plan → repair loop → executor | Strict keys/types, one primary tool, argv arrays only, semantic check targets, canonical name, declared slots/intermediates, per-tool flags, output confinement, timeout. |
 | Saved recipe JSON | load → slot render → executor | Strict recipe validation; only path slots and serialized derivations; rendered plan is revalidated; no agent-reachable module. |
 | Derivation input | first granted file → ffprobe duration | Fixed ffprobe argv through executor, closed named formula, typed model-authored args. |

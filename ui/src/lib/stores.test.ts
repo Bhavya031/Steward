@@ -87,4 +87,30 @@ describe("UI event stores", () => {
     });
     expect(snapshot.errors).toHaveLength(1);
   });
+
+  test("check results update one row without changing pending siblings", () => {
+    resetStores();
+    applyServerEvent({
+      type: "run_started", run_id: runId,
+      action: "task", files: ["/tmp/in.mov"],
+    });
+    applyServerEvent({ type: "check_pending", run_id: runId, name: "size_under" });
+    applyServerEvent({ type: "check_pending", run_id: runId, name: "duration_matches" });
+    expect(get(checks).map(({ status }) => status)).toEqual(["pending", "pending"]);
+
+    applyServerEvent({
+      type: "check_result", run_id: runId, name: "size_under", pass: true,
+      expected: "under 2,000,000 bytes", actual: "1,800,000 bytes",
+    });
+    expect(get(checks).map(({ status }) => status)).toEqual(["passed", "pending"]);
+
+    applyServerEvent({
+      type: "check_result", run_id: runId, name: "duration_matches", pass: false,
+      expected: "5.000 s ±0.500 s", actual: "3.800 s (Δ 1.200 s)",
+    });
+    expect(get(checks)).toMatchObject([
+      { name: "size_under", status: "passed", actual: "1,800,000 bytes" },
+      { name: "duration_matches", status: "failed", actual: "3.800 s (Δ 1.200 s)" },
+    ]);
+  });
 });

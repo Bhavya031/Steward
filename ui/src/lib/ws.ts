@@ -1,5 +1,6 @@
 import type { ClientEvent, ServerEvent } from "../../../server/ws-events.ts";
-import { applyServerEvent } from "./stores.ts";
+import { createPacer } from "./pacing.ts";
+import { applyClientEvent, applyServerEvent } from "./stores.ts";
 
 const SERVER_EVENT_TYPES: { [Type in ServerEvent["type"]]: true } = {
   run_started: true,
@@ -50,9 +51,11 @@ function websocketUrl(token: string): string {
   return url.toString();
 }
 
+const pacer = createPacer(applyServerEvent);
+
 function receive(raw: string): void {
   try {
-    applyServerEvent(parseServerEvent(raw));
+    pacer.push(parseServerEvent(raw));
   } catch (error) {
     applyServerEvent({
       type: "error",
@@ -91,6 +94,7 @@ export function sendClientEvent(event: ClientEvent): void {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     throw new Error("Steward is not connected.");
   }
+  applyClientEvent(event);
   socket.send(JSON.stringify(event));
 }
 
