@@ -20,11 +20,12 @@ export function displayArgument(value: string): string {
 
 export function checkAssertion(check: PlanCheck): string {
   const target = String(check.target);
+  const source = target === "{{input_0}}" ? "the input file" : target;
   switch (check.type) {
     case "size_under":
       return `Output is smaller than ${target} bytes.`;
     case "duration_matches":
-      return `Output duration matches ${target === "{{input_0}}" ? "the input file" : target}.`;
+      return `Output duration matches ${source}.`;
     case "streams_present":
       return `Output contains every required stream: ${target}.`;
     case "plays":
@@ -39,10 +40,24 @@ export function checkAssertion(check: PlanCheck): string {
       return `Output is structurally valid ${target.toUpperCase()}.`;
     case "page_count_positive":
       return `Output contains at least ${target} page${check.target === 1 ? "" : "s"}.`;
+    case "page_count_matches":
+      return `Output page count matches ${source}.`;
     case "text_extractable":
-      return `At least ${target} non-whitespace characters can be extracted.`;
+      return typeof check.target === "number"
+        ? `At least ${target} non-whitespace characters can be extracted.`
+        : `${source === "the input file" ? "The input file" : `Source ${source}`} has no extractable text and the output does.`;
     case "format_matches":
       return `Detected output format is ${target.toUpperCase()}.`;
+    case "srt_valid":
+      return "Output is a structurally valid UTF-8 SRT.";
+    case "cue_count":
+      return `Output contains at least ${target} subtitle cue${check.target === 1 ? "" : "s"}.`;
+    case "timestamps_monotonic":
+      return "Subtitle timestamps are monotonic and every cue ends after it starts.";
+    default: {
+      const unsupported: never = check.type;
+      return `Verification target ${String(unsupported)} is ${target}.`;
+    }
   }
 }
 

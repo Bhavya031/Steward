@@ -1,7 +1,26 @@
 import { describe, expect, test } from "bun:test";
+import type { PlanCheck, PlanCheckType } from "../../../server/plan.ts";
 import {
   checkAssertion, displayArgument, formatPrice, runAgainEvent, templateFragments,
 } from "./detail-view.ts";
+
+const registeredChecks = {
+  size_under: { type: "size_under", target: 25_000_000 },
+  duration_matches: { type: "duration_matches", target: "{{input_0}}" },
+  streams_present: { type: "streams_present", target: "video,audio" },
+  plays: { type: "plays", target: true },
+  audio_stream_present: { type: "audio_stream_present", target: true },
+  loudness_matches: { type: "loudness_matches", target: -14 },
+  true_peak_under: { type: "true_peak_under", target: -1 },
+  file_valid: { type: "file_valid", target: "pdf" },
+  page_count_positive: { type: "page_count_positive", target: 1 },
+  page_count_matches: { type: "page_count_matches", target: "{{input_0}}" },
+  text_extractable: { type: "text_extractable", target: "{{input_0}}" },
+  format_matches: { type: "format_matches", target: "pdf" },
+  srt_valid: { type: "srt_valid", target: true },
+  cue_count: { type: "cue_count", target: 1 },
+  timestamps_monotonic: { type: "timestamps_monotonic", target: true },
+} satisfies Record<PlanCheckType, PlanCheck>;
 
 describe("saved-command detail formatting", () => {
   test("highlights only real template slots", () => {
@@ -26,6 +45,25 @@ describe("saved-command detail formatting", () => {
       .toBe("Output duration matches the input file.");
     expect(checkAssertion({ type: "loudness_matches", target: -14 }))
       .toBe("Integrated loudness is within ±1.0 LUFS of -14 LUFS.");
+  });
+
+  test("describes OCR path targets and every subtitle assertion", () => {
+    expect(checkAssertion(registeredChecks.text_extractable))
+      .toBe("The input file has no extractable text and the output does.");
+    expect(checkAssertion(registeredChecks.page_count_matches))
+      .toBe("Output page count matches the input file.");
+    expect(checkAssertion(registeredChecks.srt_valid))
+      .toBe("Output is a structurally valid UTF-8 SRT.");
+    expect(checkAssertion(registeredChecks.cue_count))
+      .toBe("Output contains at least 1 subtitle cue.");
+    expect(checkAssertion(registeredChecks.timestamps_monotonic))
+      .toBe("Subtitle timestamps are monotonic and every cue ends after it starts.");
+  });
+
+  test("renders a non-blank assertion for every registered verification type", () => {
+    for (const check of Object.values(registeredChecks)) {
+      expect(checkAssertion(check).trim().length).toBeGreaterThan(0);
+    }
   });
 
   test("does not round verified replacement prices", () => {
