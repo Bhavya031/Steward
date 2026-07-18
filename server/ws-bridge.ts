@@ -1,5 +1,7 @@
 import type { WsEngineOptions } from "./ws-engine.ts";
 import { runEngineEvent } from "./ws-engine.ts";
+import { RECIPES_DIRECTORY, load } from "./recipes.ts";
+import { userFacingMessage } from "./user-facing.ts";
 import { parseClientEvent, type EmitServerEvent, type ServerEvent } from "./ws-events.ts";
 
 export interface WsSender { send(message: string): unknown }
@@ -8,6 +10,12 @@ export interface WsBridgeOptions extends WsEngineOptions { runEngine?: EngineRun
 
 function send(socket: WsSender, event: ServerEvent): void {
   socket.send(JSON.stringify(event));
+}
+
+export function createWorkflowCatalogSender(
+  directory = RECIPES_DIRECTORY,
+): (socket: WsSender) => void {
+  return (socket) => send(socket, { type: "workflow_catalog", workflows: load(directory) });
 }
 
 export function createWsBridge(options: WsBridgeOptions = {}) {
@@ -41,7 +49,7 @@ export function createWsBridge(options: WsBridgeOptions = {}) {
     } catch (error) {
       send(socket, {
         type: "error",
-        message: `engine bridge failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `engine bridge failed: ${userFacingMessage(error)}`,
       });
     } finally {
       active.delete(socket);

@@ -28,6 +28,7 @@ export interface RunProgress {
   activity: string;
   command: string;
   commands: string[];
+  commandArgv: string[][];
   progress: string;
   commandDurationMs: number;
   commandDurationCount: number;
@@ -46,7 +47,8 @@ function emptySteps(): RunProgress["steps"] {
 export function createRunProgress(request?: RunRequest): RunProgress {
   return {
     request, steps: emptySteps(), activity: "", command: "",
-    commands: [], progress: "", commandDurationMs: 0, commandDurationCount: 0,
+    commands: [], commandArgv: [], progress: "",
+    commandDurationMs: 0, commandDurationCount: 0,
   };
 }
 
@@ -54,6 +56,7 @@ function copy(state: RunProgress): RunProgress {
   return {
     ...state,
     commands: state.commands.slice(),
+    commandArgv: state.commandArgv.map((argv) => [...argv]),
     steps: Object.fromEntries(
       RUN_STEPS.map((name) => {
         const step = state.steps[name];
@@ -69,7 +72,7 @@ export function reduceClientEvent(
   if (event.type === "confirm_install") return copy(state);
   const request: RunRequest = event.type === "run_task"
     ? { kind: "task", description: event.task, files: [...event.files] }
-    : { kind: "recipe", description: event.name, files: [...event.files] };
+    : { kind: "recipe", description: event.workflow_id, files: [...event.files] };
   return createRunProgress(request);
 }
 
@@ -87,7 +90,7 @@ export function reduceServerEvent(
   if (event.type === "model_call_count" && state.steps.plan.status !== "complete") {
     state.steps.plan.note = `${event.model_calls} model ${event.model_calls === 1 ? "call" : "calls"}`;
   }
-  if (event.type === "recipe_matched") {
+  if (event.type === "recipe_matched" || event.type === "workflow_selected") {
     if (state.steps.probe.status === "active") completeStep(state, "probe", at);
     else if (state.steps.probe.status === "pending") {
       state.steps.probe = { status: "skipped" };
@@ -102,6 +105,7 @@ export function reduceServerEvent(
     startStep(state, "execute", at);
     state.command = displayCommand(event.argv);
     state.commands.push(state.command);
+    state.commandArgv.push([...event.argv]);
     state.progress = "";
     state.commandStartedAt = at;
   }

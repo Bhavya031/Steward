@@ -116,6 +116,9 @@ export function applyClientEvent(event: ClientEvent): void {
 export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): void {
   runProgress.update((state) => reduceServerEvent(state, event, receivedAt));
   switch (event.type) {
+    case "workflow_catalog":
+      recipes.set(event.workflows);
+      return;
     case "run_started":
       activity.set([]);
       checks.set([]);
@@ -192,7 +195,7 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
         : state);
       append({
         runId: event.run_id,
-        message: "Recipe saved. Future runs use zero model calls.",
+        message: "Workflow saved. Future runs use zero model calls.",
         kind: "activity",
       });
       return;
@@ -207,7 +210,24 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       }));
       append({
         runId: event.run_id,
-        message: "Saved recipe matched. 0 model calls.",
+        message: "Saved workflow matched. 0 model calls.",
+        kind: "activity",
+      });
+      return;
+    case "workflow_selected":
+      if (activeRunHistory?.runId === event.run_id) {
+        activeRunHistory.recipeName = event.workflow_id;
+        activeRunHistory.modelCalls = event.model_calls;
+      }
+      runState.update((state) => ({
+        ...state,
+        modelCalls: event.model_calls,
+        matchedRecipe: event.workflow_id,
+        matchScore: 1,
+      }));
+      append({
+        runId: event.run_id,
+        message: "Saved workflow selected directly. 0 model calls.",
         kind: "activity",
       });
       return;

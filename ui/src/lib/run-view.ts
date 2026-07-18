@@ -72,7 +72,7 @@ export function stepLines(
   }
   const detail = [...(progress.steps[name].detail ?? [])];
   if (name === "plan" && matchedRecipe) {
-    detail.unshift(`Matched saved recipe "${matchedRecipe}".`);
+    detail.unshift(`Selected saved workflow "${matchedRecipe}".`);
   }
   return detail;
 }

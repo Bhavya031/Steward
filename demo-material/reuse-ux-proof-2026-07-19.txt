@@ -1,0 +1,45 @@
+Steward reuse UX browser proof
+Date: 2026-07-19
+
+Home
+- The returning-user screen displayed PAST TASKS from the real saved-workflow catalog.
+- Seven saved workflows were visible, each with its remembered effect and DO AGAIN.
+- The visible page contained no "recipe" wording.
+- After startup authentication, the visible URL was http://127.0.0.1:52229/ with no token.
+- Reloading that token-free URL kept the session authenticated.
+
+Direct rerun
+- Selected stable workflow ID: convert-media-to-mp4
+- Selected a different file through the existing system file picker.
+- The server emitted workflow_selected with model_calls: 0.
+- No semantic-match, planning, or model-call event occurred.
+- Run ID: fe808bed-3182-4855-893d-02a6486527c3
+- Input basename: 24df0a69-f9b7-4765-9397-5deb243a89e1-first.mp4
+- Output basename: 24df0a69-f9b7-4765-9397-5deb243a89e1-first-2.mp4
+- Collision-safe naming: PASS (-2 suffix allocated rather than overwriting the input)
+- Command exit code: 0
+- Receipt model calls: 0
+
+Verification
+- format_matches: PASS
+  expected: MP4
+  actual: MP4 container (ffprobe=mov,mp4,m4a,3gp,3g2,mj2; major_brand=isom)
+- duration_matches: PASS
+  expected: 6.917 s ±0.500 s
+  actual: 6.919 s (delta 0.002 s)
+- streams_present: PASS
+  expected: video, audio
+  actual: video (h264), audio (aac)
+
+Detail
+- Exact command template: non-blank
+- Verification contract: non-blank
+- Past-run history: non-blank
+- History result: VERIFIED
+- History model calls: 0
+- Visible page contained no token, private path, extension detail, or "recipe" wording.
+
+Screenshots
+- reuse-ux-past-tasks-token-free-home.jpg
+- reuse-ux-direct-zero-model-receipt.jpg
+- reuse-ux-detail-history.jpg

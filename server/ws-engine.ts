@@ -17,12 +17,15 @@ import { runWithRepair } from "./repair-loop.ts";
 import {
   pauseForInstall, requirementsNeeded, resumeInstall, type PendingInstall,
 } from "./ws-install-flow.ts";
+import { userFacingMessage } from "./user-facing.ts";
 
 interface Completion { outputPath: string; modelCalls?: number }
+type SavedSelection = { kind: "matched"; score: number } | { kind: "direct" };
 export type { PendingInstall } from "./ws-install-flow.ts";
 export interface WsEngineOptions {
   recipeDirectory?: string;
   pendingRuns?: Map<string, PendingInstall>;
+  profile?: SystemProfile;
 }
 
 function activity(runId: string, message: string, emit: EmitServerEvent): void {
@@ -38,30 +41,41 @@ function verificationEvents(runId: string, emit: EmitServerEvent) {
 }
 
 async function runSavedReady(
-  recipe: Recipe, score: number, files: string[], runId: string, emit: EmitServerEvent,
+  recipe: Recipe, selection: SavedSelection, files: string[], runId: string,
+  emit: EmitServerEvent, profile?: SystemProfile,
 ): Promise<Completion> {
-  emit({
-    type: "recipe_matched", run_id: runId, name: recipe.name,
-    score, model_calls: 0,
-  });
+  if (selection.kind === "matched") {
+    emit({
+      type: "recipe_matched", run_id: runId, name: recipe.name,
+      score: selection.score, model_calls: 0,
+    });
+  } else {
+    emit({
+      type: "workflow_selected", run_id: runId,
+      workflow_id: recipe.name, model_calls: 0,
+    });
+  }
   pendingChecks(runId, recipe.checks, emit);
   activity(runId, "Saved plan ready. Preparing local execution.", emit);
   const run = await rerun(recipe, files, {
+    ...(profile ? { profile } : {}),
     executionOptions: { onEvent: executionEvents(runId, emit) },
     ...verificationEvents(runId, emit),
   });
   checkResults(runId, run.checks, emit);
   if (!run.all_pass) {
-    throw new Error(`recipe rerun failed with exit ${run.execution.exit_code}; failed output discarded`);
+    throw new Error(`saved workflow failed with exit ${run.execution.exit_code}; failed output discarded`);
   }
   return { outputPath: run.plan.output_path, modelCalls: 0 };
 }
 
 async function runSaved(
-  recipe: Recipe, score: number, files: string[], runId: string, emit: EmitServerEvent,
+  recipe: Recipe, selection: SavedSelection, files: string[], runId: string,
+  emit: EmitServerEvent,
   pendingRuns: Map<string, PendingInstall>,
+  suppliedProfile?: SystemProfile,
 ): Promise<Completion | null> {
-  const profile = probeSystem();
+  const profile = suppliedProfile ?? probeSystem();
   const slots = await runtimeRecipeSlots(recipe, files, profile);
   let plan = renderRecipe(recipe, files, slots);
   const status = profile.tools.find((tool) => tool.name === plan.tool);
@@ -73,11 +87,11 @@ async function runSaved(
   const requirements = await planRequirements(plan);
   if (requirementsNeeded(requirements)) {
     return pauseForInstall(
-      runId, { kind: "saved", recipe, score, files, profile, plan, requirements },
+      runId, { kind: "saved", recipe, selection, files, profile, plan, requirements },
       emit, pendingRuns,
     );
   }
-  return runSavedReady(recipe, score, files, runId, emit);
+  return runSavedReady(recipe, selection, files, runId, emit, profile);
 }
 
 function attemptEvents(runId: string, checks: Plan["checks"], emit: EmitServerEvent) {
@@ -112,7 +126,7 @@ async function runPlannedReady(
     plan: run.plan, taskDescription, inputPaths: files, verification: run.checks,
     arch: profile.architecture,
   }, directory);
-  if (!recipe) throw new Error("green verification was refused by recipe storage");
+  if (!recipe) throw new Error("green verification was refused by saved-workflow storage");
   emit({ type: "recipe_saved", run_id: runId, recipe });
   return { outputPath: run.resolvedPlan.output_path, modelCalls };
 }
@@ -121,7 +135,7 @@ async function runPlanned(
   task: string, files: string[], directory: string, runId: string, emit: EmitServerEvent,
   pendingRuns: Map<string, PendingInstall>,
 ): Promise<Completion | null> {
-  activity(runId, "No saved recipe matched. Reading the local system profile.", emit);
+  activity(runId, "No saved workflow matched. Reading the local system profile.", emit);
   const profile = probeSystem();
   activity(runId, `macOS ${profile.macosVersion} · ${profile.architecture} · ${profile.ram.gib} GiB.`, emit);
   activity(runId, "Planning a local command.", emit);
@@ -158,22 +172,33 @@ async function resume(
       ready.plan, ready.profile, pending.files, pending.directory,
       pending.taskDescription, pending.modelCalls, request.run_id, emit,
     )
-    : runSavedReady(pending.recipe, pending.score, pending.files, request.run_id, emit);
+    : runSavedReady(
+      pending.recipe, pending.selection, pending.files,
+      request.run_id, emit, ready.profile,
+    );
 }
 
 async function execute(
   request: Exclude<ClientEvent, { type: "confirm_install" }>, directory: string,
   runId: string, emit: EmitServerEvent, pendingRuns: Map<string, PendingInstall>,
+  suppliedProfile?: SystemProfile,
 ): Promise<Completion | null> {
   const files = readableInputFiles(request.files);
-  if (request.type === "run_recipe") {
-    const recipe = load(directory).find((candidate) => candidate.name === request.name);
-    if (!recipe) throw new Error(`saved recipe not found: ${request.name}`);
-    return runSaved(recipe, 1, files, runId, emit, pendingRuns);
+  if (request.type === "run_saved_workflow") {
+    const recipe = load(directory).find((candidate) => candidate.name === request.workflow_id);
+    if (!recipe) throw new Error(`saved workflow not found: ${request.workflow_id}`);
+    return runSaved(
+      recipe, { kind: "direct" }, files, runId, emit, pendingRuns, suppliedProfile,
+    );
   }
-  activity(runId, "Checking the local recipe shelf.", emit);
+  activity(runId, "Checking saved workflows on this Mac.", emit);
   const matched = match(request.task, files, directory);
-  if (matched) return runSaved(matched.recipe, matched.confidence, files, runId, emit, pendingRuns);
+  if (matched) {
+    return runSaved(
+      matched.recipe, { kind: "matched", score: matched.confidence },
+      files, runId, emit, pendingRuns, suppliedProfile,
+    );
+  }
   return runPlanned(request.task, files, directory, runId, emit, pendingRuns);
 }
 
@@ -183,20 +208,26 @@ export async function runEngineEvent(
   const pendingRuns = options.pendingRuns ?? new Map<string, PendingInstall>();
   const runId = request.type === "confirm_install" ? request.run_id : randomUUID();
   if (request.type !== "confirm_install") {
-    emit({ type: "run_started", run_id: runId, action: request.type === "run_task" ? "task" : "recipe", files: [...request.files] });
+    emit({
+      type: "run_started", run_id: runId,
+      action: request.type === "run_task" ? "task" : "recipe",
+      files: [...request.files],
+    });
   }
   try {
     const result = request.type === "confirm_install"
       ? await resume(request, emit, pendingRuns)
-      : await execute(request, options.recipeDirectory ?? RECIPES_DIRECTORY, runId, emit, pendingRuns);
+      : await execute(
+        request, options.recipeDirectory ?? RECIPES_DIRECTORY,
+        runId, emit, pendingRuns, options.profile,
+      );
     if (!result) return;
     emit({
       type: "run_complete", run_id: runId, success: true, output_path: result.outputPath,
       ...(result.modelCalls === undefined ? {} : { model_calls: result.modelCalls }),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    emit({ type: "error", run_id: runId, message });
+    emit({ type: "error", run_id: runId, message: userFacingMessage(error) });
     emit({ type: "run_complete", run_id: runId, success: false });
   }
 }

@@ -8,8 +8,7 @@
     checks, installRequest, killTotal, recipes, runClock, runHistory, runProgress, runState,
     selectedRecipeName, type Recipe,
   } from "./lib/stores.ts";
-  import { runAgainEvent } from "./lib/detail-view.ts";
-  import type { RunTaskEvent } from "./lib/task-entry.ts";
+  import type { RunSavedWorkflowEvent, RunTaskEvent } from "./lib/task-entry.ts";
   import {
     connectWebSocket, disconnectWebSocket, sendClientEvent,
   } from "./lib/ws.ts";
@@ -18,6 +17,7 @@
   let entryLeaving = false;
   let entryTimer: ReturnType<typeof setTimeout> | undefined;
   let transitionMs = 900;
+  let requestedWorkflow: Recipe | undefined;
   $: selectedRecipe = $recipes.find((recipe) => recipe.name === $selectedRecipeName);
   $: selectedHistory = selectedRecipe
     ? $runHistory.filter((run) => run.recipeName === selectedRecipe?.name)
@@ -32,10 +32,10 @@
   }
 
   function runAgain(recipe: Recipe): void {
-    const event = runAgainEvent(recipe.name, selectedHistory);
-    if (!event) return;
     closeRecipe();
-    sendClientEvent(event);
+    entryLeaving = false;
+    showEntry = true;
+    requestedWorkflow = recipe;
   }
 
   function confirmInstall(runId: string): void {
@@ -43,6 +43,10 @@
   }
 
   function runTask(event: RunTaskEvent): void {
+    sendClientEvent(event);
+  }
+
+  function runSavedWorkflow(event: RunSavedWorkflowEvent): void {
     sendClientEvent(event);
   }
 
@@ -71,7 +75,7 @@
 
 <svelte:head>
   <title>Steward</title>
-  <meta name="description" content="Verified local file work, saved as reusable recipes." />
+  <meta name="description" content="Verified local file work, saved as reusable workflows." />
 </svelte:head>
 
 {#if selectedRecipe}
@@ -100,8 +104,16 @@
   />
 {/if}
 
-{#if showEntry}
+{#if showEntry && !selectedRecipe}
   <main class:entry-departing={entryLeaving} class="entry-shell" aria-label="Steward task entry">
-    <DropSurface onRunTask={runTask} />
+    <DropSurface
+      onRunTask={runTask}
+      onRunSavedWorkflow={runSavedWorkflow}
+      recipes={$recipes}
+      history={$runHistory}
+      onOpenRecipe={openRecipe}
+      {requestedWorkflow}
+      onRequestedWorkflowHandled={() => requestedWorkflow = undefined}
+    />
   </main>
 {/if}

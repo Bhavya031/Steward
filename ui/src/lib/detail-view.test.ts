@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { PlanCheck, PlanCheckType } from "../../../server/plan.ts";
 import {
-  checkAssertion, displayArgument, formatPrice, runAgainEvent, templateFragments,
+  checkAssertion, displayArgument, formatPrice, templateFragments,
 } from "./detail-view.ts";
 
 const registeredChecks = {
@@ -71,20 +71,4 @@ describe("saved-command detail formatting", () => {
     expect(formatPrice(6.99)).toBe("6.99");
   });
 
-  test("RUN AGAIN uses the existing saved-command engine event and latest real files", () => {
-    expect(runAgainEvent("compress-video", [
-      {
-        runId: "first", recipeName: "compress-video", action: "task",
-        files: ["/tmp/source-a.mov"], startedAt: 1, completedAt: 2,
-        success: true, checks: [],
-      },
-      {
-        runId: "second", recipeName: "compress-video", action: "recipe",
-        files: ["/tmp/source-b.mov"], startedAt: 3, completedAt: 4,
-        success: true, modelCalls: 0, checks: [],
-      },
-    ])).toEqual({
-      type: "run_recipe", name: "compress-video", files: ["/tmp/source-b.mov"],
-    });
-  });
 });

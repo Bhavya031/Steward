@@ -1,6 +1,4 @@
 import type { PlanCheck } from "../../../server/plan.ts";
-import type { ClientEvent } from "../../../server/ws-events.ts";
-import type { RunHistoryItem } from "./stores.ts";
 
 export interface TemplateFragment {
   text: string;
@@ -63,14 +61,4 @@ export function checkAssertion(check: PlanCheck): string {
 
 export function formatPrice(price: number): string {
   return Number.isInteger(price) ? price.toFixed(0) : price.toFixed(2);
-}
-
-export function runAgainEvent(
-  recipeName: string,
-  history: RunHistoryItem[],
-): Extract<ClientEvent, { type: "run_recipe" }> | undefined {
-  const latest = [...history].reverse().find((run) => run.files.length > 0);
-  return latest
-    ? { type: "run_recipe", name: recipeName, files: [...latest.files] }
-    : undefined;
 }

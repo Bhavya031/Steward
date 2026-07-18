@@ -22,7 +22,7 @@ export interface PlannedPending extends PendingBase {
 export interface SavedPending extends PendingBase {
   kind: "saved";
   recipe: Recipe;
-  score: number;
+  selection: { kind: "matched"; score: number } | { kind: "direct" };
 }
 export type PendingInstall = PlannedPending | SavedPending;
 

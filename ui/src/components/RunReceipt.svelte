@@ -53,7 +53,7 @@
     const blob = new Blob([scriptText(progress, recipeName)], { type: "text/x-sh" });
     const anchor = document.createElement("a");
     anchor.href = URL.createObjectURL(blob);
-    anchor.download = `${recipeName ?? "steward-recipe"}.sh`;
+    anchor.download = `${recipeName ?? "steward-workflow"}.sh`;
     anchor.click();
     URL.revokeObjectURL(anchor.href);
   }

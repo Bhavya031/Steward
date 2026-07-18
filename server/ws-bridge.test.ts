@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createWsBridge } from "./ws-bridge.ts";
+import { createWorkflowCatalogSender, createWsBridge } from "./ws-bridge.ts";
 import type { runEngineEvent } from "./ws-engine.ts";
 import { parseClientEvent, type ServerEvent } from "./ws-events.ts";
 
@@ -14,16 +14,72 @@ describe("typed WebSocket protocol", () => {
   test("parses only the three exact client event shapes", () => {
     expect(parseClientEvent('{"type":"run_task","task":"compress it","files":["/tmp/a.mp4"]}'))
       .toEqual({ type: "run_task", task: "compress it", files: ["/tmp/a.mp4"] });
-    expect(parseClientEvent('{"type":"run_recipe","name":"compress-video","files":["/tmp/b.mp4"]}'))
-      .toEqual({ type: "run_recipe", name: "compress-video", files: ["/tmp/b.mp4"] });
+    expect(parseClientEvent(
+      '{"type":"run_saved_workflow","workflow_id":"compress-video","files":["/tmp/b.mp4"]}',
+    )).toEqual({
+      type: "run_saved_workflow", workflow_id: "compress-video", files: ["/tmp/b.mp4"],
+    });
     expect(parseClientEvent('{"type":"confirm_install","run_id":"run-1","confirm":true}'))
       .toEqual({ type: "confirm_install", run_id: "run-1", confirm: true });
     expect(() => parseClientEvent(
       '{"type":"confirm_install","run_id":"run-1","confirm":false}',
     )).toThrow("unsupported WebSocket message shape");
+    expect(() => parseClientEvent(
+      '{"type":"run_saved_workflow","workflow_id":"../escape","files":["/tmp/a.mp4"]}',
+    )).toThrow("lowercase slug");
+    expect(() => parseClientEvent(
+      '{"type":"run_saved_workflow","workflow_id":"compress-video","files":["/tmp/a.mp4"],"task":"ignore"}',
+    )).toThrow("unsupported WebSocket message shape");
     expect(() => parseClientEvent('{"type":"run_task","task":"x","files":[],"extra":true}'))
       .toThrow("unsupported WebSocket message shape");
     expect(() => parseClientEvent("not json")).toThrow("valid JSON");
+  });
+
+  test("sends the real validated saved-workflow catalog", () => {
+    const socket = new FakeSocket();
+    createWorkflowCatalogSender()(socket);
+    expect(socket.messages).toHaveLength(1);
+    expect(socket.messages[0]).toMatchObject({ type: "workflow_catalog" });
+    const catalog = socket.messages[0];
+    if (catalog?.type !== "workflow_catalog") throw new Error("catalog was not sent");
+    expect(catalog.workflows.length).toBeGreaterThan(0);
+    expect(catalog.workflows.every((workflow) =>
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workflow.name)
+    )).toBe(true);
+  });
+
+  test("passes a stable-ID direct rerun to the engine without task text", async () => {
+    const socket = new FakeSocket();
+    const runner: EngineRunner = async (request, emit) => {
+      expect(request).toEqual({
+        type: "run_saved_workflow",
+        workflow_id: "compress-video",
+        files: ["/tmp/new.mp4"],
+      });
+      expect(Object.hasOwn(request, "task")).toBe(false);
+      emit({
+        type: "workflow_selected", run_id: "direct",
+        workflow_id: "compress-video", model_calls: 0,
+      });
+      emit({
+        type: "run_complete", run_id: "direct",
+        success: true, output_path: "/tmp/new-compressed.mp4", model_calls: 0,
+      });
+    };
+    await createWsBridge({ runEngine: runner })(
+      socket,
+      '{"type":"run_saved_workflow","workflow_id":"compress-video","files":["/tmp/new.mp4"]}',
+    );
+    expect(socket.messages).toEqual([
+      {
+        type: "workflow_selected", run_id: "direct",
+        workflow_id: "compress-video", model_calls: 0,
+      },
+      {
+        type: "run_complete", run_id: "direct",
+        success: true, output_path: "/tmp/new-compressed.mp4", model_calls: 0,
+      },
+    ]);
   });
 
   test("keeps paused installation state on the same socket for automatic continuation", async () => {

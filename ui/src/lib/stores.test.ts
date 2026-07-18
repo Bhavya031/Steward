@@ -64,6 +64,13 @@ const stream: ServerEvent[] = [
 ];
 
 describe("UI event stores", () => {
+  test("hydrates the home catalog from the server's real saved workflows", () => {
+    resetStores();
+    applyServerEvent({ type: "workflow_catalog", workflows: [recipe] });
+    expect(get(recipes)).toEqual([recipe]);
+    expect(get(runState)).toEqual({ status: "idle" });
+  });
+
   test("an exhaustive server-event replay lands in typed stores", () => {
     resetStores();
     stream.forEach(applyServerEvent);
@@ -181,7 +188,7 @@ describe("UI event stores", () => {
     });
   });
 
-  test("records zero model calls only when the engine reports a saved-command match", () => {
+  test("records a direct zero-model rerun in the existing workflow history", () => {
     resetStores();
     applyServerEvent({
       type: "run_started", run_id: "planned",
@@ -201,8 +208,8 @@ describe("UI event stores", () => {
       action: "recipe", files: ["/tmp/source-b.mov"],
     }, 400);
     applyServerEvent({
-      type: "recipe_matched", run_id: "rerun",
-      name: recipe.name, score: 1, model_calls: 0,
+      type: "workflow_selected", run_id: "rerun",
+      workflow_id: recipe.name, model_calls: 0,
     }, 500);
     applyServerEvent({
       type: "check_result", run_id: "rerun", name: "size_under", pass: true,

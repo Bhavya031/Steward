@@ -25,7 +25,7 @@
           <span class="detail-run-kind">
             {run.modelCalls === 0
               ? "Saved-command rerun"
-              : run.action === "recipe" ? "Run again" : "Task run"}
+              : run.action === "recipe" ? "Do again" : "Task run"}
           </span>
           {#if run.modelCalls === 0}
             <span class="zero-model-badge">0 model calls</span>

@@ -14,7 +14,6 @@
   }
 
   let { recipe, history, onBack, onRunAgain }: Props = $props();
-  let canRun = $derived(history.some((run) => run.files.length > 0));
 </script>
 
 <main class="detail-stage" aria-label="Saved command detail">
@@ -41,8 +40,8 @@
           {/if}
         </div>
       </div>
-      <button class="detail-run-again" type="button" disabled={!canRun} onclick={onRunAgain}>
-        Run again <span aria-hidden="true">▶</span>
+      <button class="detail-run-again" type="button" onclick={onRunAgain}>
+        Do again <span aria-hidden="true">▶</span>
       </button>
     </header>
 

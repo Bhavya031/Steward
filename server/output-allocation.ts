@@ -1,7 +1,12 @@
 import { lstatSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
+import { classifyCommand } from "./flag-policy.ts";
 import { validateOutput } from "./output-policy.ts";
 import { validatePlan, type Plan } from "./plan.ts";
+
+const SOURCE_TARGET_CHECKS = new Set([
+  "duration_matches", "page_count_matches", "text_extractable",
+]);
 
 function occupied(path: string): boolean {
   try {
@@ -31,9 +36,11 @@ function replaceOutput(value: string, from: string, to: string): string {
 }
 
 export function allocatePlanOutput(plan: Plan, inputPaths: string[]): Plan {
-  const inputs = inputPaths.map((path) => realpathSync(resolve(path)));
+  const rawInputs = inputPaths.map((path) => resolve(path));
+  const inputs = rawInputs.map((path) => realpathSync(path));
+  const inputAliases = new Set([...rawInputs, ...inputs]);
   const requested = resolve(plan.output_path);
-  if (inputs.includes(requested)) throw new Error("output path must differ from every input path");
+  const requestedIsInput = inputAliases.has(requested);
   const roots = inputs.map(dirname);
   let resolved: string | undefined;
   for (let number = 1; number < Number.MAX_SAFE_INTEGER; number += 1) {
@@ -43,9 +50,14 @@ export function allocatePlanOutput(plan: Plan, inputPaths: string[]): Plan {
     break;
   }
   if (!resolved) throw new Error("could not allocate an available output path");
-  const commands = plan.commands.map((command) =>
-    command.map((argument) => replaceOutput(argument, plan.output_path, resolved!))
-  );
+  const commands = plan.commands.map((command) => {
+    const rewritten = [...command];
+    for (const path of classifyCommand(plan.tool, command)) {
+      if (path.role === "input" || path.role === "temporary") continue;
+      rewritten[path.index] = replaceOutput(path.value, plan.output_path, resolved!);
+    }
+    return rewritten;
+  });
   if (resolved !== plan.output_path &&
       JSON.stringify(commands) === JSON.stringify(plan.commands)) {
     throw new Error("output collision cannot be suffixed for a directory-only command");
@@ -57,7 +69,10 @@ export function allocatePlanOutput(plan: Plan, inputPaths: string[]): Plan {
     checks: plan.checks.map((check) => ({
       ...check,
       target: typeof check.target === "string"
-        ? replaceOutput(check.target, plan.output_path, resolved!)
+        ? requestedIsInput && SOURCE_TARGET_CHECKS.has(check.type) &&
+            inputAliases.has(resolve(check.target))
+          ? check.target
+          : replaceOutput(check.target, plan.output_path, resolved!)
         : check.target,
     })),
   });

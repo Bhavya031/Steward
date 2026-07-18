@@ -49,19 +49,41 @@ export function pipelineSegments(progress: RunProgress): PipelineSegment[] {
   return segments;
 }
 
-export function scriptText(progress: RunProgress, recipeName?: string): string {
+function shellArgument(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function exportedCommand(argv: string[], inputPath: string | undefined): string {
+  return argv.map((argument) =>
+    inputPath !== undefined && argument === inputPath ? '"$1"' : shellArgument(argument)
+  ).join(" ");
+}
+
+export function scriptText(progress: RunProgress, workflowName?: string): string {
+  const inputPath = progress.request?.files[0];
+  const commands = progress.commandArgv.map((argv) => exportedCommand(argv, inputPath));
   return [
     "#!/bin/sh",
-    `# ${recipeName ?? "steward-recipe"} — verified locally by Steward`,
+    `# ${workflowName ?? "steward-workflow"} — verified locally by Steward`,
     "set -e",
-    ...progress.commands,
+    "",
+    "# Trusted input wrapper",
+    'if [ "$#" -eq 0 ]; then',
+    "  set -- \"$(/usr/bin/osascript <<'STEWARD_PICKER'",
+    'POSIX path of (choose file with prompt "Choose a file for this Steward workflow")',
+    "STEWARD_PICKER",
+    '  )"',
+    "fi",
+    "",
+    "# Exact verified transformation commands",
+    ...commands,
     "",
   ].join("\n");
 }
 
 export function raycastDeeplink(progress: RunProgress, recipeName?: string): string {
   const payload = {
-    name: recipeName ?? "steward-recipe",
+    name: recipeName ?? "steward-workflow",
     text: progress.commands.join(" && "),
   };
   return `raycast://snippets/import?snippet=${

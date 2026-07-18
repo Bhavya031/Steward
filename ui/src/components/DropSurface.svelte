@@ -1,36 +1,78 @@
 <script lang="ts">
   import {
     EXAMPLE_TASKS, canSubmitTask, filesFromDrop, filesFromPicker,
-    populateTaskFromExample, submitTask, type RunTaskEvent,
+    populateTaskFromExample, submitSavedWorkflow, submitTask,
+    type RunSavedWorkflowEvent, type RunTaskEvent,
   } from "../lib/task-entry.ts";
+  import type { Recipe, RunHistoryItem } from "../lib/stores.ts";
+  import ReceiptShelf from "./ReceiptShelf.svelte";
 
-  interface Props { onRunTask: (event: RunTaskEvent) => void }
-  let { onRunTask }: Props = $props();
+  interface Props {
+    onRunTask: (event: RunTaskEvent) => void;
+    onRunSavedWorkflow: (event: RunSavedWorkflowEvent) => void;
+    recipes: Recipe[];
+    history: RunHistoryItem[];
+    onOpenRecipe: (recipe: Recipe) => void;
+    requestedWorkflow?: Recipe;
+    onRequestedWorkflowHandled?: () => void;
+  }
+  let {
+    onRunTask, onRunSavedWorkflow, recipes, history, onOpenRecipe,
+    requestedWorkflow, onRequestedWorkflowHandled,
+  }: Props = $props();
   let task = $state("");
   let files = $state<File[]>([]);
   let busy = $state(false);
   let error = $state<string | undefined>();
+  let repeatWorkflow = $state<Recipe | undefined>();
+  let handledRequest = $state<string | undefined>();
   let fileInput: HTMLInputElement;
   let canRun = $derived(canSubmitTask(task, files, busy));
   let status = $derived(error
     ? `Local / ${error}`
     : busy
       ? `Local / staging ${files.length} file${files.length === 1 ? "" : "s"}`
+      : repeatWorkflow
+        ? `Local / choose a new file for ${repeatWorkflow.name.replaceAll("-", " ")}`
       : files.length > 0
         ? `Local / ${files.length} file${files.length === 1 ? "" : "s"} selected`
         : "Local / nothing uploaded");
 
-  function selectPicked(event: Event): void {
+  async function runSavedSelection(selected: File[]): Promise<void> {
+    if (!repeatWorkflow || selected.length === 0) return;
+    const workflow = repeatWorkflow;
+    busy = true;
+    error = undefined;
+    try {
+      onRunSavedWorkflow(await submitSavedWorkflow(workflow.name, selected));
+      repeatWorkflow = undefined;
+    } catch (caught) {
+      error = caught instanceof Error ? caught.message : String(caught);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function selectPicked(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement;
     files = filesFromPicker(input.files);
     error = undefined;
     input.value = "";
+    await runSavedSelection(files);
   }
 
-  function selectDropped(event: DragEvent): void {
+  async function selectDropped(event: DragEvent): Promise<void> {
     event.preventDefault();
     files = filesFromDrop(event.dataTransfer);
     error = undefined;
+    await runSavedSelection(files);
+  }
+
+  function chooseNewFile(recipe: Recipe): void {
+    repeatWorkflow = recipe;
+    files = [];
+    error = undefined;
+    fileInput.click();
   }
 
   async function run(event: SubmitEvent): Promise<void> {
@@ -46,6 +88,14 @@
       busy = false;
     }
   }
+
+  $effect(() => {
+    if (requestedWorkflow && fileInput && handledRequest !== requestedWorkflow.name) {
+      handledRequest = requestedWorkflow.name;
+      chooseNewFile(requestedWorkflow);
+      onRequestedWorkflowHandled?.();
+    }
+  });
 </script>
 
 <section
@@ -128,6 +178,18 @@
         </div>
       </div>
     </div>
+
+    {#if recipes.length > 0}
+      <section class="past-tasks" aria-labelledby="past-tasks-title">
+        <h2 id="past-tasks-title">Past tasks</h2>
+        <ReceiptShelf
+          {recipes}
+          {history}
+          onOpen={onOpenRecipe}
+          onDoAgain={chooseNewFile}
+        />
+      </section>
+    {/if}
   </div>
 
   <img

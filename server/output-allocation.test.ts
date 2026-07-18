@@ -78,6 +78,22 @@ describe("output collision allocation", () => {
     );
   });
 
+  test("suffixes an output equal to its input without rewriting the read argument", () => {
+    const samePathPlan: Plan = {
+      ...copyPlan(source),
+      commands: [["ffmpeg", "-loglevel", "error", "-i", source, "-c", "copy", source]],
+      output_path: source,
+      checks: [{ type: "duration_matches", target: source }],
+    };
+    const allocated = allocatePlanOutput(samePathPlan, [source]);
+    expect(allocated.output_path).toBe(join(realRoot, "source-2.mp4"));
+    expect(allocated.commands[0]).toEqual([
+      "ffmpeg", "-loglevel", "error", "-i", source,
+      "-c", "copy", join(realRoot, "source-2.mp4"),
+    ]);
+    expect(allocated.checks).toEqual([{ type: "duration_matches", target: source }]);
+  });
+
   test("keeps the authored plan as the recipe while first and saved runs allocate", async () => {
     const output = join(root, "source-copy.mp4");
     writeFileSync(output, "existing output");

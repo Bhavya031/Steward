@@ -3,6 +3,7 @@ import { createPacer } from "./pacing.ts";
 import { applyClientEvent, applyServerEvent } from "./stores.ts";
 
 const SERVER_EVENT_TYPES: { [Type in ServerEvent["type"]]: true } = {
+  workflow_catalog: true,
   run_started: true,
   activity: true,
   model_call_count: true,
@@ -18,12 +19,17 @@ const SERVER_EVENT_TYPES: { [Type in ServerEvent["type"]]: true } = {
   repair_attempt: true,
   recipe_saved: true,
   recipe_matched: true,
+  workflow_selected: true,
   run_complete: true,
   error: true,
 };
 
 let sessionToken: string | null = null;
 let socket: WebSocket | null = null;
+const SESSION_TOKEN_KEY = "steward.session-token";
+
+type SessionStorage = Pick<Storage, "getItem" | "setItem">;
+type ReplaceUrl = (url: string) => void;
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -35,6 +41,39 @@ export function sessionTokenFromUrl(url: URL): string {
     throw new Error("Session token is missing or invalid.");
   }
   return token;
+}
+
+function validStoredToken(value: string | null): string | null {
+  return value && value.length <= 256 && !value.includes("\0") ? value : null;
+}
+
+export function captureStartupSession(
+  url: URL,
+  storage: SessionStorage = window.sessionStorage,
+  replaceUrl: ReplaceUrl = (clean) =>
+    window.history.replaceState(window.history.state, "", clean),
+): string {
+  const queryToken = url.searchParams.get("token");
+  const storedToken = validStoredToken(storage.getItem(SESSION_TOKEN_KEY));
+  if (sessionToken === null) {
+    sessionToken = queryToken === null ? storedToken : sessionTokenFromUrl(url);
+  } else if (queryToken !== null && sessionTokenFromUrl(url) !== sessionToken) {
+    throw new Error("The startup session token does not match this browser session.");
+  }
+  if (!sessionToken) throw new Error("Session token is missing or invalid.");
+  storage.setItem(SESSION_TOKEN_KEY, sessionToken);
+  if (queryToken !== null) {
+    const clean = new URL(url);
+    clean.searchParams.delete("token");
+    replaceUrl(`${clean.pathname}${clean.search}${clean.hash}`);
+  }
+  return sessionToken;
+}
+
+export function sessionTokenForRequest(url?: URL): string {
+  if (sessionToken) return sessionToken;
+  if (url) return sessionTokenFromUrl(url);
+  throw new Error("Session token is missing or invalid.");
 }
 
 export function parseServerEvent(raw: string): ServerEvent {
@@ -76,8 +115,9 @@ export function connectWebSocket(): WebSocket | null {
   if (socket && (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)) {
     return socket;
   }
+  let token: string;
   try {
-    sessionToken ??= sessionTokenFromUrl(new URL(window.location.href));
+    token = captureStartupSession(new URL(window.location.href));
   } catch (error) {
     applyServerEvent({
       type: "error",
@@ -85,7 +125,7 @@ export function connectWebSocket(): WebSocket | null {
     });
     return null;
   }
-  const connection = new WebSocket(websocketUrl(sessionToken));
+  const connection = new WebSocket(websocketUrl(token));
   socket = connection;
   connection.addEventListener("message", (event) => receive(String(event.data)));
   connection.addEventListener("error", () => applyServerEvent({
@@ -109,4 +149,8 @@ export function sendClientEvent(event: ClientEvent): void {
 export function disconnectWebSocket(): void {
   socket?.close();
   socket = null;
+}
+
+export function resetSessionAuthForTests(): void {
+  sessionToken = null;
 }

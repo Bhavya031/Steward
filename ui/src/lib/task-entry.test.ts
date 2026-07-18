@@ -1,13 +1,23 @@
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import {
   EXAMPLE_TASKS, canSubmitTask, filesFromDrop, filesFromPicker,
-  populateTaskFromExample, runTaskEvent, stageInputFile, submitTask,
+  populateTaskFromExample, runSavedWorkflowEvent, runTaskEvent,
+  stageInputFile, submitSavedWorkflow, submitTask,
 } from "./task-entry.ts";
+import { captureStartupSession, resetSessionAuthForTests } from "./ws.ts";
 
 const video = new File(["video bytes"], "clip one.mov", { type: "video/quicktime" });
 const document = new File(["pdf bytes"], "scan.pdf", { type: "application/pdf" });
+const memoryStorage = () => {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value); },
+  };
+};
 
 describe("visible task entry", () => {
+  beforeEach(() => resetSessionAuthForTests());
   test("turns typed task text and staged selections into the exact run_task payload", async () => {
     const staged: string[] = [];
     const event = await submitTask("  Convert this to MP4  ", [video, document], async (file) => {
@@ -53,11 +63,18 @@ describe("visible task entry", () => {
   });
 
   test("stages browser bytes with the startup token and encoded filename", async () => {
+    const storage = memoryStorage();
+    let cleanUrl = "";
+    captureStartupSession(
+      new URL("http://127.0.0.1:4321/?token=session-secret&__proof_task=convert"),
+      storage,
+      (value) => { cleanUrl = value; },
+    );
     let capturedUrl = "";
     let capturedInit: RequestInit | undefined;
     const path = await stageInputFile(
       video,
-      new URL("http://127.0.0.1:4321/?token=session-secret"),
+      new URL("http://127.0.0.1:4321/?__proof_task=convert"),
       async (input, init) => {
         capturedUrl = String(input);
         capturedInit = init;
@@ -69,10 +86,31 @@ describe("visible task entry", () => {
     expect(capturedUrl).toBe(
       "http://127.0.0.1:4321/api/stage-input?token=session-secret",
     );
+    expect(cleanUrl).toBe("/?__proof_task=convert");
     expect(capturedInit?.method).toBe("POST");
     const headers = new Headers(capturedInit?.headers);
     expect(headers.get("x-steward-filename")).toBe("clip%20one.mov");
     expect(await new Response(capturedInit?.body).text()).toBe("video bytes");
     expect(path).toBe("/tmp/steward-inputs-proof/unique-clip.mov");
+  });
+
+  test("stages a newly chosen file for a stable-ID direct rerun", async () => {
+    const staged: string[] = [];
+    const event = await submitSavedWorkflow(
+      "convert-media-to-mp4",
+      [video],
+      async (file) => {
+        staged.push(file.name);
+        return "/tmp/steward-inputs-proof/new-clip.mov";
+      },
+    );
+    expect(staged).toEqual(["clip one.mov"]);
+    expect(event).toEqual({
+      type: "run_saved_workflow",
+      workflow_id: "convert-media-to-mp4",
+      files: ["/tmp/steward-inputs-proof/new-clip.mov"],
+    });
+    expect(() => runSavedWorkflowEvent("../escape", ["/tmp/input.mov"])).toThrow();
+    expect(() => runSavedWorkflowEvent("convert-media-to-mp4", [])).toThrow();
   });
 });

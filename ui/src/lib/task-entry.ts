@@ -1,5 +1,5 @@
 import type { ClientEvent } from "../../../server/ws-events.ts";
-import { sessionTokenFromUrl } from "./ws.ts";
+import { sessionTokenForRequest } from "./ws.ts";
 
 export const EXAMPLE_TASKS = [
   "Compress this video under 25 MB",
@@ -8,6 +8,7 @@ export const EXAMPLE_TASKS = [
 ] as const;
 
 export type RunTaskEvent = Extract<ClientEvent, { type: "run_task" }>;
+export type RunSavedWorkflowEvent = Extract<ClientEvent, { type: "run_saved_workflow" }>;
 type FileSource = ArrayLike<File> | null | undefined;
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -39,12 +40,23 @@ export function runTaskEvent(task: string, paths: string[]): RunTaskEvent {
   return { type: "run_task", task: normalized, files: [...paths] };
 }
 
+export function runSavedWorkflowEvent(
+  workflowId: string,
+  paths: string[],
+): RunSavedWorkflowEvent {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workflowId) || workflowId.length > 64 ||
+      paths.length === 0 || paths.some((path) => !path.startsWith("/"))) {
+    throw new Error("A saved workflow and at least one staged file are required.");
+  }
+  return { type: "run_saved_workflow", workflow_id: workflowId, files: [...paths] };
+}
+
 export async function stageInputFile(
   file: File,
   pageUrl = new URL(window.location.href),
   fetcher: Fetcher = fetch,
 ): Promise<string> {
-  const token = sessionTokenFromUrl(pageUrl);
+  const token = sessionTokenForRequest(pageUrl);
   const url = new URL("/api/stage-input", pageUrl);
   url.search = "";
   url.searchParams.set("token", token);
@@ -80,4 +92,15 @@ export async function submitTask(
   const paths: string[] = [];
   for (const file of files) paths.push(await stage(file));
   return runTaskEvent(task, paths);
+}
+
+export async function submitSavedWorkflow(
+  workflowId: string,
+  files: File[],
+  stage: (file: File) => Promise<string> = stageInputFile,
+): Promise<RunSavedWorkflowEvent> {
+  if (files.length === 0) throw new Error("Choose at least one new file.");
+  const paths: string[] = [];
+  for (const file of files) paths.push(await stage(file));
+  return runSavedWorkflowEvent(workflowId, paths);
 }

@@ -6,6 +6,31 @@ import { formatClock, pipelineSegments, stepTool } from "./receipt-view.ts";
 import { stepDuration, totalDuration } from "./run-view.ts";
 
 describe("running-state event clock", () => {
+  test("shows a direct saved-workflow selection as a zero-model plan", () => {
+    let state = reduceClientEvent(createRunProgress(), {
+      type: "run_saved_workflow",
+      workflow_id: "convert-media-to-mp4",
+      files: ["/tmp/new.mov"],
+    });
+    state = reduceServerEvent(state, {
+      type: "run_started", run_id: "direct",
+      action: "recipe", files: ["/tmp/new.mov"],
+    }, 1_000);
+    state = reduceServerEvent(state, {
+      type: "workflow_selected", run_id: "direct",
+      workflow_id: "convert-media-to-mp4", model_calls: 0,
+    }, 1_100);
+    expect(state.request).toEqual({
+      kind: "recipe",
+      description: "convert-media-to-mp4",
+      files: ["/tmp/new.mov"],
+    });
+    expect(state.steps.plan).toMatchObject({
+      status: "active", note: "0 model calls",
+    });
+    expect(state.activity).toBe("Saved plan ready. Preparing local execution.");
+  });
+
   test("shows probe then a saved plan and keeps authoritative execution timing", () => {
     let state = reduceClientEvent(createRunProgress(), {
       type: "run_task",
@@ -111,7 +136,7 @@ describe("running-state event clock", () => {
     }, 1_000);
     state = reduceServerEvent(state, {
       type: "activity", run_id: "run-4",
-      message: "No saved recipe matched. Reading the local system profile.",
+      message: "No saved workflow matched. Reading the local system profile.",
     }, 1_400);
     expect(state.steps.probe.status).toBe("active");
     expect(state.steps.plan.status).toBe("pending");
@@ -152,12 +177,12 @@ describe("running-state event clock", () => {
       type: "run_started", run_id: "run-3", action: "task", files: ["/tmp/in.mov"],
     }, 1_000);
     first = reduceServerEvent(first, {
-      type: "activity", run_id: "run-3", message: "Checking the local recipe shelf.",
+      type: "activity", run_id: "run-3", message: "Checking saved workflows on this Mac.",
     }, 1_010);
     const second = reduceServerEvent(first, {
       type: "activity", run_id: "run-3", message: "Planning a local command.",
     }, 1_020);
-    expect(first.steps.probe.detail).toEqual(["Checking the local recipe shelf."]);
+    expect(first.steps.probe.detail).toEqual(["Checking saved workflows on this Mac."]);
     expect(second.steps.plan.detail).toEqual([
       "Planning a local command.",
     ]);

@@ -4,12 +4,13 @@ import type { VerificationResult } from "./verify/types.ts";
 
 export type ClientEvent =
   | { type: "run_task"; task: string; files: string[] }
-  | { type: "run_recipe"; name: string; files: string[] }
+  | { type: "run_saved_workflow"; workflow_id: string; files: string[] }
   | { type: "confirm_install"; run_id: string; confirm: true };
 
 interface RunEvent { run_id: string }
 
 export type ServerEvent =
+  | { type: "workflow_catalog"; workflows: Recipe[] }
   | (RunEvent & {
     type: "run_started";
     action: "task" | "recipe";
@@ -58,6 +59,11 @@ export type ServerEvent =
     model_calls: 0;
   })
   | (RunEvent & {
+    type: "workflow_selected";
+    workflow_id: string;
+    model_calls: 0;
+  })
+  | (RunEvent & {
     type: "run_complete";
     success: boolean;
     output_path?: string;
@@ -90,6 +96,14 @@ function files(value: unknown): string[] {
   return value.map((path, index) => text(path, `files[${index}]`));
 }
 
+function workflowId(value: unknown): string {
+  const id = text(value, "workflow_id");
+  if (id.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
+    throw new Error("workflow_id must be a lowercase slug up to 64 characters");
+  }
+  return id;
+}
+
 export function parseClientEvent(raw: string): ClientEvent {
   if (raw.length > 64 * 1_024) throw new Error("WebSocket message exceeds 64 KiB");
   let value: unknown;
@@ -104,8 +118,13 @@ export function parseClientEvent(raw: string): ClientEvent {
   if (value.type === "run_task" && exactKeys(value, ["type", "task", "files"])) {
     return { type: "run_task", task: text(value.task, "task"), files: files(value.files) };
   }
-  if (value.type === "run_recipe" && exactKeys(value, ["type", "name", "files"])) {
-    return { type: "run_recipe", name: text(value.name, "name"), files: files(value.files) };
+  if (value.type === "run_saved_workflow" &&
+      exactKeys(value, ["type", "workflow_id", "files"])) {
+    return {
+      type: "run_saved_workflow",
+      workflow_id: workflowId(value.workflow_id),
+      files: files(value.files),
+    };
   }
   if (value.type === "confirm_install" &&
       exactKeys(value, ["type", "run_id", "confirm"]) && value.confirm === true) {

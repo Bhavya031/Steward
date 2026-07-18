@@ -420,6 +420,19 @@ pre {
   line-height: 1;
 }
 
+.past-tasks {
+  margin-top: 42px;
+}
+
+.past-tasks h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .running-stage {
   display: grid;
   min-height: 100vh;
@@ -1246,24 +1259,56 @@ pre {
 }
 
 .shelf-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   width: 100%;
   min-height: 84px;
   align-items: center;
-  gap: 14px;
-  padding: 14px;
+  gap: 10px;
+  padding: 8px;
   border: 0;
   border-radius: var(--radius);
   background: var(--fill);
   text-align: left;
-  cursor: pointer;
   transition: background-color 160ms ease, transform 160ms ease;
 }
 
 .shelf-card:hover,
-.shelf-card:focus-visible {
+.shelf-card:focus-within {
   background: var(--fill-hover);
   transform: translateY(-2px);
+}
+
+.shelf-card-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shelf-card-again {
+  align-self: stretch;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--field);
+  color: var(--card);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.shelf-card-again:hover,
+.shelf-card-again:focus-visible {
+  background: var(--accent);
 }
 
 .shelf-card-tile {

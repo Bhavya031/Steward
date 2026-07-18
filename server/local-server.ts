@@ -4,6 +4,7 @@ import { resolve, sep } from "node:path";
 import type { ServerWebSocket } from "bun";
 import { STAGE_INPUT_PATH, stageInput } from "./input-staging.ts";
 import { createSessionToken, requestHasSessionToken, sessionCookie } from "./security.ts";
+import { userFacingMessage } from "./user-facing.ts";
 
 export interface SocketData { authenticated: true }
 export type LocalSocket = ServerWebSocket<SocketData>;
@@ -11,6 +12,7 @@ export interface LocalServerOptions {
   staticRoot?: string;
   stagingRoot?: string;
   openBrowser?: boolean;
+  onWebSocketOpen?: (socket: LocalSocket) => void | Promise<void>;
   onWebSocketMessage?: (socket: LocalSocket, message: string) => void | Promise<void>;
 }
 
@@ -78,6 +80,12 @@ export function startLocalServer(options: LocalServerOptions = {}) {
       return new Response(Bun.file(path), { headers });
     },
     websocket: {
+      open(socket) {
+        void Promise.resolve(options.onWebSocketOpen?.(socket)).catch((error) => {
+          console.error(`WebSocket startup failed: ${userFacingMessage(error)}`);
+          socket.close(1011, "Internal startup failure");
+        });
+      },
       message(socket, message) {
         if (!options.onWebSocketMessage) {
           socket.send(message);
@@ -85,7 +93,7 @@ export function startLocalServer(options: LocalServerOptions = {}) {
         }
         const text = typeof message === "string" ? message : message.toString("utf8");
         void Promise.resolve(options.onWebSocketMessage(socket, text)).catch((error) => {
-          console.error(`WebSocket handler failed: ${error instanceof Error ? error.message : String(error)}`);
+          console.error(`WebSocket handler failed: ${userFacingMessage(error)}`);
           socket.close(1011, "Internal bridge failure");
         });
       },
