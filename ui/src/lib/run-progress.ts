@@ -1,17 +1,10 @@
 import type { ClientEvent, ServerEvent } from "../../../server/ws-events.ts";
 import {
-  applyActivity,
-  completeStep,
-  completeWithDuration,
-  completeWithoutTiming,
-  displayCommand,
-  resetStep,
-  settleExecute,
-  settlePlanAndProbe,
-  startStep,
+  applyActivity, completeStep, completeWithDuration, completeWithoutTiming, displayCommand,
+  resetStep, settleExecute, settlePlanAndProbe, startStep,
 } from "./run-progress-state.ts";
 
-export const RUN_STEPS = ["plan", "probe", "execute", "verify"] as const;
+export const RUN_STEPS = ["probe", "plan", "execute", "verify"] as const;
 export type RunStepName = typeof RUN_STEPS[number];
 export type RunStepStatus = "pending" | "active" | "complete" | "skipped";
 export interface RunStep {
@@ -85,15 +78,20 @@ export function reduceServerEvent(
 ): RunProgress {
   if (event.type === "run_started") {
     const state = createRunProgress(current.request);
-    startStep(state, "plan", at);
-    state.activity = "Starting local run.";
+    startStep(state, "probe", at);
+    state.activity = "Checking saved commands and this Mac.";
     return state;
   }
   const state = copy(current);
   if (event.type === "activity") applyActivity(state, event.message, at);
   if (event.type === "recipe_matched") {
-    completeStep(state, "plan", at);
+    if (state.steps.probe.status === "active") completeStep(state, "probe", at);
+    else if (state.steps.probe.status === "pending") {
+      state.steps.probe = { status: "skipped" };
+    }
+    startStep(state, "plan", at);
     state.steps.plan.note = `${event.model_calls} model calls`;
+    state.activity = "Saved plan ready. Preparing local execution.";
   }
   if (event.type === "command_started") {
     settlePlanAndProbe(state, at);
@@ -114,6 +112,8 @@ export function reduceServerEvent(
     settleExecute(state, at);
     if (state.steps.verify.status === "complete") resetStep(state, "verify");
     startStep(state, "verify", at);
+    state.activity = "Checking the output against the plan.";
+    state.progress = "";
   }
   if (event.type === "verification_completed") {
     settlePlanAndProbe(state, at);

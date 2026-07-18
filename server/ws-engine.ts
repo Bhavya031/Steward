@@ -45,7 +45,7 @@ async function runSavedReady(
     score, model_calls: 0,
   });
   pendingChecks(runId, recipe.checks, emit);
-  activity(runId, "Running the saved recipe locally.", emit);
+  activity(runId, "Saved plan ready. Preparing local execution.", emit);
   const run = await rerun(recipe, files, {
     executionOptions: { onEvent: executionEvents(runId, emit) },
     ...verificationEvents(runId, emit),
@@ -123,6 +123,7 @@ async function runPlanned(
   const { planTask } = await import("./agent.ts");
   const planningTask = `${task}\nInput files (absolute paths): ${JSON.stringify(files)}`;
   const plan = await planTask(profile, planningTask, task);
+  activity(runId, "Plan ready. Preparing local execution.", emit);
   const requirements = await planRequirements(plan);
   if (requirementsNeeded(requirements)) {
     return pauseForInstall(

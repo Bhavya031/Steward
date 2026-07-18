@@ -25,7 +25,6 @@
   export let history: RunHistoryItem[] = [];
   export let onOpenRecipe: (recipe: Recipe) => void = () => {};
 
-  const GLIDE_MS = 900;
   const OUTRO_MS = 650;
   const reducedMotion = typeof matchMedia === "function"
     && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -46,44 +45,26 @@
 
   onDestroy(() => clearTimeout(outroTimer));
 
-  let landed: RunStepName | undefined;
-  let landTarget: RunStepName | undefined;
-  let landTimer: ReturnType<typeof setTimeout> | undefined;
-
-  function settle(next: RunStepName | undefined, instant: boolean): void {
-    if (next === landTarget) {
-      if (instant && landed !== next) {
-        clearTimeout(landTimer);
-        landed = next;
-      }
-      return;
-    }
-    landTarget = next;
-    clearTimeout(landTimer);
-    if (next === undefined || next === "plan" || instant || reducedMotion) {
-      landed = next;
-      return;
-    }
-    landed = undefined;
-    landTimer = setTimeout(() => {
-      landed = next;
-    }, GLIDE_MS);
-  }
-
   $: active = [...RUN_STEPS].reverse()
     .find((name) => progress.steps[name].status === "active");
-  $: settle(active, status !== "running");
   $: activeIndex = active ? RUN_STEPS.indexOf(active) : RUN_STEPS.length;
   $: completed = RUN_STEPS.filter((name, index) =>
     (progress.steps[name].status === "complete" || progress.steps[name].status === "skipped")
       && index < activeIndex);
   $: kindOf = (name: RunStepName): "complete" | "live" | "ghost" =>
     completed.includes(name) ? "complete"
-      : name === active && name === landed ? "live" : "ghost";
+      : name === active ? "live" : "ghost";
   $: slotIndex = (index: number) => index > activeIndex ? 4 - index : index;
   $: file = progress.request?.files[0]?.split(/[\\/]/).at(-1) ?? "local file";
   $: description = progress.request?.description ?? "Local file task";
   $: tool = activeTool(progress);
+  $: completedChecks = checks.filter((check) => check.status !== "pending").length;
+  $: mainLine = active === "execute"
+    ? progress.command || progress.activity
+    : progress.activity;
+  $: progressLine = active === "verify" && checks.length > 0
+    ? `${completedChecks} of ${checks.length} checks complete`
+    : active === "execute" ? progress.progress || progress.activity : "";
   $: statusText = status === "complete"
     ? "Local run complete"
     : status === "failed" ? "Local run stopped" : "Running locally";
@@ -186,14 +167,10 @@
                     </span>
                   {/if}
                 </div>
-                <p class="run-command">{progress.command || progress.activity}</p>
+                <p class="run-command">{mainLine}</p>
                 {#if status === "running" || progress.progress}
                   <div class="run-progress-line">
-                    <span>
-                      {progress.command
-                        ? progress.progress || progress.activity
-                        : progress.progress}
-                    </span>
+                    <span>{progressLine}</span>
                     {#if status === "running"}
                       <span class="run-pinwheel" aria-hidden="true"></span>
                     {/if}

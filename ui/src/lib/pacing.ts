@@ -1,13 +1,13 @@
 import type { ServerEvent } from "../../../server/ws-events.ts";
 
-export const STEP_GAP_MS = 1_500;
+export const STEP_GAP_MS = 1_000;
 
 function advancesStep(event: ServerEvent): boolean {
   if (event.type === "recipe_matched" || event.type === "command_started" ||
       event.type === "verification_started" || event.type === "run_complete") return true;
-  if (event.type === "check_result") return true;
   if (event.type !== "activity") return false;
-  return event.message.includes("Reading the local system profile");
+  return event.message.startsWith("Planning a local command") ||
+    event.message.startsWith("Plan ready.");
 }
 
 export interface Pacer {

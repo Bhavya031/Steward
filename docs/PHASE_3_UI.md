@@ -32,6 +32,13 @@ Calm operator: no "I/we", no exclamation marks, no AI jargon. Say what happened,
 - Empty state: "Drop a file. Tell Steward what you need." + tagline "Your computer already knows how."
 - Saved: "Recipe saved. Future runs use zero model calls."
 
+## Run choreography
+- The visible order follows the real work: PROBE → PLAN → EXECUTE → VERIFY.
+- Each stage remains visible for at least one second. This is presentation pacing only; receipts use original event timestamps and authoritative command/verification durations.
+- Planning copy stays in PLAN. A fresh plan shows "Plan ready" before execution; a saved command shows that its saved plan is ready and retains the explicit `0 model calls` evidence.
+- VERIFY remains visible while measured checks arrive. It never reuses the execution command or execution duration as verification evidence.
+- Deferred repair UI: command failure must visibly enter repair, show the structured revised command, rerun it, and reverify. The existing bounded repair engine remains authoritative; this choreography is not part of the smaller stage/layout correction.
+
 ## Layout (single screen, no routing)
 Left column (~60%): DropSurface on top (drag a file OR type a task, one input line beneath the drop zone), ActivityStream below it (mono, streaming lines), VerifyPanel below that (checks appear pending → flip green/red one by one; each row shows name, expected, actual — evidence is ALWAYS visible, not hover-hidden).
 Right column (~40%): KillCounter on top (serif, large: "$34.99/mo killed · nothing left this laptop"), Shelf below — grid of RecipeCards.

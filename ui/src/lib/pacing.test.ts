@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ServerEvent } from "../../../server/ws-events.ts";
-import { createPacer } from "./pacing.ts";
+import { createPacer, STEP_GAP_MS } from "./pacing.ts";
 import { createRunProgress, reduceServerEvent } from "./run-progress.ts";
 
 const runId = "paced-run";
@@ -19,6 +19,10 @@ function burst(): ServerEvent[] {
 }
 
 describe("run pacing", () => {
+  test("holds every visual stage for one second", () => {
+    expect(STEP_GAP_MS).toBe(1_000);
+  });
+
   test("spaces step transitions while keeping order and true receipt times", async () => {
     const seen: Array<{ type: string; delay: number }> = [];
     const started = Date.now();
@@ -52,6 +56,27 @@ describe("run pacing", () => {
     await new Promise((resolve) => setTimeout(resolve, 180));
     expect(state.steps.execute.durationMs).toBe(723);
     expect(state.steps.verify.durationMs).toBe(61);
+  });
+
+  test("holds the plan-ready handoff before execution", async () => {
+    const seen: Array<{ label: string; delay: number }> = [];
+    const started = Date.now();
+    const pacer = createPacer((event) => {
+      const label = event.type === "activity" ? event.message : event.type;
+      seen.push({ label, delay: Date.now() - started });
+    }, 30);
+    [
+      { type: "run_started", run_id: runId, action: "task", files: ["/tmp/in.mkv"] },
+      { type: "activity", run_id: runId, message: "Planning a local command." },
+      { type: "activity", run_id: runId, message: "Plan ready. Preparing local execution." },
+      { type: "command_started", run_id: runId, argv: ["ffmpeg", "/tmp/out.mp4"] },
+    ].forEach((event) => pacer.push(event as ServerEvent));
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    expect(seen.map(({ label }) => label)).toEqual([
+      "run_started", "Planning a local command.",
+      "Plan ready. Preparing local execution.", "command_started",
+    ]);
+    expect(seen[3]!.delay - seen[2]!.delay).toBeGreaterThanOrEqual(20);
   });
 
   test("a new run flushes any backlog from the previous one", async () => {

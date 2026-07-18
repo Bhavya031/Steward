@@ -6,7 +6,7 @@ import { formatClock, pipelineSegments, stepTool } from "./receipt-view.ts";
 import { stepDuration, totalDuration } from "./run-view.ts";
 
 describe("running-state event clock", () => {
-  test("marks skipped probe and keeps authoritative multi-command and verification timing", () => {
+  test("shows probe then a saved plan and keeps authoritative execution timing", () => {
     let state = reduceClientEvent(createRunProgress(), {
       type: "run_task",
       task: "compress this video under 25 MB",
@@ -26,12 +26,12 @@ describe("running-state event clock", () => {
     }, 1_340);
 
     expect(state.steps.plan).toMatchObject({
-      status: "complete", durationMs: 120, note: "0 model calls",
+      status: "complete", durationMs: 220, note: "0 model calls",
     });
-    expect(state.steps.probe).toEqual({ status: "skipped" });
-    expect(stepDuration(state, "probe", 1_840)).toBe("SKIPPED");
-    expect(stepTool(state, "probe", "compress-video-under-size")).toBe("—");
-    expect(pipelineSegments(state)).not.toContainEqual({ kind: "bash", label: "ffprobe" });
+    expect(state.steps.probe).toMatchObject({ status: "complete", durationMs: 120 });
+    expect(stepDuration(state, "probe", 1_840)).toBe("0.12s");
+    expect(stepTool(state, "probe", "compress-video-under-size")).toBe("ffprobe");
+    expect(pipelineSegments(state)).toContainEqual({ kind: "bash", label: "ffprobe" });
     expect(executeElapsedMs(state, 1_840)).toBe(500);
 
     state = reduceServerEvent(state, {
@@ -62,7 +62,7 @@ describe("running-state event clock", () => {
     expect(state.steps.execute).toMatchObject({ status: "complete", durationMs: 723 });
     expect(state.steps.verify).toMatchObject({ status: "complete", durationMs: 81 });
     expect(state.commands).toHaveLength(2);
-    expect(totalDuration(state)).toBe("0.92s");
+    expect(totalDuration(state)).toBe("1.14s");
   });
 
   test("renders no timing when a step has no observable boundary", () => {
@@ -86,7 +86,7 @@ describe("running-state event clock", () => {
       pass: false, expected: "under 25,000,000 bytes", actual: "missing output",
     }, 1_400);
     expect(state.steps.plan.status).toBe("complete");
-    expect(state.steps.probe.status).toBe("skipped");
+    expect(state.steps.probe.status).toBe("complete");
     expect(state.steps.execute.status).toBe("complete");
     expect(state.steps.execute.durationMs).toBeUndefined();
     expect(state.steps.verify.status).toBe("active");
@@ -100,7 +100,7 @@ describe("running-state event clock", () => {
       type: "verification_completed", run_id: "run-5", duration_ms: 44,
     }, 1_500);
     expect(state.steps.plan.status).toBe("complete");
-    expect(state.steps.probe.status).toBe("skipped");
+    expect(state.steps.probe.status).toBe("complete");
     expect(state.steps.execute.status).toBe("complete");
     expect(state.steps.verify).toMatchObject({ status: "complete", durationMs: 44 });
   });
@@ -113,14 +113,20 @@ describe("running-state event clock", () => {
       type: "activity", run_id: "run-4",
       message: "No saved recipe matched. Reading the local system profile.",
     }, 1_400);
-    expect(state.steps.plan.status).toBe("complete");
     expect(state.steps.probe.status).toBe("active");
+    expect(state.steps.plan.status).toBe("pending");
     state = reduceServerEvent(state, {
       type: "check_pending", run_id: "run-4", name: "size_under",
     }, 1_600);
     expect(state.steps.probe.status).toBe("active");
     expect(state.steps.execute.status).toBe("pending");
     expect(state.steps.verify.status).toBe("pending");
+    state = reduceServerEvent(state, {
+      type: "activity", run_id: "run-4", message: "Planning a local command.",
+    }, 1_700);
+    expect(state.steps.probe.status).toBe("complete");
+    expect(state.steps.plan.status).toBe("active");
+    expect(state.activity).toBe("Planning a local command.");
   });
 
   test("keeps the failed step active instead of presenting it as complete", () => {
@@ -151,10 +157,10 @@ describe("running-state event clock", () => {
     const second = reduceServerEvent(first, {
       type: "activity", run_id: "run-3", message: "Planning a local command.",
     }, 1_020);
-    expect(first.steps.plan.detail).toEqual(["Checking the local recipe shelf."]);
+    expect(first.steps.probe.detail).toEqual(["Checking the local recipe shelf."]);
     expect(second.steps.plan.detail).toEqual([
-      "Checking the local recipe shelf.", "Planning a local command.",
+      "Planning a local command.",
     ]);
-    expect(second.steps.plan.detail).not.toBe(first.steps.plan.detail);
+    expect(second.steps.probe.detail).not.toBe(first.steps.probe.detail);
   });
 });

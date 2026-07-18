@@ -1,6 +1,6 @@
 import type { RunProgress, RunStepName } from "./run-progress.ts";
 
-const STEP_NAMES: RunStepName[] = ["plan", "probe", "execute", "verify"];
+const STEP_NAMES: RunStepName[] = ["probe", "plan", "execute", "verify"];
 
 export function startStep(state: RunProgress, name: RunStepName, at: number): void {
   const step = state.steps[name];
@@ -35,9 +35,8 @@ export function resetStep(state: RunProgress, name: RunStepName): void {
 }
 
 export function settlePlanAndProbe(state: RunProgress, at: number): void {
-  if (state.steps.plan.status === "pending" || state.steps.plan.status === "active") {
-    completeStep(state, "plan", at);
-  }
+  if (state.steps.plan.status === "active") completeStep(state, "plan", at);
+  else if (state.steps.plan.status === "pending") completeWithoutTiming(state, "plan");
   if (state.steps.probe.status === "active") completeStep(state, "probe", at);
   else if (state.steps.probe.status === "pending") {
     state.steps.probe = { status: "skipped" };
@@ -66,8 +65,7 @@ export function displayCommand(argv: string[]): string {
 export function applyActivity(state: RunProgress, message: string, at: number): void {
   state.activity = message;
   if (message.includes("Reading the local system profile")) {
-    if (state.steps.plan.status !== "complete") completeStep(state, "plan", at);
-    startStep(state, "probe", at);
+    if (state.steps.probe.status === "pending") startStep(state, "probe", at);
   }
   if (message.startsWith("$ ") || /^Command exited \d+ in \d+ ms\.$/.test(message)) return;
   if (/\b(?:frame|time|size)=|progress\s*=\s*\d+%/i.test(message)) {
@@ -76,6 +74,13 @@ export function applyActivity(state: RunProgress, message: string, at: number): 
   }
   const planNote =
     /^(?:Planning a local command|Asking the model|Plan approved)/.test(message);
+  if (planNote) {
+    if (state.steps.probe.status === "active") completeStep(state, "probe", at);
+    else if (state.steps.probe.status === "pending") {
+      state.steps.probe = { status: "skipped" };
+    }
+    if (state.steps.plan.status === "pending") startStep(state, "plan", at);
+  }
   const probeFinding = /system profile|^Found /.test(message) &&
     state.steps.probe.status !== "complete";
   const target = planNote
