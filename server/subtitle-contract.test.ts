@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateCommandPaths } from "./path-policy.ts";
 import { validatePlan, type Plan } from "./plan.ts";
-import { renderRecipe, save } from "./recipes.ts";
+import { load, renderRecipe, save } from "./recipes.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-subtitles-"));
 const source = join(root, "source.mp4");
@@ -58,6 +58,55 @@ describe("subtitle plan contracts", () => {
     expect(() => validateCommandPaths(
       "whisper-cli", command, [source], output, { trustedInputs: [model] },
     )).toThrow("not explicitly granted");
+  });
+
+  test.each(["-otxt", "-ovtt", "-oj"])("rejects the auxiliary Whisper format %s", (format) => {
+    const command = ["whisper-cli", "-m", model, "-f", source, format, "-of", output.slice(0, -4)];
+    expect(() => validateCommandPaths(
+      "whisper-cli", command, [source], output, { trustedInputs: [model] },
+    )).toThrow("exactly one output format: -osrt");
+  });
+
+  test.each(["-otxt", "-ovtt", "-oj"])("rejects -osrt combined with %s", (format) => {
+    const command = [
+      "whisper-cli", "-m", model, "-f", source, "-osrt", format,
+      "-of", output.slice(0, -4),
+    ];
+    expect(() => validateCommandPaths(
+      "whisper-cli", command, [source], output, { trustedInputs: [model] },
+    )).toThrow("exactly one output format: -osrt");
+  });
+
+  test("requires exactly one -osrt switch and one -of prefix", () => {
+    const validate = (command: string[]) => validateCommandPaths(
+      "whisper-cli", command, [source], output, { trustedInputs: [model] },
+    );
+    expect(() => validate([
+      "whisper-cli", "-m", model, "-f", source, "-of", output.slice(0, -4),
+    ])).toThrow("exactly one output format: -osrt");
+    expect(() => validate([
+      "whisper-cli", "-m", model, "-f", source, "-osrt", "-osrt",
+      "-of", output.slice(0, -4),
+    ])).toThrow("exactly one output format: -osrt");
+    expect(() => validate([
+      "whisper-cli", "-m", model, "-f", source, "-osrt",
+    ])).toThrow("exactly one -of output prefix");
+    expect(() => validate([
+      "whisper-cli", "-m", model, "-f", source, "-osrt",
+      "-of", output.slice(0, -4), "-of", output.slice(0, -4),
+    ])).toThrow("exactly one -of output prefix");
+  });
+
+  test("keeps the shipped subtitle recipe valid", () => {
+    const recipe = load().find((candidate) => candidate.name === "transcribe-video-to-srt");
+    expect(recipe).toBeDefined();
+    if (!recipe) throw new Error("shipped subtitle recipe is missing");
+    const rendered = renderRecipe(recipe, [source]);
+    expect(rendered.commands[1]).toEqual([
+      "whisper-cli", "-m", "{{resource_whisper_large_v3_turbo}}",
+      "-f", "{{temp_dir}}/audio.wav",
+      "-l", "auto", "-osrt", "--print-progress", "-of", output.slice(0, -4),
+    ]);
   });
 
   test("stores and rerenders the identical two-tool plan with portable paths", () => {

@@ -2,6 +2,7 @@ import {
   checkedValue, classifySimple, matches, oneOf, pathValue,
   type ClassifiedPath, type ToolFlagRules,
 } from "./flag-policy-core.ts";
+import { ExecutionError } from "./execution-types.ts";
 
 const integer = matches(/^\d+$/);
 const ffprobe: ToolFlagRules = {
@@ -30,8 +31,7 @@ const magick: ToolFlagRules = {
 
 const whisper: ToolFlagRules = {
   switches: new Set([
-    "-otxt", "-osrt", "-ovtt", "-oj", "--translate", "--no-timestamps",
-    "--print-progress",
+    "-osrt", "--translate", "--no-timestamps", "--print-progress",
   ]),
   values: new Map([
     ["-m", pathValue("input")], ["-f", pathValue("input")],
@@ -41,13 +41,22 @@ const whisper: ToolFlagRules = {
   ]),
   positionals: null, minPositionals: 0, maxPositionals: 0,
 };
+const whisperOutputFormats = new Set(["-otxt", "-osrt", "-ovtt", "-oj"]);
 
 export function classifyMediaTool(tool: "ffprobe" | "magick" | "whisper-cli", command: string[]): ClassifiedPath[] {
+  if (tool === "whisper-cli") {
+    const formats = command.filter((argument) => whisperOutputFormats.has(argument));
+    if (formats.length !== 1 || formats[0] !== "-osrt") {
+      throw new ExecutionError("whisper-cli requires exactly one output format: -osrt");
+    }
+    if (command.filter((argument) => argument === "-of").length !== 1) {
+      throw new ExecutionError("whisper-cli requires exactly one -of output prefix");
+    }
+  }
   const paths = classifySimple(command, tool === "ffprobe" ? ffprobe : tool === "magick" ? magick : whisper);
   if (tool === "whisper-cli") {
-    const prefix = paths.some((path) => path.role === "output-prefix");
-    if (command.includes("-osrt") !== prefix) {
-      throw new Error("whisper SRT output requires both -osrt and -of");
+    if (paths.filter((path) => path.role === "output-prefix").length !== 1) {
+      throw new ExecutionError("whisper-cli requires exactly one -of output prefix");
     }
   }
   return paths;
