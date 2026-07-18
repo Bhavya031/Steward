@@ -4,6 +4,7 @@ import type { Derivations } from "./derivations.ts";
 import type { Plan, PlanCheck, PlanTool } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
 import type { VerificationResult } from "./verify/index.ts";
+import type { TrustedResourceId } from "./trusted-resources.ts";
 
 export interface Recipe {
   name: string;
@@ -17,6 +18,7 @@ export interface Recipe {
   install_weight: InstallWeight;
   derivations?: Derivations;
   intermediates?: string[];
+  resources?: TrustedResourceId[];
 }
 
 export interface SaveRecipeInput {

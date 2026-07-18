@@ -88,6 +88,13 @@ export function validatePlanForProfile(plan: Plan, profile: SystemProfile): Plan
   if (!status.installed && plan.install_cmd === null) {
     throw new PlanValidationError(`${plan.tool} is missing; install_cmd is required`);
   }
+  for (const command of plan.commands.slice(0, -1)) {
+    const ancillary = command[0] as Plan["tool"];
+    const ancillaryStatus = profile.tools.find((tool) => tool.name === ancillary);
+    if (!ancillaryStatus?.installed) {
+      throw new PlanValidationError(`ancillary tool ${ancillary} must already be installed`);
+    }
+  }
   return plan;
 }
 

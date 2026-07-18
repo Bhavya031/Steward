@@ -6,7 +6,7 @@
   import {
     STEP_ART, STEP_TITLES, activeTool, stepDuration, stepLines, toolMark,
   } from "../lib/run-view.ts";
-  import type { CheckItem, Recipe } from "../lib/stores.ts";
+  import type { CheckItem, InstallRequest, Recipe } from "../lib/stores.ts";
   import RunReceipt from "./RunReceipt.svelte";
   import StepTile from "./StepTile.svelte";
 
@@ -19,6 +19,8 @@
   export let matchedRecipe: string | undefined = undefined;
   export let modelCalls: 0 | undefined = undefined;
   export let killTotal = 0;
+  export let installRequest: InstallRequest | null = null;
+  export let onConfirmInstall: (runId: string) => void = () => undefined;
 
   const GLIDE_MS = 900;
   const OUTRO_MS = 650;
@@ -113,6 +115,29 @@
         {modelCalls} {killTotal} {outputPath} {now}
       />
     {:else}
+      {#if installRequest}
+        <section class="install-confirmation" aria-live="polite">
+          <strong>LOCAL MODEL REQUIRED</strong>
+          {#if installRequest.progress}
+            <p>
+              Downloading {installRequest.progress.id}: {installRequest.progress.percent}%
+              ({(installRequest.progress.received / 1_000_000).toFixed(0)} /
+              {(installRequest.progress.total / 1_000_000).toFixed(0)} MB)
+            </p>
+            <progress max="100" value={installRequest.progress.percent}></progress>
+          {:else}
+            <p>
+              {#if installRequest.tool}{installRequest.tool} and {/if}
+              {installRequest.resources.map((resource) =>
+                `${resource.id} (${(resource.bytes / 1_000_000_000).toFixed(2)} GB, SHA-256 pinned)`
+              ).join(", ")}
+            </p>
+            <button type="button" on:click={() => onConfirmInstall(installRequest.run_id)}>
+              CONFIRM INSTALL & CONTINUE
+            </button>
+          {/if}
+        </section>
+      {/if}
       <div class="run-shelf" class:content-departing={status === "complete"}>
         <div class="run-items">
           {#each RUN_STEPS as name, index (name)}

@@ -29,9 +29,13 @@ const magick: ToolFlagRules = {
 };
 
 const whisper: ToolFlagRules = {
-  switches: new Set(["-otxt", "-osrt", "-ovtt", "-oj", "--translate", "--no-timestamps"]),
+  switches: new Set([
+    "-otxt", "-osrt", "-ovtt", "-oj", "--translate", "--no-timestamps",
+    "--print-progress",
+  ]),
   values: new Map([
-    ["-m", pathValue("input")], ["-f", pathValue("input")], ["-of", pathValue("output")],
+    ["-m", pathValue("input")], ["-f", pathValue("input")],
+    ["-of", pathValue("output-prefix")],
     ["-l", checkedValue(matches(/^(?:auto|[a-z]{2,3})$/))],
     ["-t", checkedValue(integer)], ["-p", checkedValue(integer)],
   ]),
@@ -39,5 +43,12 @@ const whisper: ToolFlagRules = {
 };
 
 export function classifyMediaTool(tool: "ffprobe" | "magick" | "whisper-cli", command: string[]): ClassifiedPath[] {
-  return classifySimple(command, tool === "ffprobe" ? ffprobe : tool === "magick" ? magick : whisper);
+  const paths = classifySimple(command, tool === "ffprobe" ? ffprobe : tool === "magick" ? magick : whisper);
+  if (tool === "whisper-cli") {
+    const prefix = paths.some((path) => path.role === "output-prefix");
+    if (command.includes("-osrt") !== prefix) {
+      throw new Error("whisper SRT output requires both -osrt and -of");
+    }
+  }
+  return paths;
 }

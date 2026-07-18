@@ -41,7 +41,9 @@ export function executionEvents(runId: string, emit: EmitServerEvent) {
       });
       return;
     }
-    const progress = event.chunk.split(/\r?\n|\r/).filter((line) => /\b(?:frame|time|size)=/.test(line)).at(-1);
+    const progress = event.chunk.split(/\r?\n|\r/).filter((line) =>
+      /\b(?:frame|time|size)=|progress\s*=\s*\d+%/i.test(line)
+    ).at(-1);
     const now = Date.now();
     if (progress && now - lastProgress >= 500) {
       lastProgress = now;

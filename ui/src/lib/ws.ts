@@ -5,6 +5,9 @@ import { applyClientEvent, applyServerEvent } from "./stores.ts";
 const SERVER_EVENT_TYPES: { [Type in ServerEvent["type"]]: true } = {
   run_started: true,
   activity: true,
+  install_required: true,
+  install_progress: true,
+  install_complete: true,
   check_pending: true,
   check_result: true,
   repair_attempt: true,

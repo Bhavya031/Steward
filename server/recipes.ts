@@ -41,6 +41,7 @@ export function save(
     install_weight: installWeightFor(input.plan.tool),
     ...(input.plan.derivations ? { derivations: input.plan.derivations } : {}),
     ...(input.plan.intermediates ? { intermediates: input.plan.intermediates } : {}),
+    ...(input.plan.resources ? { resources: input.plan.resources } : {}),
   });
   mkdirSync(directory, { recursive: true });
   const destination = join(directory, `${recipe.name}.json`);

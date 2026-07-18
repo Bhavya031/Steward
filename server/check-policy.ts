@@ -43,6 +43,11 @@ export function checkSemanticError(checks: PlanCheck[]): string | null {
     } else if (check.type === "format_matches" &&
         !documentFormat(check.target) && !mediaFormat(check.target)) {
       errors.push(`${at} target is not a supported document or media format`);
+    } else if ((check.type === "srt_valid" || check.type === "timestamps_monotonic") &&
+        check.target !== true) {
+      errors.push(`${at} target must be true`);
+    } else if (check.type === "cue_count" && !positiveInteger(check.target)) {
+      errors.push(`${at} target must be a positive integer minimum`);
     }
   }
 

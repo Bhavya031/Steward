@@ -2,6 +2,9 @@ import { isAbsolute } from "node:path";
 import { checkSemanticError } from "./check-policy.ts";
 import { DerivationValidationError, validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
 import { IntermediateValidationError, validateIntermediates } from "./intermediate-policy.ts";
+import {
+  resourceSlot, validateResources, type TrustedResourceId,
+} from "./trusted-resources.ts";
 import { ALLOWED_BINARIES, type AllowedBinary } from "./tools.ts";
 export type PlanTool = Exclude<AllowedBinary, "brew">;
 export type CheckTarget = string | number | boolean;
@@ -9,6 +12,7 @@ export const CHECK_TYPES = [
   "size_under", "duration_matches", "streams_present", "plays",
   "audio_stream_present", "loudness_matches", "true_peak_under",
   "file_valid", "page_count_positive", "text_extractable", "format_matches",
+  "srt_valid", "cue_count", "timestamps_monotonic",
 ] as const;
 export type PlanCheckType = (typeof CHECK_TYPES)[number];
 export interface PlanCheck { type: PlanCheckType; target: CheckTarget }
@@ -21,13 +25,14 @@ export interface Plan {
   checks: PlanCheck[];
   derivations?: Derivations;
   intermediates?: string[];
+  resources?: TrustedResourceId[];
 }
 const PLAN_TOOLS = new Set<PlanTool>(
   ALLOWED_BINARIES.filter((binary): binary is PlanTool => binary !== "brew"),
 );
 const VALID_CHECKS = new Set<PlanCheckType>(CHECK_TYPES);
 const REQUIRED_PLAN_KEYS = ["name", "tool", "install_cmd", "commands", "output_path", "checks"];
-const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations", "intermediates"];
+const PLAN_KEYS = [...REQUIRED_PLAN_KEYS, "derivations", "intermediates", "resources"];
 const RECIPE_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export class PlanValidationError extends Error { constructor(message: string) { super(message); this.name = "PlanValidationError"; } }
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -51,8 +56,8 @@ function validateCommands(value: unknown, tool: PlanTool): string[][] {
     if (!isStringArray(command) || command.length === 0) {
       throw new PlanValidationError(`commands[${index}] must be a non-empty argv array`);
     }
-    if (command[0] !== tool) {
-      throw new PlanValidationError(`commands[${index}][0] must exactly match tool`);
+    if (!PLAN_TOOLS.has(command[0] as PlanTool)) {
+      throw new PlanValidationError(`commands[${index}][0] must be an allowlisted task binary`);
     }
     return [...command];
   });
@@ -106,16 +111,25 @@ export function validatePlan(value: unknown): Plan {
   }
   const tool = value.tool as PlanTool;
   const commands = validateCommands(value.commands, tool);
+  if (commands.at(-1)?.[0] !== tool) {
+    throw new PlanValidationError("the final command must use the plan's primary tool");
+  }
   let derivations: Derivations | undefined;
   let intermediates: string[] | undefined;
+  let resources: TrustedResourceId[] | undefined;
   try {
     derivations = value.derivations == null ? undefined : validateDerivations(value.derivations);
     intermediates = value.intermediates == null ? undefined : validateIntermediates(value.intermediates);
-    validateCommandSlots(commands, derivations, (slot) => slot === "temp_dir");
+    resources = value.resources == null ? undefined : validateResources(value.resources);
+    const resourceSlots = new Set((resources ?? []).map(resourceSlot));
+    validateCommandSlots(commands, derivations, (slot) =>
+      slot === "temp_dir" || resourceSlots.has(slot)
+    );
   } catch (error) {
     if (error instanceof DerivationValidationError || error instanceof IntermediateValidationError) {
       throw new PlanValidationError(error.message);
     }
+    if (error instanceof Error) throw new PlanValidationError(error.message);
     throw error;
   }
   if (!isSafeString(value.output_path) || !isAbsolute(value.output_path)) {
@@ -145,6 +159,7 @@ export function validatePlan(value: unknown): Plan {
   };
   if (derivations) plan.derivations = derivations;
   if (intermediates) plan.intermediates = intermediates;
+  if (resources) plan.resources = resources;
   return plan;
 }
 export function parsePlan(raw: string): Plan { return validatePlan(parseJson(raw)); }

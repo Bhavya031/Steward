@@ -12,6 +12,7 @@ tsconfig.json:C—
 demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
 demo-material/recipe-4-verification-failure.txt:D—
+demo-material/recipe-6-subtitles.txt:D—
 demo-material/p3.2-ws-compression.txt:D—
 demo-material/p3-entry-reference.jpg:D—
 demo-material/p3-entry-tile-hover.jpg:D—
@@ -21,6 +22,7 @@ recipes/convert-media-to-mov.json:R—
 recipes/convert-media-to-mp4.json:R—
 recipes/convert-markdown-to-docx.json:R—
 recipes/normalize-audio-to-14-lufs.json:R—
+recipes/transcribe-video-to-srt.json:R—
 ui/index.html:U—
 ui/svelte.config.js:C—
 ui/tsconfig.json:C—
@@ -68,6 +70,7 @@ server/helper-policy.ts:SA
 server/intermediate-executor.test.ts:T—
 server/intermediate-policy.test.ts:T—
 server/intermediate-policy.ts:SY
+server/installation-runtime.ts:EA
 server/index.ts:EM
 server/install-policy.ts:SA
 server/local-server.test.ts:T—
@@ -104,10 +107,13 @@ server/repair-loop.ts:EA
 server/runtime-temp.ts:SA
 server/security.ts:SA
 server/soffice-profile.ts:SA
+server/subtitle-contract.test.ts:T—
 server/source-graph.ts:TA
 server/terminal.ts:DA
 server/test-fixtures.ts:TA
 server/tools.ts:SA
+server/trusted-resources.test.ts:T—
+server/trusted-resources.ts:SA
 server/two-pass-policy.ts:SA
 server/verify/audio.test.ts:T—
 server/verify/audio.ts:VA
@@ -123,6 +129,8 @@ server/verify/media-format.ts:VA
 server/verify/pdf-parser.test.ts:T—
 server/verify/pdf.test.ts:T—
 server/verify/pdf.ts:VA
+server/verify/srt.test.ts:T—
+server/verify/srt.ts:VA
 server/verify/text-inspector.ts:VA
 server/verify/types.ts:VY
 server/verify/video-truncation.test.ts:T—
@@ -133,4 +141,5 @@ server/ws-bridge.test.ts:T—
 server/ws-bridge.ts:SA
 server/ws-engine.ts:EA
 server/ws-events.ts:EY
+server/ws-install-flow.ts:EA
 server/ws-run-events.ts:EA
