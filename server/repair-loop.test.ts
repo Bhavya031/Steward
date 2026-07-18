@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { executePlan, type ExecutionEvent } from "./executor.ts";
@@ -9,6 +9,7 @@ import { runWithRepair } from "./repair-loop.ts";
 import { writeWav, writeY4m } from "./test-fixtures.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-repair-"));
+const realRoot = realpathSync(root);
 const profile = probeSystem();
 const source = join(root, "source.mp4");
 const frame = join(root, "video.y4m");
@@ -69,6 +70,8 @@ describe("repair loop", () => {
         },
       },
     };
+    const authoredSnapshot = structuredClone(authored);
+    writeFileSync(output, "occupied");
     const events: ExecutionEvent[] = [];
     const run = await runWithRepair({
       initialPlan: authored, profile, inputPaths: [source],
@@ -77,7 +80,13 @@ describe("repair loop", () => {
     });
     const started = events.find((event) => event.type === "started");
     expect(run.all_pass).toBe(true);
-    expect(run.plan).toEqual(authored);
+    expect(run.events).toHaveLength(1);
+    expect(run.events[0]?.outcome.status).toBe("passed");
+    expect(authored).toEqual(authoredSnapshot);
+    expect(run.plan).toEqual(authoredSnapshot);
+    expect(run.resolvedPlan.output_path).toBe(join(realRoot, "derived-2.mp4"));
+    expect(run.resolvedPlan.derivations).toBeUndefined();
+    expect(run.resolvedPlan.commands.flat()).not.toContain("{{video_bitrate_kbps}}");
     expect(started?.type === "started" ? started.argv.join(" ") : "").not.toContain("{{");
   });
 

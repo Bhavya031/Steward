@@ -86,12 +86,12 @@ export async function runWithRepair(options: RepairLoopOptions): Promise<Attempt
     resolvedPlan = plan;
     let execution: PlanExecutionResult;
     try {
-      resolvedPlan = allocatePlanOutput(plan, options.inputPaths);
       const executablePlan = await materializePlanDerivations(
-        resolvedPlan, options.inputPaths, options.profile,
+        plan, options.inputPaths, options.profile,
       );
+      resolvedPlan = allocatePlanOutput(executablePlan, options.inputPaths);
       execution = await executePlan(
-        executablePlan, options.profile, options.inputPaths, options.executionOptions,
+        resolvedPlan, options.profile, options.inputPaths, options.executionOptions,
       );
     } catch (error) {
       execution = rejectedExecution(error);
