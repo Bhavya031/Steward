@@ -1,0 +1,98 @@
+OCR saved-rerun exit 6 diagnosis
+Date: 2026-07-19
+Baseline: c358bb6
+
+Conclusion
+----------
+This was a fixture problem, not a product bug. The failed second PDF was not
+raster-only: it contained a Helvetica font resource and three off-page text
+objects. OCRmyPDF correctly failed closed with exit 6. No product code or saved
+workflow was changed, and no force/skip/redo OCR option was added.
+
+Complete stderr
+---------------
+The original raw UI event stream recorded exit_code 6 but did not record the
+child process stderr. Reproducing the exact saved argv directly recovered the
+complete stderr:
+
+PriorOcrFoundError: page already has text! - aborting (use --force-ocr or --mode force to force OCR; see also help for --skip-text, --redo-ocr, and --mode)
+
+Direct reproduction exit: 6
+
+Exit-code meaning
+-----------------
+Installed OCRmyPDF version: 17.8.1
+ExitCode.already_done_ocr: 6
+PriorOcrFoundError.exit_code: 6
+
+Command comparison
+------------------
+First-run argv:
+ocrmypdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final.pdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final-searchable.pdf
+
+Failed saved-rerun argv:
+ocrmypdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document.pdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document-searchable.pdf
+
+The argv arrays have the same length and the same executable. Only the input
+and output paths differ.
+
+Failed-fixture structural proof
+-------------------------------
+The PDF had one 1400 x 900 grayscale image, but it also declared a Helvetica
+Type 1 font. Its page content stream contained:
+
+BT
+/F0 12 Tf
+0 912 Td
+(STEWARD OCR PROOF) Tj
+ET
+BT
+/F0 12 Tf
+0 924 Td
+(LOCAL FILES STAY LOCAL) Tj
+ET
+BT
+/F0 12 Tf
+0 936 Td
+(JULY 18 2026) Tj
+ET
+
+The page image height is 900 points, so the text baselines at y=912, 924, and
+936 are outside the visible page. This explains why pdftotext returned zero
+non-whitespace characters while OCRmyPDF still detected existing page text.
+
+Corrected-fixture proof
+-----------------------
+The embedded raster was extracted and rebuilt as a new image-only PDF:
+/tmp/steward-ocr-rerun-image-only.pdf
+
+SHA-256:
+fdbfb546f4fca581d2417e57d6999e99e90437117cb92fbae9436c0d41539a61
+
+It differs from the first input:
+5f8218f4e30915c41aa2f40b41b22c63e6332171c9b2ae8de4e6a238b228a666
+
+Structural checks:
+- qpdf: no syntax or stream encoding errors
+- pages: 1
+- image XObjects: 1
+- fonts: none
+- text operators: none
+- source non-whitespace text: 0 characters
+
+The unchanged saved command completed directly with exit 0. Its output was a
+valid PDF 1.7 with one page and 44 non-whitespace searchable characters:
+
+STEWARD OCR PROOF
+LOCAL FILES STAY LOCAL
+JULY 18 2026
+
+Final saved UI rerun
+--------------------
+Recipe match model_calls: 0
+Command exit: 0
+file_valid: pass; valid PDF 1.7 (1 page)
+text_extractable: pass; before=false (0 chars), after=true (44 chars)
+page_count_matches: pass; 1 page input, 1 page output
+Output:
+/private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only-searchable.pdf

@@ -1,0 +1,19 @@
+STEWARD_UI_SERVER {"origin":"http://127.0.0.1:50427","recipeDirectory":"/tmp/steward-real-ocr-ui-proof.Wee2N7/recipes","stagingRoot":"/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged"}
+STEWARD_UI_CLIENT {"type":"run_task","task":"Make this scanned PDF searchable with OCR","files":["/private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only.pdf"]}
+STEWARD_UI_EVENT {"type":"run_started","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","action":"task","files":["/private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only.pdf"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","message":"Checking the local recipe shelf."}
+STEWARD_UI_EVENT {"type":"recipe_matched","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"ocr-scanned-pdf","score":0.452,"model_calls":0}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"file_valid"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"text_extractable"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"page_count_matches"}
+STEWARD_UI_EVENT {"type":"activity","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","message":"Saved plan ready. Preparing local execution."}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","argv":["ocrmypdf","/private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only.pdf","/private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only-searchable.pdf"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","message":"$ ocrmypdf /private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only.pdf /private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only-searchable.pdf"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","exit_code":0,"duration_ms":1079}
+STEWARD_UI_EVENT {"type":"activity","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","message":"Command exited 0 in 1079 ms."}
+STEWARD_UI_EVENT {"type":"verification_started","run_id":"31b9b41d-05c9-436d-b914-020d9172a509"}
+STEWARD_UI_EVENT {"type":"verification_completed","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","duration_ms":112}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"file_valid","pass":true,"expected":"valid PDF","actual":"valid PDF 1.7 (1 page)"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"text_extractable","pass":true,"expected":"before=false on granted source; after=true on output","actual":"before=false (0 non-whitespace chars); after=true (44 non-whitespace chars; sample \"STEWARD OCR PROOF LOCAL FILES STAY LOCAL\")"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","name":"page_count_matches","pass":true,"expected":"1 page on granted source","actual":"1 page on output"}
+STEWARD_UI_EVENT {"type":"run_complete","run_id":"31b9b41d-05c9-436d-b914-020d9172a509","success":true,"output_path":"/private/tmp/steward-real-ocr-ui-rerun.v8jUZR/staged/d44ef6b6-7f6c-45b2-a78d-0b1be5096cf4-steward-ocr-rerun-image-only-searchable.pdf","model_calls":0}
