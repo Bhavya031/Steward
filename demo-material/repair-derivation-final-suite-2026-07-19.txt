@@ -1,0 +1,63 @@
+Steward repair/derivation final-suite report
+Date: 2026-07-19
+Starting commit: ac0985b2d594ab3d64c050d2251366f57bc94977
+Fix commit: 0235f7e
+Branch: integration/submission
+
+Reproduction
+- The test failed individually: 0 passed, 1 failed, 4 skipped.
+- The same test failed in the complete suite: 214 passed, 1 failed.
+- Failure: repair loop > materializes a declared derivation but retains the authored plan
+- First-attempt status: execution_failed
+- Exit code: -1
+- Commands completed: 0
+- Verification checks were skipped, not measured:
+  - duration_matches
+  - streams_present
+  - plays
+- Pre-spawn rejection:
+  value is not allowed for -b:v: {{video_bitrate_kbps}}
+
+Root cause
+- Output collision allocation classified the authored FFmpeg command before the declared
+  video-bitrate derivation was materialized.
+- FFmpeg flag policy therefore saw the trusted derivation placeholder instead of its concrete
+  runtime bitrate and correctly rejected the unresolved value.
+- The repair loop treated that pre-spawn execution rejection as a failed attempt and invoked repair.
+- The failure reproduced in isolation, ruling out test-order contamination.
+- The test used a unique temporary root and initially had no output collision, ruling out shared
+  paths and stale collision suffix state.
+- The authored plan was not mutated.
+
+Fix and invariant
+- Materialize derivations into a copied runtime plan first.
+- Perform collision allocation and policy classification on that concrete runtime copy.
+- Execute and verify the allocated runtime copy.
+- Keep the authored plan and its derivation declaration unchanged for saving and repair integrity.
+- The strengthened regression occupies the requested output and confirms:
+  - deterministic -2 collision allocation;
+  - one successful attempt;
+  - no repair invocation;
+  - unchanged authored plan;
+  - no derivation declaration or unresolved placeholder in the execution copy.
+- The test compares the allocated path against the canonical macOS real path.
+
+Regression suite
+- Files: 5
+- Tests: 18 passed, 0 failed
+- Assertions: 62
+- Coverage: repair loop, derivations, collision allocation, failed-output cleanup, repair policy
+
+Complete repository suite
+- Files: 41
+- Tests: 215 passed, 0 failed
+- Assertions: 591
+
+Release gates
+- TypeScript: PASS
+- Svelte diagnostics: PASS (0 errors, 0 warnings)
+- Production build: PASS (144 modules transformed)
+- git diff --check: PASS
+- Clean-machine test: NOT RUN
+
+No unrelated product code was changed.
