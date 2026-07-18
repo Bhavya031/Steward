@@ -1,0 +1,42 @@
+STEWARD_UI_SERVER {"origin":"http://127.0.0.1:50176","recipeDirectory":"/tmp/steward-real-ocr-ui-proof.Wee2N7/recipes","stagingRoot":"/tmp/steward-real-ocr-ui-proof.Wee2N7/staged"}
+STEWARD_UI_CLIENT {"type":"run_task","task":"Make this scanned PDF searchable with OCR","files":["/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final.pdf"]}
+STEWARD_UI_EVENT {"type":"run_started","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","action":"task","files":["/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final.pdf"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"Checking the local recipe shelf."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"No saved recipe matched. Reading the local system profile."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"macOS 26.4.1 · arm64 · 16 GiB."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"Planning a local command."}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"Plan ready. Preparing local execution."}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","name":"file_valid"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","name":"text_extractable"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","name":"page_count_matches"}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","argv":["ocrmypdf","/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final.pdf","/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final-searchable.pdf"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"$ ocrmypdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final.pdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final-searchable.pdf"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","exit_code":0,"duration_ms":1484}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"Command exited 0 in 1484 ms."}
+STEWARD_UI_EVENT {"type":"verification_started","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36"}
+STEWARD_UI_EVENT {"type":"verification_completed","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","duration_ms":122}
+STEWARD_UI_EVENT {"type":"activity","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","message":"Attempt 1: passed."}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","name":"file_valid","pass":true,"expected":"valid PDF","actual":"valid PDF 1.7 (2 pages)"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","name":"text_extractable","pass":true,"expected":"before=false on granted source; after=true on output","actual":"before=false (0 non-whitespace chars); after=true (82 non-whitespace chars; sample \"STEWARD OCR PROOF SCANNED PAGE ONE LOCAL\")"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","name":"page_count_matches","pass":true,"expected":"2 pages on granted source","actual":"2 pages on output"}
+STEWARD_UI_EVENT {"type":"recipe_saved","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","recipe":{"name":"ocr-scanned-pdf","command_template":{"commands":[["ocrmypdf","{{input_0}}","{{input_0_dir}}/{{input_0_stem}}-searchable.pdf"]],"output_path":"{{input_0_dir}}/{{input_0_stem}}-searchable.pdf"},"checks":[{"type":"file_valid","target":"pdf"},{"type":"text_extractable","target":"{{input_0}}"},{"type":"page_count_matches","target":"{{input_0}}"}],"created_at":"2026-07-18T20:39:14.460Z","arch":"arm64","tool":"ocrmypdf","install_weight":"light","replaced_service":"iLovePDF","monthly_price":5}}
+STEWARD_UI_EVENT {"type":"run_complete","run_id":"cf5b6cd0-e901-41ab-bd76-9a397c331b36","success":true,"output_path":"/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/0123a506-088b-4f60-8862-076bf1d9c4df-steward-scan-final-searchable.pdf"}
+STEWARD_UI_CLIENT {"type":"run_task","task":"Make this scanned PDF searchable with OCR","files":["/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document.pdf"]}
+STEWARD_UI_EVENT {"type":"run_started","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","action":"task","files":["/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document.pdf"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","message":"Checking the local recipe shelf."}
+STEWARD_UI_EVENT {"type":"recipe_matched","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"ocr-scanned-pdf","score":0.452,"model_calls":0}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"file_valid"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"text_extractable"}
+STEWARD_UI_EVENT {"type":"check_pending","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"page_count_matches"}
+STEWARD_UI_EVENT {"type":"activity","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","message":"Saved plan ready. Preparing local execution."}
+STEWARD_UI_EVENT {"type":"command_started","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","argv":["ocrmypdf","/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document.pdf","/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document-searchable.pdf"]}
+STEWARD_UI_EVENT {"type":"activity","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","message":"$ ocrmypdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document.pdf /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document-searchable.pdf"}
+STEWARD_UI_EVENT {"type":"command_completed","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","exit_code":6,"duration_ms":433}
+STEWARD_UI_EVENT {"type":"activity","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","message":"Command exited 6 in 433 ms."}
+STEWARD_UI_EVENT {"type":"verification_started","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9"}
+STEWARD_UI_EVENT {"type":"verification_completed","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","duration_ms":2}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"file_valid","pass":false,"expected":"check target \"pdf\"","actual":"verification failed: ffprobe input is not a readable file: /private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document-searchable.pdf"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"text_extractable","pass":false,"expected":"before=false on granted source; after=true on output","actual":"OCR text comparison failed: ENOENT: no such file or directory, lstat '/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document-searchable.pdf'"}
+STEWARD_UI_EVENT {"type":"check_result","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","name":"page_count_matches","pass":false,"expected":"same page count as granted source","actual":"PDF page comparison failed: ENOENT: no such file or directory, lstat '/private/tmp/steward-real-ocr-ui-proof.Wee2N7/staged/6138cb3e-b153-41ae-b025-83e349d53c94-scanned-document-searchable.pdf'"}
+STEWARD_UI_EVENT {"type":"error","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","message":"recipe rerun failed with exit 6; failed output discarded"}
+STEWARD_UI_EVENT {"type":"run_complete","run_id":"c942aee7-b502-4ee9-8257-f6dca7bde2f9","success":false}
