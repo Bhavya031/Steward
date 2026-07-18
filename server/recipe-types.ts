@@ -45,4 +45,6 @@ export interface RecipeRun {
 export interface RerunOptions {
   profile?: SystemProfile;
   executionOptions?: ExecutionOptions;
+  onVerificationStarted?: () => void;
+  onVerificationCompleted?: (durationMs: number) => void;
 }

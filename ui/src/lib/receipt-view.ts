@@ -3,8 +3,8 @@ import type { RunProgress, RunStepName } from "./run-progress.ts";
 export const PLANNER_LABEL = "gpt-5.6";
 
 export function formatClock(ms: number | undefined): string {
-  if (ms === undefined) return "--:--";
-  const seconds = Math.max(1, Math.ceil(ms / 1_000));
+  if (ms === undefined) return "—";
+  const seconds = Math.ceil(ms / 1_000);
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
   return `${mm}:${ss}`;
@@ -13,6 +13,7 @@ export function formatClock(ms: number | undefined): string {
 export function stepTool(
   progress: RunProgress, name: RunStepName, matchedRecipe?: string,
 ): string {
+  if (progress.steps[name].status === "skipped") return "—";
   if (name === "plan") return matchedRecipe ? "shelf" : PLANNER_LABEL;
   if (name === "execute") {
     return progress.commands[0]?.trim().split(/\s+/)[0]?.split("/").at(-1) ?? "local";
@@ -26,7 +27,8 @@ export interface PipelineSegment {
 }
 
 export function pipelineSegments(progress: RunProgress): PipelineSegment[] {
-  const segments: PipelineSegment[] = [{ kind: "bash", label: "ffprobe" }];
+  const segments: PipelineSegment[] = progress.steps.probe.status === "skipped"
+    ? [] : [{ kind: "bash", label: "ffprobe" }];
   const seen = new Map<string, number>();
   const passTools = new Set(
     progress.commands

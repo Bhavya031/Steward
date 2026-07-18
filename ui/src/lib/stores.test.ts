@@ -31,6 +31,10 @@ const recipe = {
 const stream: ServerEvent[] = [
   { type: "run_started", run_id: runId, action: "task", files: ["/tmp/in.mov"] },
   { type: "activity", run_id: runId, message: "Compressing locally." },
+  { type: "command_started", run_id: runId, argv: ["ffmpeg", "-i", "/tmp/in.mov", "/tmp/out.mp4"] },
+  { type: "command_completed", run_id: runId, exit_code: 0, duration_ms: 40 },
+  { type: "verification_started", run_id: runId },
+  { type: "verification_completed", run_id: runId, duration_ms: 12 },
   { type: "check_pending", run_id: runId, name: "size_under" },
   { type: "check_result", run_id: runId, ...failedCheck },
   {

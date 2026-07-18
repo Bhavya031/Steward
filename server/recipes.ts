@@ -5,6 +5,7 @@ import { executePlan } from "./executor.ts";
 import { discardFailedOutput } from "./failed-output.ts";
 import { recipeConfidence, recipeIntent, recipeMediaTarget, taskIntent } from "./recipe-match.ts";
 import { mediaTargetFromConversionPhrase } from "./media-formats.ts";
+import { allocatePlanOutput } from "./output-allocation.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
 import type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
@@ -103,15 +104,20 @@ export async function rerun(
   const normalizedFiles = files.map((file) => resolve(file));
   const profile = options.profile ?? probeSystem();
   const runtimeSlots = await runtimeRecipeSlots(trustedRecipe, normalizedFiles, profile);
-  const plan = renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots);
+  const plan = allocatePlanOutput(
+    renderRecipe(trustedRecipe, normalizedFiles, runtimeSlots), normalizedFiles,
+  );
   let allPass = false;
   try {
     const execution = await executePlan(plan, profile, normalizedFiles, options.executionOptions);
+    options.onVerificationStarted?.();
+    const started = performance.now();
     const checks = await verifyChecks(plan.checks, {
       outputPath: plan.output_path,
       sourcePaths: normalizedFiles,
       profile,
     });
+    options.onVerificationCompleted?.(Math.round(performance.now() - started));
     allPass = execution.ok && checks.length === plan.checks.length && checks.every((check) => check.pass);
     return { plan, execution, checks, all_pass: allPass, model_calls: 0 };
   } finally {

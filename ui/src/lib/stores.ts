@@ -130,6 +130,11 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
     case "activity":
       append({ runId: event.run_id, message: event.message, kind: "activity" });
       return;
+    case "command_started":
+    case "command_completed":
+    case "verification_started":
+    case "verification_completed":
+      return;
     case "install_required":
       installRequest.set(event);
       append({

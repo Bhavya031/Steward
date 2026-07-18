@@ -28,6 +28,7 @@ export function executionEvents(runId: string, emit: EmitServerEvent) {
   let lastProgress = 0;
   return (event: ExecutionEvent): void => {
     if (event.type === "started") {
+      emit({ type: "command_started", run_id: runId, argv: [...event.argv] });
       emit({
         type: "activity", run_id: runId,
         message: `$ ${event.argv.map(displayArgument).join(" ")}`,
@@ -35,6 +36,10 @@ export function executionEvents(runId: string, emit: EmitServerEvent) {
       return;
     }
     if (event.type === "completed") {
+      emit({
+        type: "command_completed", run_id: runId,
+        exit_code: event.result.exit_code, duration_ms: event.result.duration_ms,
+      });
       emit({
         type: "activity", run_id: runId,
         message: `Command exited ${event.result.exit_code} in ${event.result.duration_ms} ms.`,

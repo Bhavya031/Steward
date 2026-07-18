@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ServerEvent } from "../../../server/ws-events.ts";
 import { createPacer } from "./pacing.ts";
+import { createRunProgress, reduceServerEvent } from "./run-progress.ts";
 
 const runId = "paced-run";
 
@@ -8,7 +9,11 @@ function burst(): ServerEvent[] {
   return [
     { type: "run_started", run_id: runId, action: "recipe", files: ["/tmp/in.mkv"] },
     { type: "recipe_matched", run_id: runId, name: "compress-video-under-size", score: 0.9, model_calls: 0 },
+    { type: "command_started", run_id: runId, argv: ["ffmpeg", "-i", "/tmp/in.mkv", "/tmp/out.mp4"] },
     { type: "activity", run_id: runId, message: "$ ffmpeg -i /tmp/in.mkv /tmp/out.mp4" },
+    { type: "command_completed", run_id: runId, exit_code: 0, duration_ms: 723 },
+    { type: "verification_started", run_id: runId },
+    { type: "verification_completed", run_id: runId, duration_ms: 61 },
     { type: "run_complete", run_id: runId, success: true, output_path: "/tmp/out.mp4" },
   ];
 }
@@ -26,10 +31,27 @@ describe("run pacing", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(seen.map(({ type }) => type)).toEqual([
-      "run_started", "recipe_matched", "activity", "run_complete",
+      "run_started", "recipe_matched", "command_started", "activity",
+      "command_completed", "verification_started", "verification_completed", "run_complete",
     ]);
-    const gaps = seen.slice(1).map((entry, index) => entry.delay - seen[index].delay);
+    const transitions = seen.filter(({ type }) =>
+      ["run_started", "recipe_matched", "command_started", "verification_started", "run_complete"]
+        .includes(type)
+    );
+    const gaps = transitions.slice(1)
+      .map((entry, index) => entry.delay - transitions[index]!.delay);
     gaps.forEach((gap) => expect(gap).toBeGreaterThanOrEqual(30));
+  });
+
+  test("animation pacing cannot change authoritative displayed measurements", async () => {
+    let state = createRunProgress();
+    const pacer = createPacer((event, receivedAt) => {
+      state = reduceServerEvent(state, event, receivedAt);
+    }, 25);
+    burst().forEach((event) => pacer.push(event));
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    expect(state.steps.execute.durationMs).toBe(723);
+    expect(state.steps.verify.durationMs).toBe(61);
   });
 
   test("a new run flushes any backlog from the previous one", async () => {

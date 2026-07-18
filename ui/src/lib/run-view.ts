@@ -41,6 +41,7 @@ export function stepDuration(
 ): string {
   const step = progress.steps[name];
   if (step.note) return step.note;
+  if (step.status === "skipped") return "SKIPPED";
   const value = name === "execute" && step.status === "active"
     ? executeElapsedMs(progress, now)
     : elapsedMs(step, now);
@@ -48,8 +49,10 @@ export function stepDuration(
 }
 
 export function totalDuration(progress: RunProgress): string {
-  const total = Object.values(progress.steps)
-    .reduce((sum, step) => sum + (step.durationMs ?? 0), 0);
+  const measured = Object.values(progress.steps)
+    .flatMap((step) => step.durationMs === undefined ? [] : [step.durationMs]);
+  if (measured.length === 0) return "—";
+  const total = measured.reduce((sum, duration) => sum + duration, 0);
   return `${(total / 1_000).toFixed(2)}s`;
 }
 

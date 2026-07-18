@@ -29,6 +29,14 @@ function activity(runId: string, message: string, emit: EmitServerEvent): void {
   emit({ type: "activity", run_id: runId, message });
 }
 
+function verificationEvents(runId: string, emit: EmitServerEvent) {
+  return {
+    onVerificationStarted: () => emit({ type: "verification_started", run_id: runId }),
+    onVerificationCompleted: (duration_ms: number) =>
+      emit({ type: "verification_completed", run_id: runId, duration_ms }),
+  };
+}
+
 async function runSavedReady(
   recipe: Recipe, score: number, files: string[], runId: string, emit: EmitServerEvent,
 ): Promise<Completion> {
@@ -40,6 +48,7 @@ async function runSavedReady(
   activity(runId, "Running the saved recipe locally.", emit);
   const run = await rerun(recipe, files, {
     executionOptions: { onEvent: executionEvents(runId, emit) },
+    ...verificationEvents(runId, emit),
   });
   checkResults(runId, run.checks, emit);
   if (!run.all_pass) {
@@ -88,6 +97,7 @@ async function runPlannedReady(
   const run = await runWithRepair({
     initialPlan: plan, profile, inputPaths: files,
     executionOptions: { onEvent: executionEvents(runId, emit) },
+    ...verificationEvents(runId, emit),
     onAttempt: attemptEvents(runId, plan.checks, emit),
     repair: (context) => repairTask(profile, context),
   });
@@ -99,7 +109,7 @@ async function runPlannedReady(
   }, directory);
   if (!recipe) throw new Error("green verification was refused by recipe storage");
   emit({ type: "recipe_saved", run_id: runId, recipe });
-  return { outputPath: run.plan.output_path };
+  return { outputPath: run.resolvedPlan.output_path };
 }
 
 async function runPlanned(

@@ -51,6 +51,13 @@ ui/src/components/VerifyPanel.svelte:U—
 ui/src/main.ts:UM
 ui/src/lib/detail-view.test.ts:T—
 ui/src/lib/detail-view.ts:U—
+ui/src/lib/pacing.test.ts:T—
+ui/src/lib/pacing.ts:UA
+ui/src/lib/receipt-view.ts:U—
+ui/src/lib/run-progress-state.ts:UA
+ui/src/lib/run-progress.test.ts:T—
+ui/src/lib/run-progress.ts:UA
+ui/src/lib/run-view.ts:U—
 ui/src/lib/stores.test.ts:T—
 ui/src/lib/stores.ts:UA
 ui/src/lib/task-entry.test.ts:T—
@@ -95,6 +102,8 @@ server/media-formats.ts:RY
 server/path-policy.ts:SA
 server/path-policy.test.ts:T—
 server/path-error.ts:SY
+server/output-allocation.test.ts:T—
+server/output-allocation.ts:SA
 server/output-policy.ts:SA
 server/plan-paths.ts:SA
 server/plan.schema.json:P—
@@ -158,4 +167,5 @@ server/ws-bridge.ts:SA
 server/ws-engine.ts:EA
 server/ws-events.ts:EY
 server/ws-install-flow.ts:EA
+server/ws-run-events.test.ts:T—
 server/ws-run-events.ts:EA

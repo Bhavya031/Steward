@@ -75,7 +75,8 @@
   $: settle(active, status !== "running");
   $: activeIndex = active ? RUN_STEPS.indexOf(active) : RUN_STEPS.length;
   $: completed = RUN_STEPS.filter((name, index) =>
-    progress.steps[name].status === "complete" && index < activeIndex);
+    (progress.steps[name].status === "complete" || progress.steps[name].status === "skipped")
+      && index < activeIndex);
   $: kindOf = (name: RunStepName): "complete" | "live" | "ghost" =>
     completed.includes(name) ? "complete"
       : name === active && name === landed ? "live" : "ghost";

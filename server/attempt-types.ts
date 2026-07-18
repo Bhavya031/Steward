@@ -31,6 +31,7 @@ export interface AttemptEvent {
 
 export interface AttemptRun {
   plan: Plan;
+  resolvedPlan: Plan;
   execution: PlanExecutionResult;
   checks: VerificationResult[];
   all_pass: boolean;

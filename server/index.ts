@@ -66,7 +66,7 @@ async function runPlanned(task: string, files: string[]): Promise<void> {
     arch: profile.architecture,
   });
   if (!recipe) throw new Error("green verification was refused by recipe storage");
-  printRecipeCard(recipe, run.plan, run.checks, true);
+  printRecipeCard(recipe, run.resolvedPlan, run.checks, true);
   console.log(`Saved: recipes/${recipe.name}.json`);
 }
 

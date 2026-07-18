@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 3 visible task-input audit (2026-07-18). The Phase 2 CLI remains available; the browser entry now reaches the existing typed task engine only through authenticated local input staging.
+Last updated: Phase 3 collision/state-timing audit (2026-07-19). The Phase 2 CLI remains available; the browser entry reaches the existing typed task engine only through authenticated local input staging.
 
 ## Current execution surface
 
@@ -10,11 +10,11 @@ Last updated: Phase 3 visible task-input audit (2026-07-18). The Phase 2 CLI rem
 - Derivations: non-path slots require a serialized model-selected name and typed args. The sole function uses duration from a fixed executor-routed ffprobe command; there is no eval, expression language, hidden algorithm choice, or baked per-file measurement.
 - Verification: fixed ffprobe/ffmpeg/Ghostscript command builders route through the executor; verification never executes plan-supplied argv.
 - Helpers: exact helper tier and granted roots; helpers cannot be primary recipe tools or install steps.
-- Writes: final task outputs stay beside inputs; ordinary intermediate outputs require exact model declarations that are resolved/revalidated only inside the executor-owned temp root. Reads require an earlier declared write. Recipes use atomic temp+rename; failed outputs and every temp root are removed.
+- Writes: final task outputs stay beside inputs and are allocated without overwrite using the first available deterministic `-2`, `-3`, … suffix. Commands and path-valued checks receive the same resolved path while the saved recipe retains the authored plan. Ordinary intermediate outputs require exact model declarations that are resolved/revalidated only inside the executor-owned temp root. Reads require an earlier declared write. Recipes use atomic temp+rename; failed outputs and every temp root are removed.
 - Shelf claims: canonical names are model-authored but task-slug echoes fail closed. Replacement service/prices come only from the curated `(tool, check type)` map; unknown classes omit both fields, and kill totals deduplicate service names.
 - Listener: Bun binds `127.0.0.1` on a random free port. A 256-bit per-session token is required by query or HttpOnly SameSite cookie for static and staging requests and by query for `/ws`; missing/wrong tokens return 401 before routing. Static real paths remain inside `ui/dist`.
 - WS bridge: client JSON is capped at 64 KiB and must exactly match `run_task`, `run_recipe`, or `confirm_install`; file grants are absolute, readable regular files. One run per socket prevents overlapping mutations. Task runs match locally before importing the planner; recipe matches emit and retain `model_calls: 0` through completion.
-- Browser client: one module-scoped WebSocket takes the per-session token from the startup URL and connects only to same-origin `/ws`. Selected file bytes use the same token on the loopback staging route; only the returned server path enters `run_task`. Registered server events flow through one exhaustive store reducer; client-side typing is convenience only, while the server parser remains the command-boundary enforcement.
+- Browser client: one module-scoped WebSocket takes the per-session token from the startup URL and connects only to same-origin `/ws`. Selected file bytes use the same token on the loopback staging route; only the returned server path enters `run_task`. Registered server events flow through one exhaustive store reducer; typed command and verification boundaries keep status and displayed timing independent of UI pacing. Client-side typing is convenience only, while the server parser remains the command-boundary enforcement.
 - Entry surface: the existing textarea, add control, run control, drop surface, and example chips are wired without changing the composition. Empty/fileless/busy submissions stay disabled. Browser files are copied to UUID-prefixed exclusive files under a server-owned temporary input root; filename traversal is rejected and no browser path is guessed. The art disappears when `run_started` moves the store out of idle.
 - Operational panels: ActivityStream and VerifyPanel accept store props only. Svelte text interpolation escapes command/evidence strings; no raw HTML or component path reaches execution. Pending rows show no invented evidence; expected/actual appear only when measured results arrive.
 - Browser launch: startup may invoke fixed `/usr/bin/open` with only the generated loopback URL. It accepts no task/model input and is outside the recipe module graph; tests disable it.
@@ -38,7 +38,7 @@ Last updated: Phase 3 visible task-input audit (2026-07-18). The Phase 2 CLI rem
 
 | Surface | Policy |
 | --- | --- |
-| Final output | One declared output, confined beside the input; existing outputs and output symlinks fail closed. |
+| Final output | One declared output, confined beside the input; occupied names and symlinks are skipped in favor of deterministic suffixes, with execution validation still failing closed on a race. |
 | Browser-staged input | Unique direct child of a per-server system-temp root, created exclusively with mode `0600`; traversal names fail before creation and partial writes are removed. |
 | Ordinary intermediates | Declared direct children of one per-run Steward temp root; write-before-read enforced; root removed on pass/fail. |
 | Executor artifacts | ffmpeg passlogs/null sinks and isolated LibreOffice profiles stay in executor-owned temp roots and are cleaned. |

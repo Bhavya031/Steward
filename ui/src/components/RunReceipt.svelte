@@ -88,9 +88,15 @@
       {#each RUN_STEPS as name (name)}
         <div class="receipt-step-row">
           <span class="receipt-tick" aria-hidden="true"></span>
-          <strong>{name} complete</strong>
+          <strong>
+            {name} {progress.steps[name].status === "skipped" ? "skipped" : "complete"}
+          </strong>
           <span class="receipt-step-tool">{stepTool(progress, name, matchedRecipe)}</span>
-          <span class="receipt-step-time">{formatClock(progress.steps[name].durationMs)}</span>
+          <span class="receipt-step-time">
+            {progress.steps[name].status === "skipped"
+              ? "SKIPPED"
+              : formatClock(progress.steps[name].durationMs)}
+          </span>
         </div>
       {/each}
     </div>

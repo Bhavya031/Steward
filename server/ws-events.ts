@@ -16,6 +16,14 @@ export type ServerEvent =
     files: string[];
   })
   | (RunEvent & { type: "activity"; message: string })
+  | (RunEvent & { type: "command_started"; argv: string[] })
+  | (RunEvent & {
+    type: "command_completed";
+    exit_code: number;
+    duration_ms: number;
+  })
+  | (RunEvent & { type: "verification_started" })
+  | (RunEvent & { type: "verification_completed"; duration_ms: number })
   | (RunEvent & {
     type: "install_required";
     tool: string | null;
