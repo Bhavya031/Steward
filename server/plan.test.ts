@@ -114,7 +114,7 @@ describe("parsePlan", () => {
     const checks: Plan["checks"] = [
       { type: "file_valid", target: "pdf" },
       { type: "text_extractable", target: "/tmp/scanned.pdf" },
-      { type: "page_count_positive", target: "/tmp/scanned.pdf" },
+      { type: "page_count_matches", target: "/tmp/scanned.pdf" },
     ];
     expect(parsePlan(JSON.stringify({ ...validPlan, checks })).checks).toEqual(checks);
     expect(Object.keys(checks[1]!).sort()).toEqual(["target", "type"]);
@@ -137,13 +137,13 @@ describe("parsePlan", () => {
   test("rejects malformed OCR proof targets before execution", () => {
     const checks: Plan["checks"] = [
       { type: "text_extractable", target: false },
-      { type: "page_count_positive", target: false },
+      { type: "page_count_matches", target: 1 },
     ];
     expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
       "text_extractable target must be a positive integer or source path",
     );
     expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
-      "page_count_positive target must be a positive integer or source path",
+      "page_count_matches target must be a source path",
     );
   });
 
@@ -194,7 +194,7 @@ describe("parsePlan", () => {
     expect(prompts[0]).toContain("canonical transformation in concise kebab-case");
     expect(prompts[0]).toContain("never the user's wording merely slugified");
     expect(prompts[0]).toContain("with no optional flags");
-    expect(prompts[0]).toContain("page_count_positive targeting the granted input path");
+    expect(prompts[0]).toContain("page_count_matches targeting the granted input path");
     expect(prompts[1]).toContain("10.000 s ±0.500 s");
     expect(prompts[1]).toContain("measured stderr");
   });

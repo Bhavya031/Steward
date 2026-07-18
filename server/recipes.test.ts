@@ -108,7 +108,7 @@ describe("recipes", () => {
       checks: [
         { type: "file_valid", target: "pdf" },
         { type: "text_extractable", target: scanned },
-        { type: "page_count_positive", target: scanned },
+        { type: "page_count_matches", target: scanned },
       ],
     };
     const recipe = save({
@@ -125,7 +125,7 @@ describe("recipes", () => {
     expect(recipe?.checks).toEqual([
       { type: "file_valid", target: "pdf" },
       { type: "text_extractable", target: "{{input_0}}" },
-      { type: "page_count_positive", target: "{{input_0}}" },
+      { type: "page_count_matches", target: "{{input_0}}" },
     ]);
   });
 

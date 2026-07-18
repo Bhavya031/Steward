@@ -8,7 +8,7 @@ export type CheckTarget = string | number | boolean;
 export const CHECK_TYPES = [
   "size_under", "duration_matches", "streams_present", "plays",
   "audio_stream_present", "loudness_matches", "true_peak_under",
-  "file_valid", "page_count_positive", "text_extractable", "format_matches",
+  "file_valid", "page_count_positive", "page_count_matches", "text_extractable", "format_matches",
 ] as const;
 export type PlanCheckType = (typeof CHECK_TYPES)[number];
 export interface PlanCheck { type: PlanCheckType; target: CheckTarget }

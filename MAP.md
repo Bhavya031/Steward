@@ -13,6 +13,7 @@ demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
 demo-material/recipe-4-verification-failure.txt:D—
 demo-material/recipe-5-ocr.txt:D—
+demo-material/recipe-5-ocr-rerun.txt:D—
 demo-material/p3.2-ws-compression.txt:D—
 demo-material/p3-entry-reference.jpg:D—
 demo-material/p3-entry-tile-hover.jpg:D—

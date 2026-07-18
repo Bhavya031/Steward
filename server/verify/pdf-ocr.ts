@@ -11,17 +11,17 @@ function textState(evidence: PdfTextEvidence): string {
   return evidence.nonWhitespaceChars > 0 ? "true" : "false";
 }
 
-export async function verifyPdfPageCountPreserved(
+export async function verifyPdfPageCountMatches(
   target: CheckTarget,
   context: VerificationRunContext,
 ): Promise<VerificationResult> {
   const expected = "same page count as granted source";
   if (typeof target !== "string") {
-    return result("page_count_positive", false, expected, `invalid target: ${String(target)}`);
+    return result("page_count_matches", false, expected, `invalid target: ${String(target)}`);
   }
   const source = grantedSource(target, context);
   if (!source) {
-    return result("page_count_positive", false, expected, `ungranted source: ${target}`);
+    return result("page_count_matches", false, expected, `ungranted source: ${target}`);
   }
   try {
     const [before, after] = await Promise.all([
@@ -29,13 +29,13 @@ export async function verifyPdfPageCountPreserved(
       measurePdfPages(context.outputPath, context),
     ]);
     return result(
-      "page_count_positive", before === after,
+      "page_count_matches", before === after,
       `${pageLabel(before)} on granted source`,
       `${pageLabel(after)} on output`,
     );
   } catch (error) {
     return result(
-      "page_count_positive", false, expected,
+      "page_count_matches", false, expected,
       `PDF page comparison failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   }

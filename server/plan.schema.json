@@ -50,6 +50,7 @@
               "true_peak_under",
               "file_valid",
               "page_count_positive",
+              "page_count_matches",
               "text_extractable",
               "format_matches"
             ]

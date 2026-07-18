@@ -78,7 +78,7 @@ describe("PDF verification", () => {
   test("OCR proof requires text absent before and present after", async () => {
     const checks = await verifyChecks([
       { type: "text_extractable", target: textlessPdf },
-      { type: "page_count_positive", target: textlessPdf },
+      { type: "page_count_matches", target: textlessPdf },
     ], context(realPdf, undefined, [textlessPdf]));
     expect(checks).toEqual([
       {
@@ -90,7 +90,7 @@ describe("PDF verification", () => {
         ),
       },
       {
-        name: "page_count_positive",
+        name: "page_count_matches",
         pass: true,
         expected: "1 page on granted source",
         actual: "1 page on output",
@@ -101,7 +101,7 @@ describe("PDF verification", () => {
   test("OCR proof refuses a source path that was not explicitly granted", async () => {
     const checks = await verifyChecks([
       { type: "text_extractable", target: textlessPdf },
-      { type: "page_count_positive", target: textlessPdf },
+      { type: "page_count_matches", target: textlessPdf },
     ], context(realPdf));
     expect(checks.every((check) => check.pass)).toBe(false);
     expect(checks.map((check) => check.actual)).toEqual([
