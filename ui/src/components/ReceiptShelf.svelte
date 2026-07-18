@@ -18,12 +18,14 @@
       <span class="shelf-card-tile" aria-hidden="true">{toolMark(recipe.tool)}</span>
       <span class="shelf-card-copy">
         <strong>{recipe.name.replaceAll("-", " ")}</strong>
-        {#if recipe.replaced_service && recipe.monthly_price !== undefined}
-          <em>{recipe.replaced_service} · ${formatPrice(recipe.monthly_price)}/mo</em>
-        {/if}
-        {#if history.some((run) => run.recipeName === recipe.name && run.modelCalls === 0)}
-          <small>0 model calls</small>
-        {/if}
+        <span class="shelf-card-meta">
+          {#if recipe.replaced_service && recipe.monthly_price !== undefined}
+            <em>{recipe.replaced_service} · ${formatPrice(recipe.monthly_price)}/mo</em>
+          {/if}
+          {#if history.some((run) => run.recipeName === recipe.name && run.modelCalls === 0)}
+            <small>0 model calls</small>
+          {/if}
+        </span>
       </span>
     </button>
   {/each}
