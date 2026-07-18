@@ -1,0 +1,72 @@
+Real subtitles UI proof after correctness fix
+Date: 2026-07-19
+Fix commit: 63eb279ffaa3d0efb1a954575ef9bac3bae974a3
+
+Isolation
+- Fresh recipe directory: /tmp/steward-real-subtitles-ui-fixed-proof.LrUalh/recipes-final
+- Fresh staging directory: /tmp/steward-real-subtitles-ui-fixed-proof.LrUalh/staged-final
+- Reused verified isolated model resource:
+  /tmp/steward-real-subtitles-ui-proof.HKxTrI/resources/ggml-large-v3-turbo.bin
+- Model SHA-256:
+  1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69
+- The real Whisper cache was not read, deleted, or modified.
+
+Visible UI flow
+- Both inputs were selected through the visible Add a file picker.
+- Both runs were started from the visible composer with the identical task:
+  Create accurate SRT subtitles from this speech video
+- No proof URL was used.
+- Receipt order was PROBE -> PLAN -> EXECUTE -> VERIFY on both runs.
+
+First run
+- Input:
+  /tmp/steward-r6-recipe6-real/first.mp4
+- Input SHA-256:
+  760c11d395644f2698599cda6dc3ff5db4970c46bbef8ce035302f2e17af56d4
+- Output:
+  /private/tmp/steward-real-subtitles-ui-fixed-proof.LrUalh/staged-final/6d8f0dfb-0e2d-4019-9f0d-604954645efd-first-subtitles.srt
+- Authoritative model_call_count event: 1
+- run_complete model_calls: 1
+- Receipt: 1 model calls
+- srt_valid: PASS, 2 structurally valid cues
+- cue_count: PASS, 2 cues
+- timestamps_monotonic: PASS, 2 cues; timestamps monotonic
+- Independent inspectSrt result: valid=true, cues=2, monotonic=true
+
+Saved-command rerun
+- Input:
+  /tmp/steward-r6-recipe6-real/second.mp4
+- Input SHA-256:
+  95b36206c8c63457dc1f4b5eb390064f4f181a0320c2fcfca5bce757f8aabc7b
+- The differing SHA-256 proves this is a different video.
+- recipe_matched score: 1
+- recipe_matched model_calls: 0
+- Output:
+  /private/tmp/steward-real-subtitles-ui-fixed-proof.LrUalh/staged-final/c0f03659-d8dd-4db8-be52-cad5343c6639-second-subtitles.srt
+- run_complete model_calls: 0
+- Receipt: 0 model calls
+- srt_valid: PASS, 2 structurally valid cues
+- cue_count: PASS, 2 cues
+- timestamps_monotonic: PASS, 2 cues; timestamps monotonic
+- Independent inspectSrt result: valid=true, cues=2, monotonic=true
+
+Saved workflow and Detail
+- The persisted task_signature is a SHA-256 digest of normalized semantic task text.
+- It contains no file name, staged UUID, private path, or command argument.
+- The exact persisted workflow remains:
+  ffmpeg input -> temporary 16 kHz mono PCM WAV
+  whisper-cli pinned model + temporary WAV -> input-directory subtitle stem
+- Detail showed both argv entries, all three path-valued placeholders, the complete
+  verification contract, and non-blank first-run history with expected and actual evidence.
+
+Evidence
+- real-subtitles-ui-fixed-proof-2026-07-19-events.txt
+- real-subtitles-ui-fixed-first-run-one-model-call.jpg
+- real-subtitles-ui-fixed-detail-pipeline-history.jpg
+- real-subtitles-ui-fixed-saved-rerun-zero-model-calls.jpg
+
+Safety review
+- Screenshots contain page content only.
+- No screenshot contains an address bar, authentication token, browser extension detail,
+  localhost URL, or other browser chrome.
+- Raw events contain no authentication token.
