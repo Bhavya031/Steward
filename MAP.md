@@ -13,6 +13,8 @@ demo-material/repair-run-1.txt:D—
 demo-material/repair-verification-failure.txt:D—
 demo-material/recipe-4-verification-failure.txt:D—
 demo-material/recipe-6-subtitles.txt:D—
+demo-material/recipe-5-ocr.txt:D—
+demo-material/recipe-5-ocr-rerun.txt:D—
 demo-material/p3.2-ws-compression.txt:D—
 demo-material/p3-entry-reference.jpg:D—
 demo-material/p3-entry-tile-hover.jpg:D—
@@ -23,6 +25,7 @@ recipes/convert-media-to-mp4.json:R—
 recipes/convert-markdown-to-docx.json:R—
 recipes/normalize-audio-to-14-lufs.json:R—
 recipes/transcribe-video-to-srt.json:R—
+recipes/ocr-scanned-pdf.json:R—
 ui/index.html:U—
 ui/svelte.config.js:C—
 ui/tsconfig.json:C—
@@ -127,6 +130,7 @@ server/verify/loudness-parser.ts:VA
 server/verify/media-format.test.ts:T—
 server/verify/media-format.ts:VA
 server/verify/pdf-parser.test.ts:T—
+server/verify/pdf-ocr.ts:VA
 server/verify/pdf.test.ts:T—
 server/verify/pdf.ts:VA
 server/verify/srt.test.ts:T—

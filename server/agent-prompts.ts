@@ -21,12 +21,13 @@ const RULES = `Rules:
 - If the selected tool is installed, install_cmd must be null.
 - If it is missing, install_cmd may only propose ["brew","install",...] using its official package; LibreOffice uses --cask.
 - An install proposal is never permission to execute it. Heavy tools/models require a separate explicit user confirmation.
-- Check types may only be: size_under, duration_matches, streams_present, plays, audio_stream_present, loudness_matches, true_peak_under, file_valid, page_count_positive, text_extractable, format_matches, srt_valid, cue_count, timestamps_monotonic.
+- Check types may only be: size_under, duration_matches, streams_present, plays, audio_stream_present, loudness_matches, true_peak_under, file_valid, page_count_positive, page_count_matches, text_extractable, format_matches, srt_valid, cue_count, timestamps_monotonic.
 - For video compression use size_under (target bytes), duration_matches (target input path), streams_present (comma-separated target such as "video,audio"), and plays (target true).
 - For audio work, audio_stream_present targets true, loudness_matches targets LUFS, true_peak_under targets -1 dBTP unless the task requires a stricter maximum, and duration_matches targets the input path.
 - For media conversion, use format_matches (target avi/flac/m4a/mkv/mov/mp3/mp4/ogg/wav/webm), duration_matches (target input path), and streams_present. Omit codec flags so ffmpeg selects compatible defaults from the output extension.
 - For SRT subtitles, use two commands: ffmpeg extracts {{temp_dir}}/audio.wav with -vn -ac 1 -ar 16000 -c:a pcm_s16le -f wav, then whisper-cli uses the trusted model, -f that WAV, -l auto, -osrt, --print-progress, and -of with output_path minus the .srt suffix. Declare the WAV intermediate. Use srt_valid true, cue_count 1, and timestamps_monotonic true. Do not claim language detection because it is not independently measured.
-- For documents, file_valid and format_matches target pdf/docx/epub/html/md/txt; page_count_positive targets a minimum page integer; text_extractable targets minimum non-whitespace characters.
+- For documents, file_valid and format_matches target pdf/docx/epub/html/md/txt; page_count_positive targets a minimum page integer; text_extractable normally targets minimum non-whitespace characters.
+- For scanned PDF OCR, use exactly one argv command containing ocrmypdf, the granted input path, and output_path, with no optional flags. Use exactly these checks in order: file_valid targeting pdf, text_extractable targeting the granted input path, then page_count_matches targeting the granted input path.
 - Checks must objectively verify the requested result. Do not claim that any command ran.
 
 ${DERIVATION_GUIDE}`;

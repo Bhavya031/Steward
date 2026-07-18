@@ -76,4 +76,12 @@ describe("positive per-tool flag policy", () => {
     validateCommandPaths("gs", ["gs", "-dSAFER", "-dBATCH", "-dNOPAUSE",
       "-sDEVICE=pdfwrite", `-sOutputFile=${pdf}`, markdown], [markdown], pdf);
   });
+
+  test("accepts only the granted input and confined output in the proven OCR plan", () => {
+    const source = join(root, "scanned.pdf");
+    const output = join(root, "scanned-searchable.pdf");
+    writeFileSync(source, "%PDF-1.7 fixture");
+    validateCommandPaths("ocrmypdf", ["ocrmypdf", source, output], [source], output);
+    rejects("ocrmypdf", ["ocrmypdf", source, "/tmp/outside.pdf"], source, output);
+  });
 });

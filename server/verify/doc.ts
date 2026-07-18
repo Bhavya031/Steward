@@ -1,12 +1,14 @@
 import type { CheckTarget } from "../plan.ts";
 import { result } from "./common.ts";
 import { documentFormat, hasPdfHeader, validateDocumentFormat } from "./file-format.ts";
+import { verifyOcrTextAdded, verifyPdfPageCountMatches } from "./pdf-ocr.ts";
 import { extractPdfText, measurePdfPages, type PdfTextEvidence } from "./pdf.ts";
 import { inspectUtf8 } from "./text-inspector.ts";
 import type { VerificationResult, VerificationRunContext } from "./types.ts";
 
 export const DOC_CHECK_TYPES = [
-  "file_valid", "page_count_positive", "text_extractable", "format_matches",
+  "file_valid", "page_count_positive", "page_count_matches",
+  "text_extractable", "format_matches",
 ] as const;
 export type DocCheckType = (typeof DOC_CHECK_TYPES)[number];
 
@@ -63,6 +65,7 @@ async function textExtractable(
   target: CheckTarget,
   context: VerificationRunContext,
 ): Promise<VerificationResult> {
+  if (typeof target === "string") return verifyOcrTextAdded(target, context);
   if (typeof target !== "number" || !Number.isInteger(target) || target < 1) {
     return result("text_extractable", false, "positive integer character minimum", `invalid target: ${String(target)}`);
   }
@@ -88,5 +91,6 @@ export async function verifyDocCheck(
   if (type === "file_valid") return fileValid(type, target, context);
   if (type === "format_matches") return fileValid(type, target, context);
   if (type === "page_count_positive") return pageCountPositive(target, context);
+  if (type === "page_count_matches") return verifyPdfPageCountMatches(target, context);
   return textExtractable(target, context);
 }

@@ -1,0 +1,33 @@
+{
+  "name": "ocr-scanned-pdf",
+  "command_template": {
+    "commands": [
+      [
+        "ocrmypdf",
+        "{{input_0}}",
+        "{{input_0_dir}}/{{input_0_stem}}-searchable.pdf"
+      ]
+    ],
+    "output_path": "{{input_0_dir}}/{{input_0_stem}}-searchable.pdf"
+  },
+  "checks": [
+    {
+      "type": "file_valid",
+      "target": "pdf"
+    },
+    {
+      "type": "text_extractable",
+      "target": "{{input_0}}"
+    },
+    {
+      "type": "page_count_matches",
+      "target": "{{input_0}}"
+    }
+  ],
+  "created_at": "2026-07-18T18:04:36.924Z",
+  "arch": "arm64",
+  "tool": "ocrmypdf",
+  "install_weight": "light",
+  "replaced_service": "iLovePDF",
+  "monthly_price": 5
+}

@@ -1,0 +1,22 @@
+STEWARD · your computer already knows how.
+Recipe exists: ocr-scanned-pdf (59% local match)
+Mode: saved recipe · model calls: 0
+Command: ocrmypdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-model-zero.pdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-model-zero-searchable.pdf
+
+┌─ STEWARD RECIPE
+│ ocr-scanned-pdf
+│ ocrmypdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-model-zero.pdf /tmp/steward-recipe-5-ocr-20260718/steward-scan-model-zero-searchable.pdf
+│ Replaces iLovePDF: ~~$5/mo~~
+│ Re-ran locally · model calls: 0
+└─ your computer already knows how.
+
+Checks:
+  ✓ file_valid
+    expected: valid PDF
+    actual:   valid PDF 1.7 (2 pages)
+  ✓ text_extractable
+    expected: before=false on granted source; after=true on output
+    actual:   before=false (0 non-whitespace chars); after=true (82 non-whitespace chars; sample "STEWARD OCR PROOF SCANNED PAGE ONE LOCAL")
+  ✓ page_count_matches
+    expected: 2 pages on granted source
+    actual:   2 pages on output

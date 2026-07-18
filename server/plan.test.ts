@@ -110,6 +110,16 @@ describe("parsePlan", () => {
     expect(parsePlan(JSON.stringify({ ...validPlan, checks })).checks).toEqual(checks);
   });
 
+  test("accepts source-bound OCR proof checks without widening the check shape", () => {
+    const checks: Plan["checks"] = [
+      { type: "file_valid", target: "pdf" },
+      { type: "text_extractable", target: "/tmp/scanned.pdf" },
+      { type: "page_count_matches", target: "/tmp/scanned.pdf" },
+    ];
+    expect(parsePlan(JSON.stringify({ ...validPlan, checks })).checks).toEqual(checks);
+    expect(Object.keys(checks[1]!).sort()).toEqual(["target", "type"]);
+  });
+
   test("rejects invalid document targets before execution", () => {
     const checks: Plan["checks"] = [
       { type: "file_valid", target: true },
@@ -121,6 +131,19 @@ describe("parsePlan", () => {
     );
     expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
       "text_extractable is not supported for DOCX output",
+    );
+  });
+
+  test("rejects malformed OCR proof targets before execution", () => {
+    const checks: Plan["checks"] = [
+      { type: "text_extractable", target: false },
+      { type: "page_count_matches", target: 1 },
+    ];
+    expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
+      "text_extractable target must be a positive integer or source path",
+    );
+    expect(() => parsePlan(JSON.stringify({ ...validPlan, checks }))).toThrow(
+      "page_count_matches target must be a source path",
     );
   });
 
@@ -170,6 +193,8 @@ describe("parsePlan", () => {
     expect(prompts[0]).toContain("earlier ordinary file outputs must be declared in intermediates");
     expect(prompts[0]).toContain("canonical transformation in concise kebab-case");
     expect(prompts[0]).toContain("never the user's wording merely slugified");
+    expect(prompts[0]).toContain("with no optional flags");
+    expect(prompts[0]).toContain("page_count_matches targeting the granted input path");
     expect(prompts[1]).toContain("10.000 s ±0.500 s");
     expect(prompts[1]).toContain("measured stderr");
   });

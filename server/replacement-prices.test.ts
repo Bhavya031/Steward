@@ -10,10 +10,12 @@ const cases = [
   ["ffmpeg", "format_matches", "CloudConvert", 8],
   ["ffmpeg", "loudness_matches", "Auphonic", 11],
   ["pandoc", "format_matches", "Convertio", 6.99],
+  ["ocrmypdf", "text_extractable", "iLovePDF", 5],
 ] as const;
 
 function plan(tool: Plan["tool"], type: Plan["checks"][number]["type"]): Plan {
   const target = type === "size_under" ? 1_000 : type === "loudness_matches" ? -14
+    : type === "text_extractable" ? "/tmp/scanned.pdf"
     : type === "format_matches" && tool === "ffmpeg" ? "mp4" : "docx";
   return {
     name: "test-replacement", tool, install_cmd: null,
@@ -36,7 +38,7 @@ describe("curated replacement prices", () => {
   test("deduplicates shared services in the shelf kill total", () => {
     const shelf = load();
     expect(shelf.filter((recipe) => recipe.replaced_service === "CloudConvert")).toHaveLength(2);
-    expect(killTotalFor(shelf)).toBe(34.99);
+    expect(killTotalFor(shelf)).toBe(39.99);
   });
 
   test("an unpriced recipe card renders no replacement claim", () => {

@@ -9,7 +9,7 @@ const CANONICAL: Record<string, string> = {
   below: "under", clip: "video", compressing: "compress", compression: "compress",
   compressor: "compress", less: "under", movie: "video", movies: "video",
   reduce: "compress", smaller: "compress", shrink: "compress", shrinking: "compress",
-  videos: "video",
+  scan: "ocr", scanned: "ocr", searchable: "ocr", videos: "video",
 };
 const FILE_KINDS: Record<string, string> = {
   ".avi": "video", ".mkv": "video", ".mov": "video", ".mp4": "video", ".webm": "video",

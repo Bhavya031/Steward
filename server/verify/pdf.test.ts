@@ -28,8 +28,9 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 function context(
   outputPath: string,
   onExecutionEvent?: (event: ExecutionEvent) => void,
+  sourcePaths: string[] = [],
 ): VerificationContext {
-  return { outputPath, sourcePaths: [], profile, onExecutionEvent };
+  return { outputPath, sourcePaths, profile, onExecutionEvent };
 }
 
 describe("PDF verification", () => {
@@ -72,6 +73,41 @@ describe("PDF verification", () => {
     );
     expect(check?.pass).toBe(false);
     expect(check?.actual).toBe('0 non-whitespace chars; sample "(empty)"');
+  });
+
+  test("OCR proof requires text absent before and present after", async () => {
+    const checks = await verifyChecks([
+      { type: "text_extractable", target: textlessPdf },
+      { type: "page_count_matches", target: textlessPdf },
+    ], context(realPdf, undefined, [textlessPdf]));
+    expect(checks).toEqual([
+      {
+        name: "text_extractable",
+        pass: true,
+        expected: "before=false on granted source; after=true on output",
+        actual: expect.stringMatching(
+          /^before=false \(0 non-whitespace chars\); after=true \(\d+ non-whitespace chars; sample "Steward searchable document/,
+        ),
+      },
+      {
+        name: "page_count_matches",
+        pass: true,
+        expected: "1 page on granted source",
+        actual: "1 page on output",
+      },
+    ]);
+  });
+
+  test("OCR proof refuses a source path that was not explicitly granted", async () => {
+    const checks = await verifyChecks([
+      { type: "text_extractable", target: textlessPdf },
+      { type: "page_count_matches", target: textlessPdf },
+    ], context(realPdf));
+    expect(checks.every((check) => check.pass)).toBe(false);
+    expect(checks.map((check) => check.actual)).toEqual([
+      `ungranted source: ${textlessPdf}`,
+      `ungranted source: ${textlessPdf}`,
+    ]);
   });
 
   test("renamed text and broken PDF structure fail file_valid", async () => {

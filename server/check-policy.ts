@@ -37,9 +37,13 @@ export function checkSemanticError(checks: PlanCheck[]): string | null {
       errors.push(`${at} target must be a finite number`);
     } else if (check.type === "file_valid" && !documentFormat(check.target)) {
       errors.push(`${at} target must be pdf/docx/epub/html/md/txt`);
-    } else if ((check.type === "page_count_positive" || check.type === "text_extractable") &&
-        !positiveInteger(check.target)) {
+    } else if (check.type === "page_count_positive" && !positiveInteger(check.target)) {
       errors.push(`${at} target must be a positive integer`);
+    } else if (check.type === "page_count_matches" && typeof check.target !== "string") {
+      errors.push(`${at} target must be a source path`);
+    } else if (check.type === "text_extractable" &&
+        !positiveInteger(check.target) && typeof check.target !== "string") {
+      errors.push(`${at} target must be a positive integer or source path`);
     } else if (check.type === "format_matches" &&
         !documentFormat(check.target) && !mediaFormat(check.target)) {
       errors.push(`${at} target is not a supported document or media format`);
@@ -53,8 +57,9 @@ export function checkSemanticError(checks: PlanCheck[]): string | null {
 
   const promised = checks.find((check) => check.type === "format_matches");
   const outputFormat = documentFormat(promised?.target);
-  if (outputFormat && outputFormat !== "pdf" && checks.some((check) => check.type === "page_count_positive")) {
-    errors.push(`page_count_positive is only supported for PDF output, not ${outputFormat.toUpperCase()}`);
+  if (outputFormat && outputFormat !== "pdf" &&
+      checks.some((check) => check.type === "page_count_positive" || check.type === "page_count_matches")) {
+    errors.push(`PDF page-count checks are not supported for ${outputFormat.toUpperCase()} output`);
   }
   if ((outputFormat === "docx" || outputFormat === "epub") &&
       checks.some((check) => check.type === "text_extractable")) {
