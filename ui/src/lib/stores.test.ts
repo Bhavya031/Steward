@@ -143,16 +143,57 @@ describe("UI event stores", () => {
     expect(get(installRequest)).toBeNull();
   });
 
+  test("retains an authoritative planned model-call count through install and resume", () => {
+    resetStores();
+    applyServerEvent({
+      type: "run_started", run_id: "planned-install",
+      action: "task", files: ["/tmp/speech.mp4"],
+    }, 100);
+    applyServerEvent({
+      type: "model_call_count", run_id: "planned-install", model_calls: 1,
+    }, 110);
+    applyServerEvent({
+      type: "install_required", run_id: "planned-install", tool: null, command: null,
+      resources: [{
+        id: "whisper-large-v3-turbo", bytes: 1_624_555_275,
+        sha256: "1fc70f", source: "ggerganov/whisper.cpp",
+      }],
+    }, 120);
+    applyServerEvent({
+      type: "install_progress", run_id: "planned-install", id: "whisper-large-v3-turbo",
+      received: 1_624_555_275, total: 1_624_555_275, percent: 100,
+    }, 130);
+    applyServerEvent({
+      type: "install_complete", run_id: "planned-install",
+      message: "Installation verified. Continuing automatically.",
+    }, 140);
+    expect(get(runState).modelCalls).toBe(1);
+    applyServerEvent({
+      type: "recipe_saved", run_id: "planned-install", recipe,
+    }, 150);
+    applyServerEvent({
+      type: "run_complete", run_id: "planned-install", success: true,
+      output_path: "/tmp/speech.srt", model_calls: 1,
+    }, 160);
+    expect(get(runState).modelCalls).toBe(1);
+    expect(get(runHistory)[0]).toMatchObject({
+      runId: "planned-install", modelCalls: 1, success: true,
+    });
+  });
+
   test("records zero model calls only when the engine reports a saved-command match", () => {
     resetStores();
     applyServerEvent({
       type: "run_started", run_id: "planned",
       action: "task", files: ["/tmp/source-a.mov"],
     }, 100);
+    applyServerEvent({
+      type: "model_call_count", run_id: "planned", model_calls: 1,
+    }, 150);
     applyServerEvent({ type: "recipe_saved", run_id: "planned", recipe }, 200);
     applyServerEvent({
       type: "run_complete", run_id: "planned", success: true,
-      output_path: "/tmp/source-a-compressed.mp4",
+      output_path: "/tmp/source-a-compressed.mp4", model_calls: 1,
     }, 300);
 
     applyServerEvent({
@@ -175,7 +216,7 @@ describe("UI event stores", () => {
     expect(get(runHistory)).toEqual([
       expect.objectContaining({
         runId: "planned", recipeName: recipe.name, action: "task",
-        startedAt: 100, completedAt: 300, success: true,
+        startedAt: 100, completedAt: 300, success: true, modelCalls: 1,
       }),
       expect.objectContaining({
         runId: "rerun", recipeName: recipe.name, action: "recipe",
@@ -183,6 +224,6 @@ describe("UI event stores", () => {
         checks: [expect.objectContaining({ name: "size_under", status: "passed" })],
       }),
     ]);
-    expect(get(runHistory)[0]).not.toHaveProperty("modelCalls");
+    expect(get(runState).modelCalls).toBe(0);
   });
 });

@@ -18,7 +18,7 @@ import {
   pauseForInstall, requirementsNeeded, resumeInstall, type PendingInstall,
 } from "./ws-install-flow.ts";
 
-interface Completion { outputPath: string; modelCalls?: 0 }
+interface Completion { outputPath: string; modelCalls?: number }
 export type { PendingInstall } from "./ws-install-flow.ts";
 export interface WsEngineOptions {
   recipeDirectory?: string;
@@ -90,8 +90,13 @@ function attemptEvents(runId: string, checks: Plan["checks"], emit: EmitServerEv
 
 async function runPlannedReady(
   plan: Plan, profile: SystemProfile, files: string[], directory: string,
-  runId: string, emit: EmitServerEvent,
+  taskDescription: string, initialModelCalls: number, runId: string, emit: EmitServerEvent,
 ): Promise<Completion> {
+  let modelCalls = initialModelCalls;
+  const onModelCall = () => {
+    modelCalls += 1;
+    emit({ type: "model_call_count", run_id: runId, model_calls: modelCalls });
+  };
   pendingChecks(runId, plan.checks, emit);
   const { repairTask } = await import("./agent.ts");
   const run = await runWithRepair({
@@ -99,17 +104,17 @@ async function runPlannedReady(
     executionOptions: { onEvent: executionEvents(runId, emit) },
     ...verificationEvents(runId, emit),
     onAttempt: attemptEvents(runId, plan.checks, emit),
-    repair: (context) => repairTask(profile, context),
+    repair: (context) => repairTask(profile, context, onModelCall),
   });
   checkResults(runId, run.checks, emit);
   if (!run.all_pass) throw new Error(`all ${run.events.length} attempts failed; failed output discarded`);
   const recipe = save({
-    plan: run.plan, inputPaths: files, verification: run.checks,
+    plan: run.plan, taskDescription, inputPaths: files, verification: run.checks,
     arch: profile.architecture,
   }, directory);
   if (!recipe) throw new Error("green verification was refused by recipe storage");
   emit({ type: "recipe_saved", run_id: runId, recipe });
-  return { outputPath: run.resolvedPlan.output_path };
+  return { outputPath: run.resolvedPlan.output_path, modelCalls };
 }
 
 async function runPlanned(
@@ -121,17 +126,25 @@ async function runPlanned(
   activity(runId, `macOS ${profile.macosVersion} · ${profile.architecture} · ${profile.ram.gib} GiB.`, emit);
   activity(runId, "Planning a local command.", emit);
   const { planTask } = await import("./agent.ts");
+  let modelCalls = 0;
+  const onModelCall = () => {
+    modelCalls += 1;
+    emit({ type: "model_call_count", run_id: runId, model_calls: modelCalls });
+  };
   const planningTask = `${task}\nInput files (absolute paths): ${JSON.stringify(files)}`;
-  const plan = await planTask(profile, planningTask, task);
+  const plan = await planTask(profile, planningTask, task, onModelCall);
   activity(runId, "Plan ready. Preparing local execution.", emit);
   const requirements = await planRequirements(plan);
   if (requirementsNeeded(requirements)) {
     return pauseForInstall(
-      runId, { kind: "planned", plan, profile, files, directory, requirements },
+      runId, {
+        kind: "planned", plan, profile, files, directory, taskDescription: task,
+        modelCalls, requirements,
+      },
       emit, pendingRuns,
     );
   }
-  return runPlannedReady(plan, profile, files, directory, runId, emit);
+  return runPlannedReady(plan, profile, files, directory, task, modelCalls, runId, emit);
 }
 
 async function resume(
@@ -141,7 +154,10 @@ async function resume(
   const ready = await resumeInstall(request.run_id, pendingRuns, emit);
   const pending = ready.pending;
   return pending.kind === "planned"
-    ? runPlannedReady(ready.plan, ready.profile, pending.files, pending.directory, request.run_id, emit)
+    ? runPlannedReady(
+      ready.plan, ready.profile, pending.files, pending.directory,
+      pending.taskDescription, pending.modelCalls, request.run_id, emit,
+    )
     : runSavedReady(pending.recipe, pending.score, pending.files, request.run_id, emit);
 }
 
@@ -176,7 +192,7 @@ export async function runEngineEvent(
     if (!result) return;
     emit({
       type: "run_complete", run_id: runId, success: true, output_path: result.outputPath,
-      ...(result.modelCalls === 0 ? { model_calls: 0 as const } : {}),
+      ...(result.modelCalls === undefined ? {} : { model_calls: result.modelCalls }),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

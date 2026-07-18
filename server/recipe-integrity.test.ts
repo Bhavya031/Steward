@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Plan } from "./plan.ts";
+import { semanticTaskSignature } from "./recipe-match.ts";
 import { save } from "./recipes.ts";
 
 const root = mkdtempSync(join(tmpdir(), "steward-recipe-integrity-"));
@@ -54,6 +55,23 @@ describe("recipe plan integrity", () => {
     const recipe = savePlan(plan(filter), join(root, "single-pass"));
     expect(recipe?.command_template.commands).toEqual([[
       "ffmpeg", "-i", "{{input_0}}", "-af", filter,
+      "{{input_0_dir}}/{{input_0_stem}}-normalized.wav",
+    ]]);
+  });
+
+  test("stores only a path-free semantic task signature without changing the workflow", () => {
+    const candidate = plan("loudnorm=I=-14:TP=-1:LRA=11");
+    const taskDescription = "Normalize this recording for podcast delivery";
+    const recipe = save({
+      plan: candidate, taskDescription, inputPaths: [source], arch: "arm64",
+      verification: candidate.checks.map((check) => ({
+        name: check.type, pass: true, expected: "expected", actual: "measured",
+      })),
+    }, join(root, "semantic-task"));
+    expect(recipe?.task_signature).toBe(semanticTaskSignature(taskDescription));
+    expect(JSON.stringify(recipe)).not.toContain(root);
+    expect(recipe?.command_template.commands).toEqual([[
+      "ffmpeg", "-i", "{{input_0}}", "-af", "loudnorm=I=-14:TP=-1:LRA=11",
       "{{input_0_dir}}/{{input_0_stem}}-normalized.wav",
     ]]);
   });

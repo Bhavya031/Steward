@@ -16,7 +16,7 @@
     checks: CheckItem[];
     savedRecipe?: Recipe;
     matchedRecipe?: string;
-    modelCalls?: 0;
+    modelCalls?: number;
     killTotal: number;
     outputPath?: string;
     now: number;

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { extname } from "node:path";
 import { mediaFormat, mediaTargetFromConversionPhrase, type MediaFormat } from "./media-formats.ts";
 import type { Recipe } from "./recipe-types.ts";
@@ -28,6 +29,17 @@ function tokens(value: string): Set<string> {
   return new Set(separated);
 }
 
+export function normalizeSemanticTask(value: string): string {
+  return value.normalize("NFKC").toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+export function semanticTaskSignature(value: string): string {
+  return `sha256:${createHash("sha256").update(normalizeSemanticTask(value)).digest("hex")}`;
+}
+
 export function recipeIntent(recipe: Recipe): RecipeIntent | null {
   if (recipe.checks.some((check) => check.type === "size_under")) return "compression";
   return recipeMediaTarget(recipe) ? "conversion" : null;
@@ -45,6 +57,14 @@ export function taskIntent(task: string): RecipeIntent | null {
   if (compression && (conversionVerb || conversionTarget)) return null;
   if (conversionTarget) return "conversion";
   return compression ? "compression" : null;
+}
+
+function compatibleIntent(recipe: Recipe, taskDescription: string): boolean {
+  const requested = taskIntent(taskDescription);
+  const capability = recipeIntent(recipe);
+  if ((requested || capability) && requested !== capability) return false;
+  return requested !== "conversion" ||
+    mediaTargetFromConversionPhrase(taskDescription) === recipeMediaTarget(recipe);
 }
 
 export function recipeConfidence(recipe: Recipe, taskDescription: string, files: string[]): number {
@@ -68,4 +88,18 @@ export function recipeConfidence(recipe: Recipe, taskDescription: string, files:
     recipeMediaTarget(recipe) !== requestedFormat;
   const scored = capability === requested && !wrongFormat ? 0.7 + lexical * 0.3 : lexical * 0.3;
   return Number(Math.min(1, scored).toFixed(3));
+}
+
+export function exactTaskRecipe(
+  recipes: Recipe[], taskDescription: string,
+): Recipe | null | undefined {
+  const signature = semanticTaskSignature(taskDescription);
+  const exact = recipes.filter((recipe) => recipe.task_signature === signature);
+  if (exact.length === 0) return undefined;
+  if (exact.length !== 1 || !compatibleIntent(exact[0]!, taskDescription)) return null;
+  return exact[0]!;
+}
+
+export function recipeMatchesIntent(recipe: Recipe, taskDescription: string): boolean {
+  return compatibleIntent(recipe, taskDescription);
 }

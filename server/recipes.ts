@@ -3,8 +3,9 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync
 import { join, resolve } from "node:path";
 import { executePlan } from "./executor.ts";
 import { discardFailedOutput } from "./failed-output.ts";
-import { recipeConfidence, recipeIntent, recipeMediaTarget, taskIntent } from "./recipe-match.ts";
-import { mediaTargetFromConversionPhrase } from "./media-formats.ts";
+import {
+  exactTaskRecipe, recipeConfidence, recipeMatchesIntent, semanticTaskSignature,
+} from "./recipe-match.ts";
 import { allocatePlanOutput } from "./output-allocation.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
@@ -33,6 +34,9 @@ export function save(
   const replacement = replacementClaimFor(input.plan) ?? {};
   const recipe = validateRecipe({
     name: input.plan.name,
+    ...(input.taskDescription === undefined
+      ? {}
+      : { task_signature: semanticTaskSignature(input.taskDescription) }),
     ...replacement,
     command_template: templated.command_template,
     checks: templated.checks,
@@ -80,18 +84,17 @@ export function match(
   files: string[],
   directory = RECIPES_DIRECTORY,
 ): RecipeMatch | null {
-  const ranked = load(directory)
+  const recipes = load(directory);
+  const exact = exactTaskRecipe(recipes, taskDescription);
+  if (exact !== undefined) return exact ? { recipe: exact, confidence: 1 } : null;
+  const ranked = recipes
     .map((recipe) => ({ recipe, confidence: recipeConfidence(recipe, taskDescription, files) }))
     .sort((left, right) => right.confidence - left.confidence);
   const best = ranked[0];
   if (!best || best.confidence < MATCH_THRESHOLD) return null;
   const lead = best.confidence - (ranked[1]?.confidence ?? 0);
   if (lead < MATCH_LEAD) return null;
-  const requested = taskIntent(taskDescription);
-  const capability = recipeIntent(best.recipe);
-  if ((requested || capability) && requested !== capability) return null;
-  if (requested === "conversion" &&
-      mediaTargetFromConversionPhrase(taskDescription) !== recipeMediaTarget(best.recipe)) return null;
+  if (!recipeMatchesIntent(best.recipe, taskDescription)) return null;
   return best;
 }
 

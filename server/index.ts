@@ -60,7 +60,7 @@ async function runPlanned(task: string, files: string[]): Promise<void> {
     throw new Error(`all ${run.events.length} attempts failed; recipe was not saved`);
   }
   const recipe = save({
-    plan: run.plan,
+    plan: run.plan, taskDescription: task,
     inputPaths: files,
     verification: run.checks,
     arch: profile.architecture,

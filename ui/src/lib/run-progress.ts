@@ -84,6 +84,9 @@ export function reduceServerEvent(
   }
   const state = copy(current);
   if (event.type === "activity") applyActivity(state, event.message, at);
+  if (event.type === "model_call_count" && state.steps.plan.status !== "complete") {
+    state.steps.plan.note = `${event.model_calls} model ${event.model_calls === 1 ? "call" : "calls"}`;
+  }
   if (event.type === "recipe_matched") {
     if (state.steps.probe.status === "active") completeStep(state, "probe", at);
     else if (state.steps.probe.status === "pending") {

@@ -8,6 +8,7 @@ import type { TrustedResourceId } from "./trusted-resources.ts";
 
 export interface Recipe {
   name: string;
+  task_signature?: string;
   replaced_service?: string;
   monthly_price?: number;
   command_template: { commands: string[][]; output_path: string };
@@ -23,6 +24,7 @@ export interface Recipe {
 
 export interface SaveRecipeInput {
   plan: Plan;
+  taskDescription?: string;
   inputPaths: string[];
   verification: VerificationResult[];
   arch: string;

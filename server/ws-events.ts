@@ -16,6 +16,7 @@ export type ServerEvent =
     files: string[];
   })
   | (RunEvent & { type: "activity"; message: string })
+  | (RunEvent & { type: "model_call_count"; model_calls: number })
   | (RunEvent & { type: "command_started"; argv: string[] })
   | (RunEvent & {
     type: "command_completed";
@@ -60,7 +61,7 @@ export type ServerEvent =
     type: "run_complete";
     success: boolean;
     output_path?: string;
-    model_calls?: 0;
+    model_calls?: number;
   })
   | { type: "error"; message: string; run_id?: string };
 

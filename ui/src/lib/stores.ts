@@ -29,7 +29,7 @@ export interface RunState {
   status: "idle" | "running" | "complete" | "failed";
   action?: "task" | "recipe";
   outputPath?: string;
-  modelCalls?: 0;
+  modelCalls?: number;
   matchedRecipe?: string;
   matchScore?: number;
   savedRecipe?: Recipe;
@@ -44,7 +44,7 @@ export interface RunHistoryItem {
   completedAt: number;
   success: boolean;
   outputPath?: string;
-  modelCalls?: 0;
+  modelCalls?: number;
   checks: CheckItem[];
 }
 
@@ -129,6 +129,14 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       return;
     case "activity":
       append({ runId: event.run_id, message: event.message, kind: "activity" });
+      return;
+    case "model_call_count":
+      if (activeRunHistory?.runId === event.run_id) {
+        activeRunHistory.modelCalls = event.model_calls;
+      }
+      runState.update((state) => state.id === event.run_id
+        ? { ...state, modelCalls: event.model_calls }
+        : state);
       return;
     case "command_started":
     case "command_completed":
@@ -215,7 +223,7 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
             completedAt: receivedAt,
             success: event.success,
             outputPath: event.output_path,
-            ...(modelCalls === 0 ? { modelCalls: 0 as const } : {}),
+            ...(modelCalls === undefined ? {} : { modelCalls }),
             checks: active.checks.map((check) => ({ ...check })),
           }].slice(-100));
         }

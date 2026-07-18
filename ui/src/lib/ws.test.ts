@@ -16,6 +16,8 @@ describe("browser WebSocket client", () => {
       .toMatchObject({ type: "command_completed", duration_ms: 417 });
     expect(parseServerEvent('{"type":"verification_completed","run_id":"r1","duration_ms":81}'))
       .toMatchObject({ type: "verification_completed", duration_ms: 81 });
+    expect(parseServerEvent('{"type":"model_call_count","run_id":"r1","model_calls":1}'))
+      .toMatchObject({ type: "model_call_count", model_calls: 1 });
     expect(() => parseServerEvent('{"type":"shelf_magic"}'))
       .toThrow("unsupported");
     expect(() => parseServerEvent("not json")).toThrow("valid JSON");

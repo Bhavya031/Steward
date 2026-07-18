@@ -32,6 +32,7 @@ describe("typed WebSocket protocol", () => {
       if (!pendingRuns) throw new Error("bridge did not provide pending state");
       if (request.type === "run_task") {
         pendingRuns.set("paused", {} as never);
+        emit({ type: "model_call_count", run_id: "paused", model_calls: 1 });
         emit({
           type: "install_required", run_id: "paused", tool: null, command: null,
           resources: [{
@@ -47,15 +48,19 @@ describe("typed WebSocket protocol", () => {
         type: "install_complete", run_id: request.run_id,
         message: "Installation verified. Continuing automatically.",
       });
-      emit({ type: "run_complete", run_id: request.run_id, success: true });
+      emit({
+        type: "run_complete", run_id: request.run_id,
+        success: true, model_calls: 1,
+      });
     };
     const socket = new FakeSocket();
     const bridge = createWsBridge({ runEngine: runner });
     await bridge(socket, '{"type":"run_task","task":"subtitles","files":["/tmp/a.mp4"]}');
     await bridge(socket, '{"type":"confirm_install","run_id":"paused","confirm":true}');
     expect(socket.messages.map((event) => event.type)).toEqual([
-      "install_required", "install_complete", "run_complete",
+      "model_call_count", "install_required", "install_complete", "run_complete",
     ]);
+    expect(socket.messages.at(-1)).toMatchObject({ model_calls: 1 });
   });
 
   test("serializes engine events and refuses overlapping runs per socket", async () => {

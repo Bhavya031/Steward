@@ -17,7 +17,7 @@
   export let checks: CheckItem[] = [];
   export let savedRecipe: Recipe | undefined = undefined;
   export let matchedRecipe: string | undefined = undefined;
-  export let modelCalls: 0 | undefined = undefined;
+  export let modelCalls: number | undefined = undefined;
   export let killTotal = 0;
   export let installRequest: InstallRequest | null = null;
   export let onConfirmInstall: (runId: string) => void = () => undefined;

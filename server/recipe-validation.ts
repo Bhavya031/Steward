@@ -12,7 +12,7 @@ const REQUIRED_RECIPE_KEYS = [
 ];
 const RECIPE_KEYS = [
   ...REQUIRED_RECIPE_KEYS, "replaced_service", "monthly_price", "derivations", "intermediates",
-  "resources",
+  "resources", "task_signature",
 ];
 const CHECK_TYPE_SET = new Set<string>(CHECK_TYPES);
 
@@ -113,6 +113,13 @@ export function validateRecipe(value: unknown): Recipe {
     tool,
     install_weight: value.install_weight as InstallWeight,
   };
+  if (value.task_signature !== undefined) {
+    if (typeof value.task_signature !== "string" ||
+        !/^sha256:[0-9a-f]{64}$/.test(value.task_signature)) {
+      throw new Error("recipe task_signature is invalid");
+    }
+    recipe.task_signature = value.task_signature;
+  }
   if (hasService && hasPrice) {
     recipe.replaced_service = value.replaced_service as string;
     recipe.monthly_price = value.monthly_price as number;

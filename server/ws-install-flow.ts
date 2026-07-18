@@ -16,6 +16,8 @@ interface PendingBase {
 export interface PlannedPending extends PendingBase {
   kind: "planned";
   directory: string;
+  taskDescription: string;
+  modelCalls: number;
 }
 export interface SavedPending extends PendingBase {
   kind: "saved";

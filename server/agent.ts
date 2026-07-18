@@ -52,7 +52,10 @@ export function confirmCodexAuth(): CodexAuthStatus {
   };
 }
 
-async function runCodex(prompt: string): Promise<string> {
+export type ModelCallObserver = () => void;
+
+async function runCodex(prompt: string, onModelCall?: ModelCallObserver): Promise<string> {
+  onModelCall?.();
   const child = Bun.spawn(
     [
       codexPath(), "exec", "--ephemeral", "--sandbox", "read-only",
@@ -117,27 +120,32 @@ export async function planTask(
   profile: SystemProfile,
   task: string,
   taskDescription = task,
+  onModelCall?: ModelCallObserver,
 ): Promise<Plan> {
   if (!task.trim()) throw new AgentError("Task must not be empty");
   confirmCodexAuth();
-  const first = await runCodex(buildPlannerPrompt(profile, task));
+  const first = await runCodex(buildPlannerPrompt(profile, task), onModelCall);
   try {
     return validatePlanNameForTask(parseForProfile(first, profile), taskDescription);
   } catch (error) {
     if (!(error instanceof PlanValidationError)) throw error;
-    const second = await runCodex(buildPlannerPrompt(profile, task, error.message));
+    const second = await runCodex(buildPlannerPrompt(profile, task, error.message), onModelCall);
     return validatePlanNameForTask(parseForProfile(second, profile), taskDescription);
   }
 }
 
-export async function repairTask(profile: SystemProfile, context: RepairContext): Promise<Plan> {
+export async function repairTask(
+  profile: SystemProfile,
+  context: RepairContext,
+  onModelCall?: ModelCallObserver,
+): Promise<Plan> {
   confirmCodexAuth();
-  const first = await runCodex(buildRepairPrompt(profile, context));
+  const first = await runCodex(buildRepairPrompt(profile, context), onModelCall);
   try {
     return enforceRepairIntegrity(context.original_plan, parseForProfile(first, profile));
   } catch (error) {
     if (!(error instanceof PlanValidationError)) throw error;
-    const second = await runCodex(buildRepairPrompt(profile, context, error.message));
+    const second = await runCodex(buildRepairPrompt(profile, context, error.message), onModelCall);
     return enforceRepairIntegrity(context.original_plan, parseForProfile(second, profile));
   }
 }

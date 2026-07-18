@@ -5,6 +5,7 @@ import { applyClientEvent, applyServerEvent } from "./stores.ts";
 const SERVER_EVENT_TYPES: { [Type in ServerEvent["type"]]: true } = {
   run_started: true,
   activity: true,
+  model_call_count: true,
   command_started: true,
   command_completed: true,
   verification_started: true,
