@@ -1,0 +1,58 @@
+Steward clean-machine Apple Silicon installation report
+Date: 2026-07-19
+Integration commit: 069798e98a9b8be04b85b28f7b9a1ac3c36edb00
+Branch: integration/submission
+Result: FAIL — committed installer is missing
+
+Isolation
+- The integration worktree was clean before testing.
+- A disposable clone was created outside the integration worktree.
+- The disposable clone was clean and checked out the exact integration commit.
+- HOME was redirected to a new empty directory inside the disposable test root.
+- The fresh HOME remained empty after the failed invocation.
+- The real Steward configuration, saved workflows, model cache, and existing worktrees were
+  not read, deleted, or modified.
+- No global tool was installed or uninstalled.
+
+Environment
+- macOS: 26.4.1
+- uname architecture: arm64
+- process architecture: arm64
+- Homebrew executable: /opt/homebrew/bin/brew
+- Homebrew prefix: /opt/homebrew
+- Homebrew version: 6.0.11-102-g4bb472f
+- Bun version: 1.2.8
+- Git version: 2.51.0
+
+Installer presence
+- install.sh is absent from the root of the fresh clone.
+- No install.sh exists anywhere in the committed tree.
+- No substitute setup command was invented or run.
+
+First installation attempt
+- Command: ./install.sh
+- Exit code: 127
+- Exact output:
+  zsh:1: no such file or directory: ./install.sh
+
+Dependency status
+- Newly installed: none
+- Already present and observed: Homebrew, Bun, Git
+- Application dependency installation status: not evaluated because the committed installer
+  could not start.
+- /opt/homebrew installer handling: not testable because install.sh is absent.
+
+Required follow-on checks
+- UI production build usability: NOT RUN
+- Steward startup: NOT RUN
+- Loopback-only binding: NOT RUN
+- Random port: NOT RUN
+- Session authentication: NOT RUN
+- Unauthorized HTTP rejection: NOT RUN
+- Authorized HTTP page: NOT RUN
+- Authorized WebSocket: NOT RUN
+- Visible token removal after bootstrap: NOT RUN
+- Second installation/idempotency: NOT RUN
+
+The workflow stopped immediately after the first installation failure as required. No Steward
+process was started, so there was no process to stop. No product code was changed.
