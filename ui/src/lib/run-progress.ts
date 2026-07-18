@@ -24,6 +24,7 @@ export interface RunProgress {
   steps: Record<RunStepName, RunStep>;
   activity: string;
   command: string;
+  commands: string[];
   progress: string;
   commandDurationMs: number;
   commandStartedAt?: number;
@@ -41,13 +42,14 @@ function emptySteps(): RunProgress["steps"] {
 export function createRunProgress(request?: RunRequest): RunProgress {
   return {
     request, steps: emptySteps(), activity: "", command: "",
-    progress: "", commandDurationMs: 0,
+    commands: [], progress: "", commandDurationMs: 0,
   };
 }
 
 function copy(state: RunProgress): RunProgress {
   return {
     ...state,
+    commands: state.commands.slice(),
     steps: Object.fromEntries(
       RUN_STEPS.map((name) => {
         const step = state.steps[name];
@@ -93,6 +95,7 @@ function activityEvent(state: RunProgress, message: string, at: number): void {
     if (state.steps.verify.status === "active") state.steps.verify.status = "pending";
     start(state, "execute", at);
     state.command = message.slice(2);
+    state.commands.push(state.command);
     state.progress = "";
     state.commandStartedAt = at;
     return;

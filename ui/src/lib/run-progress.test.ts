@@ -48,6 +48,7 @@ describe("running-state event clock", () => {
 
     expect(state.steps.execute).toMatchObject({ status: "complete", durationMs: 723 });
     expect(state.steps.verify).toMatchObject({ status: "complete", durationMs: 120 });
+    expect(state.commands).toEqual(["ffmpeg -i /tmp/holiday-video.mkv /tmp/out.mp4"]);
   });
 
   test("renders no timing when a step has no observable boundary", () => {

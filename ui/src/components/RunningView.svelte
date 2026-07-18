@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import {
     RUN_STEPS, type RunProgress, type RunStepName,
   } from "../lib/run-progress.ts";
@@ -20,8 +21,25 @@
   export let killTotal = 0;
 
   const GLIDE_MS = 900;
+  const OUTRO_MS = 650;
   const reducedMotion = typeof matchMedia === "function"
     && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let showReceipt = false;
+  let outroTimer: ReturnType<typeof setTimeout> | undefined;
+
+  $: if (status === "complete" && !showReceipt && !outroTimer) {
+    outroTimer = setTimeout(() => {
+      showReceipt = true;
+    }, reducedMotion ? 0 : OUTRO_MS);
+  }
+  $: if (status === "running" && (showReceipt || outroTimer)) {
+    clearTimeout(outroTimer);
+    outroTimer = undefined;
+    showReceipt = false;
+  }
+
+  onDestroy(() => clearTimeout(outroTimer));
 
   let landed: RunStepName | undefined;
   let landTarget: RunStepName | undefined;
@@ -65,31 +83,37 @@
     : status === "failed" ? "Local run stopped" : "Running locally";
 </script>
 
-<main class="running-stage" aria-label="Steward running locally">
-  <section class="running-card">
-    <header class="running-header">
-      <div class="running-wordmark">Steward<span aria-hidden="true">*</span></div>
-      <div class="running-status">
-        <span class="running-dot" aria-hidden="true"></span>
-        <span>{statusText}</span>
+<main
+  class="running-stage"
+  class:stage-complete={status === "complete"}
+  aria-label="Steward running locally"
+>
+  <section class="running-card" class:running-card-poster={status === "complete"}>
+    {#if !showReceipt}
+      <header class="running-header" class:content-departing={status === "complete"}>
+        <div class="running-wordmark">Steward<span aria-hidden="true">*</span></div>
+        <div class="running-status">
+          <span class="running-dot" aria-hidden="true"></span>
+          <span>{statusText}</span>
+        </div>
+      </header>
+
+      <div class="running-task-strip" class:content-departing={status === "complete"}>
+        <span class="running-file-chip">
+          <span class="running-file-glyph" aria-hidden="true"></span>
+          <span>{file}</span>
+        </span>
+        <span class="running-task-text">{description}</span>
       </div>
-    </header>
+    {/if}
 
-    <div class="running-task-strip">
-      <span class="running-file-chip">
-        <span class="running-file-glyph" aria-hidden="true"></span>
-        <span>{file}</span>
-      </span>
-      <span class="running-task-text">{description}</span>
-    </div>
-
-    {#if status === "complete"}
+    {#if showReceipt}
       <RunReceipt
         {progress} {checks} {savedRecipe} {matchedRecipe}
         {modelCalls} {killTotal} {outputPath} {now}
       />
     {:else}
-      <div class="run-shelf">
+      <div class="run-shelf" class:content-departing={status === "complete"}>
         <div class="run-items">
           {#each RUN_STEPS as name, index (name)}
             <div

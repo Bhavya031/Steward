@@ -3,11 +3,13 @@
   import { Tween } from "svelte/motion";
   import { onDestroy } from "svelte";
   import { RUN_STEPS, type RunProgress } from "../lib/run-progress.ts";
+  import { totalDuration } from "../lib/run-view.ts";
   import {
-    STEP_ART, activeTool, stepDuration, stepLines, totalDuration,
-  } from "../lib/run-view.ts";
+    formatClock, raycastDeeplink, scriptText, stepTool,
+  } from "../lib/receipt-view.ts";
   import type { CheckItem, Recipe } from "../lib/stores.ts";
-  import StepTile from "./StepTile.svelte";
+  import ReceiptPipeline from "./ReceiptPipeline.svelte";
+  import ReceiptShelf from "./ReceiptShelf.svelte";
 
   interface Props {
     progress: RunProgress;
@@ -27,7 +29,7 @@
   let copied = $state(false);
   let copyTimer: ReturnType<typeof setTimeout> | undefined;
   let outputFile = $derived(outputPath?.split(/[\\/]/).at(-1) ?? "Verified local output");
-  let tool = $derived(activeTool(progress));
+  let recipeName = $derived(savedRecipe?.name ?? matchedRecipe);
   let total = $derived(totalDuration(progress));
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const killed = Tween.of(() => killTotal, {
@@ -43,82 +45,99 @@
     copyTimer = setTimeout(() => copied = false, 1_500);
   }
 
+  function saveScript(): void {
+    const blob = new Blob([scriptText(progress, recipeName)], { type: "text/x-sh" });
+    const anchor = document.createElement("a");
+    anchor.href = URL.createObjectURL(blob);
+    anchor.download = `${recipeName ?? "steward-recipe"}.sh`;
+    anchor.click();
+    URL.revokeObjectURL(anchor.href);
+  }
+
+  function saveToRaycast(): void {
+    window.location.href = raycastDeeplink(progress, recipeName);
+  }
+
   onDestroy(() => {
     if (copyTimer) clearTimeout(copyTimer);
   });
 </script>
 
 <section class="run-receipt" aria-label="Verified run receipt">
-  <div class="receipt-verdict">
-    <div>
-      <span class="receipt-kicker">Verification complete</span>
-      <h1>Your file is ready.</h1>
+  <img class="receipt-flora receipt-flora-left" src="/art/border-flowers-left-v2.png" alt="" aria-hidden="true" />
+  <img class="receipt-flora receipt-flora-right" src="/art/border-flowers-right-v2.png" alt="" aria-hidden="true" />
+
+  <header class="receipt-masthead">
+    <h1>
+      Verified.<br />Yours now.<img
+        class="receipt-doodle"
+        src="/art/headline-flower-doodle.png"
+        alt=""
+        aria-hidden="true"
+      />
+    </h1>
+    <img class="receipt-badge" src="/art/flower-badge.png" alt="" aria-hidden="true" />
+  </header>
+
+  <div class="receipt-core">
+    <div class="receipt-steps">
+      {#each RUN_STEPS as name (name)}
+        <div class="receipt-step-row">
+          <span class="receipt-tick" aria-hidden="true"></span>
+          <strong>{name} complete</strong>
+          <span class="receipt-step-tool">{stepTool(progress, name, matchedRecipe)}</span>
+          <span class="receipt-step-time">{formatClock(progress.steps[name].durationMs)}</span>
+        </div>
+      {/each}
     </div>
-    <div class="receipt-output">
-      <span class="receipt-kicker">Output</span>
+
+    <div class="receipt-file-row">
+      <img src="/art/filename-flower-tile.png" alt="" aria-hidden="true" />
       <strong>{outputFile}</strong>
       <button type="button" disabled={!outputPath} onclick={copyOutputPath}>
         {copied ? "Path copied" : "Reveal in Finder"}
       </button>
     </div>
-  </div>
 
-  <div class="receipt-shelf">
-    <div class="receipt-tiles">
-      {#each RUN_STEPS as name (name)}
-        <StepTile
-          {name}
-          art={STEP_ART[name]}
-          duration={stepDuration(progress, name, now)}
-          tool={name === "execute" ? tool : ""}
-          lines={stepLines(progress, name, checks, matchedRecipe)}
-          mini
-        />
-      {/each}
-    </div>
-    <div class="run-shelf-bar" aria-hidden="true"></div>
-    <div class="receipt-chips">
-      {#each RUN_STEPS as name (name)}
-        <div class="run-step-chip" data-step={name}>
-          <span class="run-step-square"></span>
-          <span><strong>{name}</strong><small>{stepDuration(progress, name, now)}</small></span>
+    <ReceiptPipeline {progress} />
+
+    <div class="receipt-checks">
+      {#each checks as check (check.name)}
+        <div class="receipt-check-row" data-status={check.status}>
+          <span class="receipt-tick" aria-hidden="true"></span>
+          <strong>{check.name}</strong>
+          <span class="check-cell">
+            <em>Expected</em>
+            <span>{check.expected ?? "—"}</span>
+          </span>
+          <span class="check-cell">
+            <em>Actual</em>
+            <span>{check.actual ?? "—"}</span>
+          </span>
         </div>
       {/each}
     </div>
+
+    <div class="receipt-actions">
+      <button type="button" onclick={saveScript}>
+        <span class="action-icon action-icon-bash" aria-hidden="true">
+          <img src="/logos/Bash_Logo_Colored.svg" alt="" />
+        </span>
+        <span>Save as script</span>
+      </button>
+      <button type="button" onclick={saveToRaycast}>
+        <span class="action-icon action-icon-raycast" aria-hidden="true">
+          <i class="raycast-mark"></i>
+        </span>
+        <span>Save to Raycast</span>
+      </button>
+    </div>
+
+    <ReceiptShelf />
+
+    <footer class="receipt-footer">
+      <span>{modelCalls ?? "—"} model calls · {total} total · verified on this Mac</span>
+      <strong>${killed.current.toFixed(2)}/MO KILLED</strong>
+    </footer>
   </div>
-
-  <div class="receipt-checks">
-    {#each checks as check (check.name)}
-      <div class="receipt-check-row" data-status={check.status}>
-        <span class="status-indicator" aria-hidden="true"></span>
-        <strong>{check.name}</strong>
-        <p class="check-evidence">
-          <span class="evidence-prefix">Expected</span>
-          <span class="evidence-value">{check.expected ?? "—"}</span>
-          <span class="evidence-arrow">→</span>
-          <span class="evidence-prefix">Actual</span>
-          <span class="evidence-value">{check.actual ?? "—"}</span>
-        </p>
-      </div>
-    {/each}
-  </div>
-
-  {#if savedRecipe || matchedRecipe}
-    <section class="receipt-command-card">
-      <span class="receipt-kicker">{savedRecipe ? "Saved command" : "Reused command"}</span>
-      <h2>{savedRecipe?.name ?? matchedRecipe}</h2>
-      <p>{savedRecipe ? "Future runs use zero model calls." : "Ran with zero model calls."}</p>
-      {#if savedRecipe?.replaced_service}
-        <strong>
-          Replaces {savedRecipe.replaced_service}
-          {savedRecipe.monthly_price !== undefined ? ` · $${savedRecipe.monthly_price}/mo` : ""}
-        </strong>
-      {/if}
-    </section>
-  {/if}
-
-  <footer class="receipt-footer">
-    <span>{modelCalls ?? "—"} model calls · {total} total · verified on this Mac</span>
-    <strong>${killed.current.toFixed(2)}/MO KILLED</strong>
-  </footer>
 </section>
