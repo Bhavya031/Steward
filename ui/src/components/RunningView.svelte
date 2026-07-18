@@ -6,7 +6,7 @@
   import {
     STEP_ART, STEP_TITLES, activeTool, stepDuration, stepLines, toolMark,
   } from "../lib/run-view.ts";
-  import type { CheckItem, Recipe } from "../lib/stores.ts";
+  import type { CheckItem, Recipe, RunHistoryItem } from "../lib/stores.ts";
   import RunReceipt from "./RunReceipt.svelte";
   import StepTile from "./StepTile.svelte";
 
@@ -19,6 +19,9 @@
   export let matchedRecipe: string | undefined = undefined;
   export let modelCalls: 0 | undefined = undefined;
   export let killTotal = 0;
+  export let recipes: Recipe[] = [];
+  export let history: RunHistoryItem[] = [];
+  export let onOpenRecipe: (recipe: Recipe) => void = () => {};
 
   const GLIDE_MS = 900;
   const OUTRO_MS = 650;
@@ -111,6 +114,7 @@
       <RunReceipt
         {progress} {checks} {savedRecipe} {matchedRecipe}
         {modelCalls} {killTotal} {outputPath} {now}
+        {recipes} {history} {onOpenRecipe}
       />
     {:else}
       <div class="run-shelf" class:content-departing={status === "complete"}>

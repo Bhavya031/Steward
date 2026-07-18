@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 import type { ServerEvent } from "../../../server/ws-events.ts";
 import {
   activity, applyServerEvent, checks, errors, killTotal, recipes,
-  repairs, resetStores, runState,
+  repairs, resetStores, runHistory, runState,
 } from "./stores.ts";
 
 const runId = "store-proof-run";
@@ -112,5 +112,48 @@ describe("UI event stores", () => {
       { name: "size_under", status: "passed", actual: "1,800,000 bytes" },
       { name: "duration_matches", status: "failed", actual: "3.800 s (Δ 1.200 s)" },
     ]);
+  });
+
+  test("records zero model calls only when the engine reports a saved-command match", () => {
+    resetStores();
+    applyServerEvent({
+      type: "run_started", run_id: "planned",
+      action: "task", files: ["/tmp/source-a.mov"],
+    }, 100);
+    applyServerEvent({ type: "recipe_saved", run_id: "planned", recipe }, 200);
+    applyServerEvent({
+      type: "run_complete", run_id: "planned", success: true,
+      output_path: "/tmp/source-a-compressed.mp4",
+    }, 300);
+
+    applyServerEvent({
+      type: "run_started", run_id: "rerun",
+      action: "recipe", files: ["/tmp/source-b.mov"],
+    }, 400);
+    applyServerEvent({
+      type: "recipe_matched", run_id: "rerun",
+      name: recipe.name, score: 1, model_calls: 0,
+    }, 500);
+    applyServerEvent({
+      type: "check_result", run_id: "rerun", name: "size_under", pass: true,
+      expected: "under 2,000,000 bytes", actual: "1,750,000 bytes",
+    }, 600);
+    applyServerEvent({
+      type: "run_complete", run_id: "rerun", success: true,
+      output_path: "/tmp/source-b-compressed.mp4", model_calls: 0,
+    }, 700);
+
+    expect(get(runHistory)).toEqual([
+      expect.objectContaining({
+        runId: "planned", recipeName: recipe.name, action: "task",
+        startedAt: 100, completedAt: 300, success: true,
+      }),
+      expect.objectContaining({
+        runId: "rerun", recipeName: recipe.name, action: "recipe",
+        startedAt: 400, completedAt: 700, success: true, modelCalls: 0,
+        checks: [expect.objectContaining({ name: "size_under", status: "passed" })],
+      }),
+    ]);
+    expect(get(runHistory)[0]).not.toHaveProperty("modelCalls");
   });
 });

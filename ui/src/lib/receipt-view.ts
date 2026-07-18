@@ -66,16 +66,3 @@ export function raycastDeeplink(progress: RunProgress, recipeName?: string): str
     encodeURIComponent(JSON.stringify(payload))
   }`;
 }
-
-export interface ShelfCard {
-  name: string;
-  price: number;
-  art: string;
-}
-
-export const SHELF_CATALOG: ShelfCard[] = [
-  { name: "compress video", price: 9, art: "/art/compress-video-tile.png" },
-  { name: "remove silence", price: 12, art: "/art/remove-silence-tile.png" },
-  { name: "convert format", price: 15, art: "/art/convert-format-tile.png" },
-  { name: "verify output", price: 8, art: "/art/verify-output-tile.png" },
-];

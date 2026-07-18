@@ -32,12 +32,33 @@ export interface RunState {
   savedRecipe?: Recipe;
 }
 
+export interface RunHistoryItem {
+  runId: string;
+  recipeName: string;
+  action: "task" | "recipe";
+  files: string[];
+  startedAt: number;
+  completedAt: number;
+  success: boolean;
+  outputPath?: string;
+  modelCalls?: 0;
+  checks: CheckItem[];
+}
+
+interface ActiveRunHistory extends Omit<
+  RunHistoryItem, "recipeName" | "completedAt" | "success"
+> {
+  recipeName?: string;
+}
+
 export const activity = writable<ActivityItem[]>([]);
 export const checks = writable<CheckItem[]>([]);
 export const recipes = writable<Recipe[]>([]);
 export const repairs = writable<RepairEvent[]>([]);
 export const errors = writable<ActivityItem[]>([]);
 export const runState = writable<RunState>({ status: "idle" });
+export const runHistory = writable<RunHistoryItem[]>([]);
+export const selectedRecipeName = writable<string | undefined>();
 export const runProgress = writable(createRunProgress());
 export const runClock = readable(Date.now(), (set) => {
   const timer = window.setInterval(() => set(Date.now()), 100);
@@ -75,6 +96,15 @@ function upsertRecipe(recipe: Recipe): void {
   });
 }
 
+let activeRunHistory: ActiveRunHistory | undefined;
+
+function recordCheck(item: CheckItem): void {
+  if (!activeRunHistory || activeRunHistory.runId !== item.runId) return;
+  const index = activeRunHistory.checks.findIndex(({ name }) => name === item.name);
+  if (index < 0) activeRunHistory.checks.push(item);
+  else activeRunHistory.checks[index] = item;
+}
+
 export function applyClientEvent(event: ClientEvent): void {
   runProgress.update((state) => reduceClientEvent(state, event));
 }
@@ -87,6 +117,10 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       checks.set([]);
       repairs.set([]);
       runState.set({ id: event.run_id, status: "running", action: event.action });
+      activeRunHistory = {
+        runId: event.run_id, action: event.action, files: [...event.files],
+        startedAt: receivedAt, checks: [],
+      };
       return;
     case "activity":
       append({ runId: event.run_id, message: event.message, kind: "activity" });
@@ -95,11 +129,15 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       upsertCheck({ runId: event.run_id, name: event.name, status: "pending" });
       return;
     case "check_result":
-      upsertCheck({
-        runId: event.run_id, name: event.name,
-        status: event.pass ? "passed" : "failed",
-        expected: event.expected, actual: event.actual,
-      });
+      {
+        const item: CheckItem = {
+          runId: event.run_id, name: event.name,
+          status: event.pass ? "passed" : "failed",
+          expected: event.expected, actual: event.actual,
+        };
+        upsertCheck(item);
+        recordCheck(item);
+      }
       return;
     case "repair_attempt":
       repairs.update((items) => [...items, event]);
@@ -111,6 +149,9 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       return;
     case "recipe_saved":
       upsertRecipe(event.recipe);
+      if (activeRunHistory?.runId === event.run_id) {
+        activeRunHistory.recipeName = event.recipe.name;
+      }
       runState.update((state) => state.id === event.run_id
         ? { ...state, savedRecipe: event.recipe }
         : state);
@@ -121,6 +162,10 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       });
       return;
     case "recipe_matched":
+      if (activeRunHistory?.runId === event.run_id) {
+        activeRunHistory.recipeName = event.name;
+        activeRunHistory.modelCalls = event.model_calls;
+      }
       runState.update((state) => ({
         ...state, modelCalls: event.model_calls,
         matchedRecipe: event.name, matchScore: event.score,
@@ -132,6 +177,23 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       });
       return;
     case "run_complete":
+      if (activeRunHistory?.runId === event.run_id) {
+        const active = activeRunHistory;
+        const recipeName = active.recipeName;
+        if (recipeName) {
+          const modelCalls = event.model_calls ?? active.modelCalls;
+          runHistory.update((items) => [...items, {
+            ...active,
+            recipeName,
+            completedAt: receivedAt,
+            success: event.success,
+            outputPath: event.output_path,
+            ...(modelCalls === 0 ? { modelCalls: 0 as const } : {}),
+            checks: active.checks.map((check) => ({ ...check })),
+          }].slice(-100));
+        }
+        activeRunHistory = undefined;
+      }
       runState.update((state) => ({
         ...state, status: event.success ? "complete" : "failed",
         outputPath: event.output_path,
@@ -163,5 +225,8 @@ export function resetStores(): void {
   repairs.set([]);
   errors.set([]);
   runState.set({ status: "idle" });
+  runHistory.set([]);
+  selectedRecipeName.set(undefined);
   runProgress.set(createRunProgress());
+  activeRunHistory = undefined;
 }
