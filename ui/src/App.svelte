@@ -4,7 +4,7 @@
   import DropSurface from "./components/DropSurface.svelte";
   import RunningView from "./components/RunningView.svelte";
   import {
-    checks, killTotal, runClock, runProgress, runState,
+    checks, installRequest, killTotal, runClock, runProgress, runState,
   } from "./lib/stores.ts";
   import {
     connectWebSocket, disconnectWebSocket, sendClientEvent,
@@ -14,6 +14,10 @@
   let entryLeaving = false;
   let entryTimer: ReturnType<typeof setTimeout> | undefined;
   let transitionMs = 900;
+
+  function confirmInstall(runId: string): void {
+    sendClientEvent({ type: "confirm_install", run_id: runId, confirm: true });
+  }
 
   $: if ($runState.status !== "idle" && showEntry && !entryLeaving) {
     entryLeaving = true;
@@ -54,6 +58,8 @@
     matchedRecipe={$runState.matchedRecipe}
     modelCalls={$runState.modelCalls}
     killTotal={$killTotal}
+    installRequest={$installRequest}
+    onConfirmInstall={confirmInstall}
   />
 {/if}
 

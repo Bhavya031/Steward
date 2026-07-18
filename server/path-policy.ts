@@ -18,6 +18,7 @@ export interface CommandPathOptions {
   temporaryDirectory?: string | null;
   declaredIntermediates?: string[];
   readableIntermediates?: string[];
+  trustedInputs?: string[];
 }
 function validateInput(path: string): { raw: string; real: string } {
   const raw = requireAbsolute(path, "input path");
@@ -67,9 +68,16 @@ export function validateCommandPaths(
   const output = validateOutput(outputPath, outputRoots);
   const inputAliases = new Set(inputs.flatMap((input) => [input.raw, input.real]));
   const outputAliases = new Set([output.raw, output.real]);
+  const outputPrefixAliases = new Set(
+    [...outputAliases].filter((path) => path.endsWith(".srt"))
+      .map((path) => path.slice(0, -4)),
+  );
   const outputDirectories = new Set([output.rawDirectory, output.realDirectory]);
   const declared = options.declaredIntermediates ?? [];
   const readable = options.readableIntermediates ?? [];
+  const trusted = new Set((options.trustedInputs ?? []).flatMap((path) =>
+    commandAliases(path, "trusted input")
+  ));
   if ([...declared, ...readable].some((path) => !inside(temporaryDirectory, path))) {
     throw new PathPolicyError("intermediate path is outside the Steward temp root");
   }
@@ -83,16 +91,21 @@ export function validateCommandPaths(
     const intermediateInput = candidate.role === "input" ? matchedPath(aliases, readable) : undefined;
     const intermediateOutput = candidate.role === "output" ? matchedPath(aliases, declared) : undefined;
     const input = aliases.some((path) => inputAliases.has(path));
+    const trustedInput = aliases.some((path) => trusted.has(path));
     const finalOutput = aliases.some((path) => outputAliases.has(path));
-    const allowed = candidate.role === "input" ? input || intermediateInput !== undefined
+    const prefixOutput = candidate.role === "output-prefix" &&
+      aliases.some((path) => outputPrefixAliases.has(path));
+    const allowed = candidate.role === "input"
+      ? input || trustedInput || intermediateInput !== undefined
       : candidate.role === "output" ? finalOutput || intermediateOutput !== undefined
+        : candidate.role === "output-prefix" ? prefixOutput
         : candidate.role === "output-directory" ? aliases.some((path) => outputDirectories.has(path))
           : aliases.some((path) => inside(temporaryDirectory, path));
     if (!allowed) throw new PathPolicyError(`${candidate.role} path was not explicitly granted: ${candidate.value}`);
     aliases.forEach((path) => seen.add(path));
-    if (candidate.role === "input") sourceSeen = true;
+    if (candidate.role === "input" && (input || intermediateInput !== undefined)) sourceSeen = true;
     if (intermediateOutput) intermediateOutputs.push(intermediateOutput);
-    if (finalOutput || candidate.role === "output-directory") outputSeen = true;
+    if (finalOutput || prefixOutput || candidate.role === "output-directory") outputSeen = true;
   }
   if (readable.length === 0) {
     for (const input of inputs) {

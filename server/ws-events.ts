@@ -4,7 +4,8 @@ import type { VerificationResult } from "./verify/types.ts";
 
 export type ClientEvent =
   | { type: "run_task"; task: string; files: string[] }
-  | { type: "run_recipe"; name: string; files: string[] };
+  | { type: "run_recipe"; name: string; files: string[] }
+  | { type: "confirm_install"; run_id: string; confirm: true };
 
 interface RunEvent { run_id: string }
 
@@ -15,6 +16,22 @@ export type ServerEvent =
     files: string[];
   })
   | (RunEvent & { type: "activity"; message: string })
+  | (RunEvent & {
+    type: "install_required";
+    tool: string | null;
+    command: string[] | null;
+    resources: Array<{
+      id: string; bytes: number; sha256: string; source: string;
+    }>;
+  })
+  | (RunEvent & {
+    type: "install_progress";
+    id: string;
+    received: number;
+    total: number;
+    percent: number;
+  })
+  | (RunEvent & { type: "install_complete"; message: string })
   | (RunEvent & { type: "check_pending"; name: string })
   | (RunEvent & VerificationResult & { type: "check_result" })
   | (RunEvent & {
@@ -80,6 +97,10 @@ export function parseClientEvent(raw: string): ClientEvent {
   }
   if (value.type === "run_recipe" && exactKeys(value, ["type", "name", "files"])) {
     return { type: "run_recipe", name: text(value.name, "name"), files: files(value.files) };
+  }
+  if (value.type === "confirm_install" &&
+      exactKeys(value, ["type", "run_id", "confirm"]) && value.confirm === true) {
+    return { type: "confirm_install", run_id: text(value.run_id, "run_id"), confirm: true };
   }
   throw new Error("unsupported WebSocket message shape");
 }

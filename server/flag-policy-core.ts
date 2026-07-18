@@ -1,6 +1,7 @@
 import { ExecutionError } from "./execution-types.ts";
 
-export type PathRole = "input" | "output" | "temporary" | "output-directory";
+export type PathRole =
+  "input" | "output" | "output-prefix" | "temporary" | "output-directory";
 export interface ClassifiedPath { value: string; role: PathRole; index: number }
 export interface ValueRule {
   kind: "value" | "path";

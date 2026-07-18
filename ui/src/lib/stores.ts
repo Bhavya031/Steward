@@ -6,6 +6,9 @@ import {
 
 export type Recipe = Extract<ServerEvent, { type: "recipe_saved" }>["recipe"];
 type RepairEvent = Extract<ServerEvent, { type: "repair_attempt" }>;
+export type InstallRequest = Extract<ServerEvent, { type: "install_required" }> & {
+  progress?: { id: string; received: number; total: number; percent: number };
+};
 
 export interface ActivityItem {
   runId?: string;
@@ -37,6 +40,7 @@ export const checks = writable<CheckItem[]>([]);
 export const recipes = writable<Recipe[]>([]);
 export const repairs = writable<RepairEvent[]>([]);
 export const errors = writable<ActivityItem[]>([]);
+export const installRequest = writable<InstallRequest | null>(null);
 export const runState = writable<RunState>({ status: "idle" });
 export const runProgress = writable(createRunProgress());
 export const runClock = readable(Date.now(), (set) => {
@@ -86,9 +90,27 @@ export function applyServerEvent(event: ServerEvent, receivedAt = Date.now()): v
       activity.set([]);
       checks.set([]);
       repairs.set([]);
+      installRequest.set(null);
       runState.set({ id: event.run_id, status: "running", action: event.action });
       return;
     case "activity":
+      append({ runId: event.run_id, message: event.message, kind: "activity" });
+      return;
+    case "install_required":
+      installRequest.set(event);
+      append({
+        runId: event.run_id,
+        message: "Confirmation required before installing the declared model or tool.",
+        kind: "activity",
+      });
+      return;
+    case "install_progress":
+      installRequest.update((request) => request?.run_id === event.run_id
+        ? { ...request, progress: event }
+        : request);
+      return;
+    case "install_complete":
+      installRequest.set(null);
       append({ runId: event.run_id, message: event.message, kind: "activity" });
       return;
     case "check_pending":
@@ -162,6 +184,7 @@ export function resetStores(): void {
   recipes.set([]);
   repairs.set([]);
   errors.set([]);
+  installRequest.set(null);
   runState.set({ status: "idle" });
   runProgress.set(createRunProgress());
 }

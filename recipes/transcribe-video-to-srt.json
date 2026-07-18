@@ -1,0 +1,60 @@
+{
+  "name": "transcribe-video-to-srt",
+  "command_template": {
+    "commands": [
+      [
+        "ffmpeg",
+        "-i",
+        "{{input_0}}",
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-c:a",
+        "pcm_s16le",
+        "-f",
+        "wav",
+        "{{temp_dir}}/audio.wav"
+      ],
+      [
+        "whisper-cli",
+        "-m",
+        "{{resource_whisper_large_v3_turbo}}",
+        "-f",
+        "{{temp_dir}}/audio.wav",
+        "-l",
+        "auto",
+        "-osrt",
+        "--print-progress",
+        "-of",
+        "{{input_0_dir}}/{{input_0_stem}}-subtitles"
+      ]
+    ],
+    "output_path": "{{input_0_dir}}/{{input_0_stem}}-subtitles.srt"
+  },
+  "checks": [
+    {
+      "type": "srt_valid",
+      "target": true
+    },
+    {
+      "type": "cue_count",
+      "target": 1
+    },
+    {
+      "type": "timestamps_monotonic",
+      "target": true
+    }
+  ],
+  "created_at": "2026-07-18T17:02:37.078Z",
+  "arch": "arm64",
+  "tool": "whisper-cli",
+  "install_weight": "heavy",
+  "intermediates": [
+    "{{temp_dir}}/audio.wav"
+  ],
+  "resources": [
+    "whisper-large-v3-turbo"
+  ]
+}

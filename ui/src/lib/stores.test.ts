@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { get } from "svelte/store";
 import type { ServerEvent } from "../../../server/ws-events.ts";
 import {
-  activity, applyServerEvent, checks, errors, killTotal, recipes,
+  activity, applyServerEvent, checks, errors, installRequest, killTotal, recipes,
   repairs, resetStores, runState,
 } from "./stores.ts";
 
@@ -112,5 +112,30 @@ describe("UI event stores", () => {
       { name: "size_under", status: "passed", actual: "1,800,000 bytes" },
       { name: "duration_matches", status: "failed", actual: "3.800 s (Δ 1.200 s)" },
     ]);
+  });
+
+  test("shows confirmed model download progress and clears it before continuation", () => {
+    resetStores();
+    applyServerEvent({
+      type: "install_required", run_id: runId, tool: null, command: null,
+      resources: [{
+        id: "whisper-large-v3-turbo", bytes: 1_624_555_275,
+        sha256: "1fc70f", source: "ggerganov/whisper.cpp",
+      }],
+    });
+    expect(get(installRequest)).toMatchObject({
+      run_id: runId,
+      resources: [{ id: "whisper-large-v3-turbo", bytes: 1_624_555_275 }],
+    });
+    applyServerEvent({
+      type: "install_progress", run_id: runId, id: "whisper-large-v3-turbo",
+      received: 812_277_637, total: 1_624_555_275, percent: 50,
+    });
+    expect(get(installRequest)?.progress).toMatchObject({ percent: 50 });
+    applyServerEvent({
+      type: "install_complete", run_id: runId,
+      message: "Installation verified. Continuing automatically.",
+    });
+    expect(get(installRequest)).toBeNull();
   });
 });

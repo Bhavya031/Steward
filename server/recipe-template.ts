@@ -37,6 +37,8 @@ export function templatizePlan(plan: Plan, inputPaths: string[]): TemplatedPlan 
   const output = portableOutput(plan, inputPaths[0]!, plan.name);
   const replacements: Array<[string, string]> = [
     [plan.output_path, output],
+    [plan.output_path.endsWith(".srt") ? plan.output_path.slice(0, -4) : "",
+      output.endsWith(".srt") ? output.slice(0, -4) : ""],
     ...inputPaths.map((path, index) => [path, `{{input_${index}}}`] as [string, string]),
     [dirname(plan.output_path), "{{input_0_dir}}"],
   ];
@@ -71,11 +73,13 @@ function slotValues(files: string[]): Record<string, string> {
 function fill(value: string, slots: Record<string, string>): string {
   const rendered = value.replace(/\{\{([a-z0-9_]+)\}\}/g, (_match, name: string) => {
     if (name === "temp_dir") return TEMP_DIR_SLOT;
+    if (name.startsWith("resource_")) return `{{${name}}}`;
     const replacement = slots[name];
     if (replacement === undefined) throw new Error(`recipe slot is unfilled: ${name}`);
     return replacement;
   });
-  const recipeOnly = rendered.split(TEMP_DIR_SLOT).join("");
+  const recipeOnly = rendered.split(TEMP_DIR_SLOT).join("")
+    .replace(/\{\{resource_[a-z0-9_]+\}\}/g, "");
   if (recipeOnly.includes("{{") || recipeOnly.includes("}}")) {
     throw new Error("recipe contains malformed slots");
   }
@@ -100,5 +104,6 @@ export function renderRecipe(
     output_path: fill(recipe.command_template.output_path, slots),
     checks: recipe.checks.map((check) => ({ type: check.type, target: fillTarget(check.target, slots) })),
     ...(recipe.intermediates ? { intermediates: recipe.intermediates } : {}),
+    ...(recipe.resources ? { resources: recipe.resources } : {}),
   });
 }

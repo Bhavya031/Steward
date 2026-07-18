@@ -11,14 +11,51 @@ class FakeSocket {
 }
 
 describe("typed WebSocket protocol", () => {
-  test("parses only the two exact client event shapes", () => {
+  test("parses only the three exact client event shapes", () => {
     expect(parseClientEvent('{"type":"run_task","task":"compress it","files":["/tmp/a.mp4"]}'))
       .toEqual({ type: "run_task", task: "compress it", files: ["/tmp/a.mp4"] });
     expect(parseClientEvent('{"type":"run_recipe","name":"compress-video","files":["/tmp/b.mp4"]}'))
       .toEqual({ type: "run_recipe", name: "compress-video", files: ["/tmp/b.mp4"] });
+    expect(parseClientEvent('{"type":"confirm_install","run_id":"run-1","confirm":true}'))
+      .toEqual({ type: "confirm_install", run_id: "run-1", confirm: true });
+    expect(() => parseClientEvent(
+      '{"type":"confirm_install","run_id":"run-1","confirm":false}',
+    )).toThrow("unsupported WebSocket message shape");
     expect(() => parseClientEvent('{"type":"run_task","task":"x","files":[],"extra":true}'))
       .toThrow("unsupported WebSocket message shape");
     expect(() => parseClientEvent("not json")).toThrow("valid JSON");
+  });
+
+  test("keeps paused installation state on the same socket for automatic continuation", async () => {
+    const runner: EngineRunner = async (request, emit, options) => {
+      const pendingRuns = options?.pendingRuns;
+      if (!pendingRuns) throw new Error("bridge did not provide pending state");
+      if (request.type === "run_task") {
+        pendingRuns.set("paused", {} as never);
+        emit({
+          type: "install_required", run_id: "paused", tool: null, command: null,
+          resources: [{
+            id: "whisper-large-v3-turbo", bytes: 1_624_555_275,
+            sha256: "sha", source: "official",
+          }],
+        });
+        return;
+      }
+      if (request.type !== "confirm_install") throw new Error("expected confirmation");
+      expect(pendingRuns.has(request.run_id)).toBe(true);
+      emit({
+        type: "install_complete", run_id: request.run_id,
+        message: "Installation verified. Continuing automatically.",
+      });
+      emit({ type: "run_complete", run_id: request.run_id, success: true });
+    };
+    const socket = new FakeSocket();
+    const bridge = createWsBridge({ runEngine: runner });
+    await bridge(socket, '{"type":"run_task","task":"subtitles","files":["/tmp/a.mp4"]}');
+    await bridge(socket, '{"type":"confirm_install","run_id":"paused","confirm":true}');
+    expect(socket.messages.map((event) => event.type)).toEqual([
+      "install_required", "install_complete", "run_complete",
+    ]);
   });
 
   test("serializes engine events and refuses overlapping runs per socket", async () => {

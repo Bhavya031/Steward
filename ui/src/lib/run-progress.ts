@@ -76,6 +76,7 @@ function complete(state: RunProgress, name: RunStepName, at: number): void {
 export function reduceClientEvent(
   state: RunProgress, event: ClientEvent,
 ): RunProgress {
+  if (event.type === "confirm_install") return copy(state);
   const request: RunRequest = event.type === "run_task"
     ? { kind: "task", description: event.task, files: [...event.files] }
     : { kind: "recipe", description: event.name, files: [...event.files] };
@@ -106,7 +107,7 @@ function activityEvent(state: RunProgress, message: string, at: number): void {
     state.commandStartedAt = undefined;
     return;
   }
-  if (/\b(?:frame|time|size)=/.test(message)) {
+  if (/\b(?:frame|time|size)=|progress\s*=\s*\d+%/i.test(message)) {
     state.progress = message;
     return;
   }

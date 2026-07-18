@@ -12,6 +12,7 @@ function send(socket: WsSender, event: ServerEvent): void {
 
 export function createWsBridge(options: WsBridgeOptions = {}) {
   const active = new WeakSet<WsSender>();
+  const pending = new WeakMap<WsSender, NonNullable<WsEngineOptions["pendingRuns"]>>();
   const runner = options.runEngine ?? runEngineEvent;
   return async (socket: WsSender, raw: string): Promise<void> => {
     let request;
@@ -31,7 +32,12 @@ export function createWsBridge(options: WsBridgeOptions = {}) {
     active.add(socket);
     const emit: EmitServerEvent = (event) => send(socket, event);
     try {
-      await runner(request, emit, options);
+      let pendingRuns = pending.get(socket);
+      if (!pendingRuns) {
+        pendingRuns = new Map();
+        pending.set(socket, pendingRuns);
+      }
+      await runner(request, emit, { ...options, pendingRuns });
     } catch (error) {
       send(socket, {
         type: "error",

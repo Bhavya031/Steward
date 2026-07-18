@@ -4,6 +4,7 @@ import { validateCommandSlots, validateDerivations, type Derivations } from "./d
 import { validateIntermediates } from "./intermediate-policy.ts";
 import type { Recipe } from "./recipe-types.ts";
 import { TOOL_POLICIES, type InstallWeight } from "./tools.ts";
+import { resourceSlot, validateResources, type TrustedResourceId } from "./trusted-resources.ts";
 
 const REQUIRED_RECIPE_KEYS = [
   "name", "command_template", "checks",
@@ -11,6 +12,7 @@ const REQUIRED_RECIPE_KEYS = [
 ];
 const RECIPE_KEYS = [
   ...REQUIRED_RECIPE_KEYS, "replaced_service", "monthly_price", "derivations", "intermediates",
+  "resources",
 ];
 const CHECK_TYPE_SET = new Set<string>(CHECK_TYPES);
 
@@ -75,8 +77,12 @@ export function validateRecipe(value: unknown): Recipe {
     ? undefined : validateDerivations(value.derivations);
   const intermediates = value.intermediates === undefined
     ? undefined : validateIntermediates(value.intermediates);
+  const resources: TrustedResourceId[] | undefined = value.resources === undefined
+    ? undefined : validateResources(value.resources);
+  const resourceSlots = new Set((resources ?? []).map(resourceSlot));
   validateCommandSlots(commands, derivations, (slot) =>
-    slot === "temp_dir" || /^input_\d+(?:_(?:dir|name|stem|ext))?$/.test(slot)
+    slot === "temp_dir" || /^input_\d+(?:_(?:dir|name|stem|ext))?$/.test(slot) ||
+    resourceSlots.has(slot)
   );
   if (!value.command_template.output_path.startsWith("{{input_0_dir}}/")) {
     throw new Error("recipe output must remain inside the first input directory");
@@ -85,8 +91,9 @@ export function validateRecipe(value: unknown): Recipe {
     throw new Error("recipe tool is not allowlisted");
   }
   const tool = value.tool as PlanTool;
-  if (!commands.every((argv) => argv[0] === tool)) {
-    throw new Error("every recipe command must start with its tool");
+  if (commands.at(-1)?.[0] !== tool ||
+      !commands.every((argv) => argv[0] !== "brew" && Object.hasOwn(TOOL_POLICIES, argv[0]!))) {
+    throw new Error("recipe commands must be allowlisted and end with the primary tool");
   }
   const expectedWeight = TOOL_POLICIES[tool].install_weight;
   if (value.install_weight !== expectedWeight) throw new Error("recipe install_weight does not match policy");
@@ -112,5 +119,6 @@ export function validateRecipe(value: unknown): Recipe {
   }
   if (derivations) recipe.derivations = derivations;
   if (intermediates) recipe.intermediates = intermediates;
+  if (resources) recipe.resources = resources;
   return recipe;
 }

@@ -51,7 +51,10 @@
               "file_valid",
               "page_count_positive",
               "text_extractable",
-              "format_matches"
+              "format_matches",
+              "srt_valid",
+              "cue_count",
+              "timestamps_monotonic"
             ]
           },
           "target": {
@@ -106,8 +109,22 @@
           "maxItems": 8
         }
       ]
+    },
+    "resources": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["whisper-large-v3-turbo"]
+          },
+          "minItems": 1,
+          "maxItems": 4
+        }
+      ]
     }
   },
-  "required": ["name", "tool", "install_cmd", "commands", "output_path", "checks", "derivations", "intermediates"],
+  "required": ["name", "tool", "install_cmd", "commands", "output_path", "checks", "derivations", "intermediates", "resources"],
   "additionalProperties": false
 }

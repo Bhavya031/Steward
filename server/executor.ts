@@ -13,6 +13,7 @@ import { consumeProcessStream } from "./process-stream.ts";
 import { createSofficeProfile } from "./soffice-profile.ts";
 import { materializeRuntimeCommands } from "./runtime-temp.ts";
 import { enforceManagedPasslogs } from "./two-pass-policy.ts";
+import { fillResourceSlots, resourceSlots } from "./trusted-resources.ts";
 
 export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 
@@ -73,21 +74,28 @@ export async function executePlan(
   if (plan.install_cmd !== null) {
     throw new ExecutionError("install proposal must be handled before task execution");
   }
+  const resources = await resourceSlots(plan.resources);
+  if (resources.missing.length > 0) {
+    throw new ExecutionError(`trusted resources require installation: ${resources.missing.join(", ")}`);
+  }
   const timeoutMs = boundedTimeout(options.timeoutMs);
-  const runtime = materializeRuntimeCommands(plan.commands, plan.intermediates);
-  const isolatedProfile = plan.tool === "soffice" ? createSofficeProfile() : null;
+  const commands = fillResourceSlots(plan.commands, resources.slots);
+  const runtime = materializeRuntimeCommands(commands, plan.intermediates);
+  const isolatedProfile = commands.some((command) => command[0] === "soffice")
+    ? createSofficeProfile() : null;
   try {
     enforceManagedPasslogs(runtime.commands, runtime.directory);
-    validatePlanPaths(plan, runtime, inputPaths);
-    const executable = resolveBinary(plan.tool, profile);
+    validatePlanPaths(plan, runtime, inputPaths, resources.trustedPaths);
     const results: ExecutionResult[] = [];
     const started = performance.now();
     for (const command of runtime.commands) {
+      const tool = command[0] as Plan["tool"];
+      const executable = resolveBinary(tool, profile);
       const remaining = Math.max(1, timeoutMs - Math.round(performance.now() - started));
-      const args = isolatedProfile
+      const args = isolatedProfile && tool === "soffice"
         ? [isolatedProfile.argument, ...command.slice(1)]
         : command.slice(1);
-      const result = await runBinary(plan.tool, executable, args, { ...options, timeoutMs: remaining });
+      const result = await runBinary(tool, executable, args, { ...options, timeoutMs: remaining });
       results.push(result);
       if (!result.ok) break;
     }

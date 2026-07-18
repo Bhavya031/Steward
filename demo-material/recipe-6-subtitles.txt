@@ -1,0 +1,92 @@
+STEWARD · RECIPE 6 SUBTITLES · REAL RUN
+Captured 2026-07-18 on macOS arm64
+
+FEASIBILITY OVERRIDE
+The frozen contract gate was explicitly overridden. The controlled extension keeps:
+- argv arrays only
+- allowlisted tools only
+- whisper-cli as the final primary tool
+- declared direct-child temp intermediates
+- exact input/output confinement
+- one pinned trusted resource ID; no arbitrary model paths
+- the authored plan as the saved command
+
+TRUSTED MODEL CONFIRMATION
+event: install_required
+run_id: eb098408-0a97-4199-ac49-dbf98d2a0824
+resource: whisper-large-v3-turbo
+source: ggerganov/whisper.cpp
+declared bytes: 1624555275
+declared SHA-256: 1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69
+user confirmation: approved=true
+
+VISIBLE DOWNLOAD ACTIVITY
+0%   16384 / 1624555275
+25%  406350973 / 1624555275
+50%  812395645 / 1624555275
+75%  1218784381 / 1624555275
+100% 1624555275 / 1624555275
+event: install_complete
+message: Installation verified. Continuing automatically.
+
+INDEPENDENT MODEL VALIDATION
+bytes: 1624555275
+SHA-256: 1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69
+path: ~/Library/Caches/Steward/models/ggml-large-v3-turbo.bin
+
+FIRST REAL RUN
+input: /tmp/steward-r6-recipe6-real/first.mp4
+input duration: 6.917007 seconds
+
+$ ffmpeg -i /tmp/steward-r6-recipe6-real/first.mp4 -vn -ac 1 -ar 16000 -c:a pcm_s16le -f wav {{managed_temp}}/audio.wav
+exit: 0
+duration: 79 ms
+
+$ whisper-cli -m ~/Library/Caches/Steward/models/ggml-large-v3-turbo.bin -f {{managed_temp}}/audio.wav -l auto -osrt --print-progress -of /tmp/steward-r6-recipe6-real/first-subtitles
+progress: 100%
+exit: 0
+duration: 4202 ms
+
+OBJECTIVE VERIFICATION
+{"name":"srt_valid","pass":true,"expected":"valid UTF-8 SRT with sequential non-empty cues","actual":"2 structurally valid cues"}
+{"name":"cue_count","pass":true,"expected":"at least 1 cue","actual":"2 cues"}
+{"name":"timestamps_monotonic","pass":true,"expected":"cue timestamps are nondecreasing and every end follows its start","actual":"2 cues; timestamps monotonic"}
+
+OUTPUT EXCERPT
+1
+00:00:00,000 --> 00:00:03,620
+ Stuart turns local work into a tool you keep.
+
+2
+00:00:03,620 --> 00:00:07,040
+ This subtitle file was generated and verified on this Mac.
+
+SAVED COMMAND
+name: transcribe-video-to-srt
+file: recipes/transcribe-video-to-srt.json
+commands:
+  ["ffmpeg","-i","{{input_0}}","-vn","-ac","1","-ar","16000","-c:a","pcm_s16le","-f","wav","{{temp_dir}}/audio.wav"]
+  ["whisper-cli","-m","{{resource_whisper_large_v3_turbo}}","-f","{{temp_dir}}/audio.wav","-l","auto","-osrt","--print-progress","-of","{{input_0_dir}}/{{input_0_stem}}-subtitles"]
+output_path: {{input_0_dir}}/{{input_0_stem}}-subtitles.srt
+
+ZERO-MODEL-CALL RERUN
+run_id: 9a0f5c21-62dc-485e-8d79-42570c0c9c57
+input: /tmp/steward-r6-recipe6-real/second.mp4
+event: recipe_matched
+name: transcribe-video-to-srt
+score: 1
+model_calls: 0
+
+$ ffmpeg -i /tmp/steward-r6-recipe6-real/second.mp4 -vn -ac 1 -ar 16000 -c:a pcm_s16le -f wav {{managed_temp}}/audio.wav
+exit: 0
+duration: 30 ms
+
+$ whisper-cli -m ~/Library/Caches/Steward/models/ggml-large-v3-turbo.bin -f {{managed_temp}}/audio.wav -l auto -osrt --print-progress -of /tmp/steward-r6-recipe6-real/second-subtitles
+progress: 100%
+exit: 0
+duration: 4145 ms
+
+{"name":"srt_valid","pass":true,"expected":"valid UTF-8 SRT with sequential non-empty cues","actual":"2 structurally valid cues"}
+{"name":"cue_count","pass":true,"expected":"at least 1 cue","actual":"2 cues"}
+{"name":"timestamps_monotonic","pass":true,"expected":"cue timestamps are nondecreasing and every end follows its start","actual":"2 cues; timestamps monotonic"}
+{"type":"run_complete","success":true,"output_path":"/tmp/steward-r6-recipe6-real/second-subtitles.srt","model_calls":0}
