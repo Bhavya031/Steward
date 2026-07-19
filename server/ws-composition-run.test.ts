@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
-  copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync,
+  chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,6 +23,8 @@ const catalog = join(root, "catalog");
 const staging = new StagedInputRegistry(join(root, "staging"));
 const frame = join(staging.root, "frame.y4m");
 const source = join(staging.root, "source.mp4");
+const fakeCodex = join(root, "codex-must-not-run");
+const codexMarker = join(root, "codex-was-run");
 const profile = probeSystem();
 
 function saveStage(stage: CompositionStage): void {
@@ -44,8 +46,26 @@ function eventsOf(events: WsServerEvent[], type: WsServerEvent["type"]) {
   return events.filter((event) => event.type === type);
 }
 
+async function withCodexTrap(run: () => Promise<void>): Promise<void> {
+  const previousBinary = process.env.STEWARD_CODEX_BIN;
+  rmSync(codexMarker, { force: true });
+  process.env.STEWARD_CODEX_BIN = fakeCodex;
+  try {
+    await run();
+  } finally {
+    if (previousBinary === undefined) delete process.env.STEWARD_CODEX_BIN;
+    else process.env.STEWARD_CODEX_BIN = previousBinary;
+  }
+}
+
 beforeAll(async () => {
   mkdirSync(catalog);
+  writeFileSync(fakeCodex, `#!/usr/bin/env bun
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(codexMarker)}, "invoked");
+process.exit(97);
+`);
+  chmodSync(fakeCodex, 0o700);
   writeY4m(frame, 1);
   const fixture: Plan = {
     name: "composition-protocol-fixture",
@@ -83,15 +103,17 @@ describe("composition WebSocket execution", () => {
     const events: WsServerEvent[] = [];
     const stagedPath = join(staging.root, "first-source.mp4");
     const stagedId = stageCopy("first-source.mp4");
-    await runEngineEvent({
-      type: "run_composition",
-      name: "protocol-chain",
-      workflow_ids: ["protocol-stage-one", "protocol-stage-two"],
-      staged_input_id: stagedId,
-    }, (event) => events.push(event), {
-      recipeDirectory: catalog, profile, stagedInputs: staging,
-      pendingCompositionRuns: new Map(),
-    });
+    await withCodexTrap(() => runEngineEvent({
+        type: "run_composition",
+        name: "protocol-chain",
+        workflow_ids: ["protocol-stage-one", "protocol-stage-two"],
+        staged_input_id: stagedId,
+      }, (event) => events.push(event), {
+        recipeDirectory: catalog, profile, stagedInputs: staging,
+        pendingCompositionRuns: new Map(),
+      }),
+    );
+    expect(existsSync(codexMarker)).toBe(false);
 
     const saved = loadSaved(catalog).find(({ name }) => name === "protocol-chain");
     expect(saved?.kind).toBe("composition");
@@ -127,14 +149,16 @@ describe("composition WebSocket execution", () => {
 
   test("reruns a composition directly by stable ID without matching or planning", async () => {
     const events: WsServerEvent[] = [];
-    await runEngineEvent({
-      type: "run_saved_workflow",
-      workflow_id: "protocol-chain",
-      staged_input_id: stageCopy("fresh-source.mp4"),
-    }, (event) => events.push(event), {
-      recipeDirectory: catalog, profile, stagedInputs: staging,
-      pendingCompositionRuns: new Map(),
-    });
+    await withCodexTrap(() => runEngineEvent({
+        type: "run_saved_workflow",
+        workflow_id: "protocol-chain",
+        staged_input_id: stageCopy("fresh-source.mp4"),
+      }, (event) => events.push(event), {
+        recipeDirectory: catalog, profile, stagedInputs: staging,
+        pendingCompositionRuns: new Map(),
+      }),
+    );
+    expect(existsSync(codexMarker)).toBe(false);
     expect(events).toContainEqual(expect.objectContaining({
       type: "composition_selected",
       workflow_id: "protocol-chain",

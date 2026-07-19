@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import {
-  existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync,
+  chmodSync, existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,9 +16,17 @@ const catalog = join(root, "catalog");
 const authoredInput = join(root, "authored.y4m");
 const freshInput = join(root, "fresh.y4m");
 const authoredOutput = join(root, "authored-copy.mp4");
+const fakeCodex = join(root, "codex-must-not-run");
+const codexMarker = join(root, "codex-was-run");
 const realRoot = realpathSync(root);
 writeY4m(authoredInput, 0.2);
 writeY4m(freshInput, 0.2);
+writeFileSync(fakeCodex, `#!/usr/bin/env bun
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(codexMarker)}, "invoked");
+process.exit(97);
+`);
+chmodSync(fakeCodex, 0o700);
 
 const plan: Plan = {
   name: "copy-video-directly",
@@ -49,12 +57,20 @@ describe("stable-ID direct saved-workflow rerun", () => {
     const occupied = join(root, "fresh-copy.mp4");
     writeFileSync(occupied, "occupied");
     const events: ServerEvent[] = [];
-    await runEngineEvent({
-      type: "run_saved_workflow",
-      workflow_id: workflow.name,
-      files: [freshInput],
-    }, (event) => events.push(event), { recipeDirectory: catalog, profile });
+    const previousBinary = process.env.STEWARD_CODEX_BIN;
+    process.env.STEWARD_CODEX_BIN = fakeCodex;
+    try {
+      await runEngineEvent({
+        type: "run_saved_workflow",
+        workflow_id: workflow.name,
+        files: [freshInput],
+      }, (event) => events.push(event), { recipeDirectory: catalog, profile });
+    } finally {
+      if (previousBinary === undefined) delete process.env.STEWARD_CODEX_BIN;
+      else process.env.STEWARD_CODEX_BIN = previousBinary;
+    }
 
+    expect(existsSync(codexMarker)).toBe(false);
     expect(events.some((event) => event.type === "recipe_matched")).toBe(false);
     expect(events.some((event) => event.type === "model_call_count")).toBe(false);
     expect(events).toContainEqual(expect.objectContaining({

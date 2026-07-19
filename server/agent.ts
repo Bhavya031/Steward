@@ -1,3 +1,4 @@
+import { constants, accessSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { buildPlannerPrompt, buildRepairPrompt, type RepairContext } from "./agent-prompts.ts";
 import { type SystemProfile, probeSystem } from "./probe.ts";
@@ -7,6 +8,7 @@ import { enforceRepairIntegrity } from "./repair-integrity.ts";
 export const PLANNER_MODEL = "gpt-5.6-sol";
 const PLAN_SCHEMA_PATH = join(import.meta.dir, "plan.schema.json");
 const CODEX_TIMEOUT_MS = 5 * 60 * 1_000;
+const KNOWN_CODEX_PATH = "/Users/bhavya/.local/bin/codex";
 
 export interface CodexAuthStatus {
   authenticated: true;
@@ -21,14 +23,33 @@ export class AgentError extends Error {
   }
 }
 
-function codexPath(): string {
-  const path = Bun.which("codex");
-  if (!path) throw new AgentError("Codex CLI is not installed or not on PATH");
-  return path;
+function executableFile(path: string): boolean {
+  try {
+    return statSync(path).isFile() && (accessSync(path, constants.X_OK), true);
+  } catch {
+    return false;
+  }
 }
 
-function fixedCodexCall(args: string[]): string {
-  const result = Bun.spawnSync([codexPath(), ...args], {
+export function resolveCodexBinary(): string {
+  const override = process.env.STEWARD_CODEX_BIN?.trim();
+  if (override) {
+    if (executableFile(override)) return override;
+    throw new AgentError(
+      `Codex CLI setup error: STEWARD_CODEX_BIN is not an executable file: ${override}`,
+    );
+  }
+  if (executableFile(KNOWN_CODEX_PATH)) return KNOWN_CODEX_PATH;
+  const fromPath = Bun.which("codex");
+  if (fromPath && executableFile(fromPath)) return fromPath;
+  throw new AgentError(
+    "Codex CLI setup error: no executable was found. " +
+    "Set STEWARD_CODEX_BIN to the Codex CLI path or install codex on PATH.",
+  );
+}
+
+function fixedCodexCall(binary: string, args: string[]): string {
+  const result = Bun.spawnSync([binary, ...args], {
     stdout: "pipe",
     stderr: "pipe",
     timeout: 10_000,
@@ -41,24 +62,29 @@ function fixedCodexCall(args: string[]): string {
 }
 
 export function confirmCodexAuth(): CodexAuthStatus {
-  const status = fixedCodexCall(["login", "status"]);
+  const binary = resolveCodexBinary();
+  const status = fixedCodexCall(binary, ["login", "status"]);
   if (!/^Logged in using /m.test(status)) {
     throw new AgentError(`Codex CLI authentication is unavailable: ${status}`);
   }
   return {
     authenticated: true,
     method: status.match(/^Logged in using (.+)$/m)?.[1] ?? "unknown",
-    cliVersion: fixedCodexCall(["--version"]),
+    cliVersion: fixedCodexCall(binary, ["--version"]),
   };
 }
 
 export type ModelCallObserver = () => void;
 
-async function runCodex(prompt: string, onModelCall?: ModelCallObserver): Promise<string> {
+async function runCodex(
+  binary: string,
+  prompt: string,
+  onModelCall?: ModelCallObserver,
+): Promise<string> {
   onModelCall?.();
   const child = Bun.spawn(
     [
-      codexPath(), "exec", "--ephemeral", "--sandbox", "read-only",
+      binary, "exec", "--ephemeral", "--sandbox", "read-only",
       "--model", PLANNER_MODEL, "--color", "never",
       "--output-schema", PLAN_SCHEMA_PATH, prompt,
     ],
@@ -123,13 +149,15 @@ export async function planTask(
   onModelCall?: ModelCallObserver,
 ): Promise<Plan> {
   if (!task.trim()) throw new AgentError("Task must not be empty");
-  confirmCodexAuth();
-  const first = await runCodex(buildPlannerPrompt(profile, task), onModelCall);
+  const binary = resolveCodexBinary();
+  const first = await runCodex(binary, buildPlannerPrompt(profile, task), onModelCall);
   try {
     return validatePlanNameForTask(parseForProfile(first, profile), taskDescription);
   } catch (error) {
     if (!(error instanceof PlanValidationError)) throw error;
-    const second = await runCodex(buildPlannerPrompt(profile, task, error.message), onModelCall);
+    const second = await runCodex(
+      binary, buildPlannerPrompt(profile, task, error.message), onModelCall,
+    );
     return validatePlanNameForTask(parseForProfile(second, profile), taskDescription);
   }
 }
@@ -139,13 +167,15 @@ export async function repairTask(
   context: RepairContext,
   onModelCall?: ModelCallObserver,
 ): Promise<Plan> {
-  confirmCodexAuth();
-  const first = await runCodex(buildRepairPrompt(profile, context), onModelCall);
+  const binary = resolveCodexBinary();
+  const first = await runCodex(binary, buildRepairPrompt(profile, context), onModelCall);
   try {
     return enforceRepairIntegrity(context.original_plan, parseForProfile(first, profile));
   } catch (error) {
     if (!(error instanceof PlanValidationError)) throw error;
-    const second = await runCodex(buildRepairPrompt(profile, context, error.message), onModelCall);
+    const second = await runCodex(
+      binary, buildRepairPrompt(profile, context, error.message), onModelCall,
+    );
     return enforceRepairIntegrity(context.original_plan, parseForProfile(second, profile));
   }
 }
