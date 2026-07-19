@@ -107,6 +107,13 @@ export function parseClientEvent(raw: string): WsClientEvent {
   if (value.type === "get_composable_catalog" && exactKeys(value, ["type"])) {
     return { type: "get_composable_catalog" };
   }
+  if (value.type === "get_composition_detail" &&
+      exactKeys(value, ["type", "workflow_id"])) {
+    return {
+      type: "get_composition_detail",
+      workflow_id: workflowId(value.workflow_id),
+    };
+  }
   if (value.type === "run_composition" && exactKeys(
     value, ["type", "name", "workflow_ids", "staged_input_id"],
   )) {

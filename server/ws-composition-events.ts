@@ -1,9 +1,11 @@
 import type { ComposableCatalogEntry } from "./composition-catalog.ts";
 import type { CompositionContract } from "./composition-contract.ts";
 import type { VerificationResult } from "./verify/types.ts";
+import type { CheckTarget } from "./plan.ts";
 
 export type CompositionClientEvent =
   | { type: "get_composable_catalog" }
+  | { type: "get_composition_detail"; workflow_id: string }
   | {
     type: "run_composition";
     name: string;
@@ -21,6 +23,38 @@ interface CompositionRunEvent {
   run_id: string;
 }
 
+export interface CompositionDetailCheck {
+  check_id: string;
+  stage_index: number;
+  check_index: number;
+  source_id: string;
+  name: string;
+  target: CheckTarget;
+}
+
+export interface CompositionDetailStage {
+  stage_index: number;
+  source_id: string;
+  source_title: string;
+  tools: string[];
+  resources: string[];
+  command_templates: string[][];
+  output_template: string;
+  checks: CompositionDetailCheck[];
+}
+
+export interface CompositionDetail {
+  workflow_id: string;
+  title: string;
+  created_at: string;
+  stage_count: number;
+  command_count: number;
+  contract: CompositionContract;
+  stages: CompositionDetailStage[];
+  evidence: [];
+  history: [];
+}
+
 export interface CompositionSavedSummary {
   workflow_id: string;
   created_at: string;
@@ -30,6 +64,7 @@ export interface CompositionSavedSummary {
 
 export type CompositionServerEvent =
   | { type: "composable_catalog"; workflows: ComposableCatalogEntry[] }
+  | { type: "composition_detail"; detail: CompositionDetail }
   | (CompositionRunEvent & {
     type: "composition_run_started";
     action: "create" | "recipe";

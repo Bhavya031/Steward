@@ -3,6 +3,7 @@ import {
   compositionRequirementsNeeded,
 } from "./composition-installation.ts";
 import { composableCatalog } from "./composition-catalog.ts";
+import { authoritativeCompositionDetail } from "./composition-detail.ts";
 import { CompositionSession } from "./composition-session.ts";
 import { probeSystem } from "./probe.ts";
 import { RECIPES_DIRECTORY } from "./recipes.ts";
@@ -96,6 +97,7 @@ export function handlesCompositionEvent(
   pending: Map<string, PendingCompositionInstall>,
 ): boolean {
   return request.type === "get_composable_catalog" ||
+    request.type === "get_composition_detail" ||
     request.type === "run_composition" || request.type === "deny_install" ||
     request.type === "run_saved_workflow" && "staged_input_id" in request ||
     request.type === "confirm_install" && pending.has(request.run_id);
@@ -111,6 +113,14 @@ export async function runCompositionProtocolEvent(
     emit({
       type: "composable_catalog",
       workflows: composableCatalog(options.recipeDirectory ?? RECIPES_DIRECTORY),
+    });
+  } else if (request.type === "get_composition_detail") {
+    emit({
+      type: "composition_detail",
+      detail: authoritativeCompositionDetail(
+        request.workflow_id,
+        options.recipeDirectory ?? RECIPES_DIRECTORY,
+      ),
     });
   } else if (request.type === "deny_install") {
     const session = pending.get(request.run_id)?.session;

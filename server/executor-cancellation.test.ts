@@ -87,13 +87,28 @@ describe("executor cancellation settlement", () => {
     );
     const controller = new AbortController();
     const chunks: string[] = [];
+    let outputObserved!: () => void;
+    const emittedOutput = new Promise<void>((resolve) => {
+      outputObserved = resolve;
+    });
+    let stdoutObserved = false;
+    let stderrObserved = false;
     const running = executePlan(item.plan, item.profile, [item.input], {
       signal: controller.signal,
       onEvent: (event) => {
-        if (event.type === "stdout" || event.type === "stderr") chunks.push(event.chunk);
+        if (event.type === "stdout" || event.type === "stderr") {
+          chunks.push(event.chunk);
+          if (event.type === "stdout" && event.chunk.includes("stdout-open")) {
+            stdoutObserved = true;
+          }
+          if (event.type === "stderr" && event.chunk.includes("stderr-open")) {
+            stderrObserved = true;
+          }
+          if (stdoutObserved && stderrObserved) outputObserved();
+        }
       },
     });
-    await marker(item.marker);
+    await emittedOutput;
     controller.abort(new ExecutionCancelledError("close open pipes"));
     await expect(running).rejects.toBeInstanceOf(ExecutionCancelledError);
     expect(chunks.join("")).toContain("stdout-open");
