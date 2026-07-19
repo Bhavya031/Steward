@@ -1,6 +1,6 @@
 # Security audit
 
-Last updated: Phase 3 collision/state-timing audit (2026-07-19). The Phase 2 CLI remains available; the browser entry reaches the existing typed task engine only through authenticated local input staging.
+Last updated: final safety evidence pass at `041899890341668850b40a33a7a37e6eb85ae740` (2026-07-19). The Phase 2 CLI remains available; the browser entry reaches the existing typed task engine only through authenticated local input staging.
 
 ## Current execution surface
 
@@ -60,7 +60,16 @@ Last updated: Phase 3 collision/state-timing audit (2026-07-19). The Phase 2 CLI
 | Medium | Model/task wording and guessed SaaS prices could make shelf claims misleading. | Canonical names reject task-slug echoes; service/price claims are code-curated, unknown classes render no claim, and shared services count once. |
 | High | A localhost UI listener could expose execution controls to DNS rebinding/CSRF, write attacker-chosen paths, or serve files outside its build root. | Loopback/random-port binding plus a 256-bit token gates every HTTP/WS request; static paths are realpath-confined, and staging uses rejected traversal names plus exclusive UUID direct children of a private temp root. |
 
-## Deferred to Day 5 audit
+## Final safety evidence pass
+
+The redacted evidence index is `demo-material/final-safety-evidence-pass-04189989.txt`.
+
+- Twenty-four focused existing test files passed individually: 130 tests, 361 assertions, zero failures, zero skips.
+- The covered boundaries are argv-only execution, closed tool/helper and flag policies, traversal and post-symlink confinement, authenticated byte staging, loopback/random-port HTTP and WebSocket authentication, startup-URL credential removal, sequential stop-on-failure, failed-output and intermediate cleanup, bounded repair, managed-download approval and checksum verification, and direct saved-workflow reruns with `model_calls: 0`.
+- Existing real proof artifacts were reused for startup/authentication, browser URL state, managed model installation, and a different-file direct rerun. No new product claim was inferred from UI decoration.
+- The screenshots cited by the evidence index are page-only and contain no browser chrome, credential, extension detail, or private absolute path. Path-valued raw events were not copied into the redacted index.
+
+## Remaining audit items
 
 | Severity | Item | Risk and required audit action |
 | --- | --- | --- |
