@@ -1,6 +1,6 @@
 import { constants, accessSync } from "node:fs";
 import { compositionOutputRoots } from "./composition-output-root.ts";
-import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
+import { ExecutionCancelledError, ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 import { boundedTimeout, resolveBinary, summarizeExecution } from "./execution-policy.ts";
 import { buildGhostscriptDocumentCommand, type GhostscriptDocumentQuery } from "./document-policy.ts";
 import { HELPER_PATHS, validateHelperStep } from "./helper-policy.ts";
@@ -10,16 +10,20 @@ import { buildLoudnessCommand } from "./loudness-policy.ts";
 import type { SystemProfile } from "./probe.ts";
 import { validatePlan, type Plan } from "./plan.ts";
 import { validatePlanPaths } from "./plan-paths.ts";
-import { consumeProcessStream } from "./process-stream.ts";
+import {
+  OwnedProcessCancellation, throwIfStewardCancelled,
+} from "./process-cancellation.ts";
+import { startProcessStreamConsumption } from "./process-stream.ts";
 import { createSofficeProfile } from "./soffice-profile.ts";
 import { materializeRuntimeCommands } from "./runtime-temp.ts";
 import { enforceManagedPasslogs } from "./two-pass-policy.ts";
 import { fillResourceSlots, resourceSlots } from "./trusted-resources.ts";
 
-export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
+export { ExecutionCancelledError, ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 async function runBinary(
   binary: string, executable: string, args: string[], options: ExecutionOptions,
 ): Promise<ExecutionResult> {
+  throwIfStewardCancelled(options.signal);
   const timeoutMs = boundedTimeout(options.timeoutMs);
   const emit = options.onEvent ?? (() => undefined);
   const started = performance.now();
@@ -29,36 +33,58 @@ async function runBinary(
   });
   let timedOut = false;
   let forceTimer: ReturnType<typeof setTimeout> | undefined;
+  const terminate = (): void => {
+    child.kill();
+    forceTimer ??= setTimeout(() => child.kill(9), 2_000);
+  };
   const timeout = setTimeout(() => {
     timedOut = true;
-    child.kill();
-    forceTimer = setTimeout(() => child.kill(9), 2_000);
+    terminate();
   }, timeoutMs);
+  const cancellation = new OwnedProcessCancellation(child, options.signal);
+  const stdout = startProcessStreamConsumption(child.stdout, "stdout", emit);
+  const stderr = startProcessStreamConsumption(child.stderr, "stderr", emit);
+  cancellation.addReader(stdout.cancel);
+  cancellation.addReader(stderr.cancel);
 
   try {
     emit({ type: "started", argv: [binary, ...args] });
-    const [stdoutTail, stderrTail, exitCode] = await Promise.all([
-      consumeProcessStream(child.stdout, "stdout", emit),
-      consumeProcessStream(child.stderr, "stderr", emit),
-      child.exited,
+    const normal = Promise.all([
+      stdout.completion, stderr.completion, child.exited,
+    ]).then(
+      ([stdoutTail, stderrTail, exitCode]) => ({
+        kind: "completed" as const, stdoutTail, stderrTail, exitCode,
+      }),
+      (error) => ({ kind: "failed" as const, error }),
+    );
+    const winner = await Promise.race([
+      normal,
+      cancellation.aborted.then((error) => ({ kind: "aborted" as const, error })),
     ]);
+    if (winner.kind === "aborted") throw await cancellation.settleAbort();
+    if (winner.kind === "failed") throw winner.error;
+    throwIfStewardCancelled(options.signal);
     const result: ExecutionResult = {
-      ok: exitCode === 0 && !timedOut,
-      exit_code: exitCode,
+      ok: winner.exitCode === 0 && !timedOut,
+      exit_code: winner.exitCode,
       timed_out: timedOut,
       duration_ms: Math.round(performance.now() - started),
-      stdout_tail: stdoutTail,
-      stderr_tail: stderrTail,
+      stdout_tail: winner.stdoutTail,
+      stderr_tail: winner.stderrTail,
     };
     emit({ type: "completed", result });
     return result;
   } catch (error) {
+    if (error instanceof ExecutionCancelledError) {
+      throw await cancellation.settleAbort();
+    }
     child.kill(9);
     await child.exited;
     throw new ExecutionError(
       `execution event handling failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   } finally {
+    cancellation.dispose();
     clearTimeout(timeout);
     if (forceTimer) clearTimeout(forceTimer);
   }
@@ -70,11 +96,13 @@ export async function executePlan(
   options: ExecutionOptions = {},
   outputRootCapability?: unknown,
 ): Promise<PlanExecutionResult> {
+  throwIfStewardCancelled(options.signal);
   const plan: Plan = validatePlan(untrustedPlan);
   if (plan.install_cmd !== null) {
     throw new ExecutionError("install proposal must be handled before task execution");
   }
   const resources = await resourceSlots(plan.resources);
+  throwIfStewardCancelled(options.signal);
   if (resources.missing.length > 0) {
     throw new ExecutionError(`trusted resources require installation: ${resources.missing.join(", ")}`);
   }
@@ -91,6 +119,7 @@ export async function executePlan(
     const results: ExecutionResult[] = [];
     const started = performance.now();
     for (const command of runtime.commands) {
+      throwIfStewardCancelled(options.signal);
       const tool = command[0] as Plan["tool"];
       const executable = resolveBinary(tool, profile);
       const remaining = Math.max(1, timeoutMs - Math.round(performance.now() - started));

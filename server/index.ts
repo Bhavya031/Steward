@@ -6,6 +6,7 @@ import { runWithRepair } from "./repair-loop.ts";
 import { match, rerun, save, type Recipe } from "./recipes.ts";
 import { executionReporter, printAttemptEvent, printChecks, printRecipeCard } from "./terminal.ts";
 import { createWorkflowCatalogSender, createWsBridge } from "./ws-bridge.ts";
+import { StagedInputRegistry } from "./staged-input-registry.ts";
 import { userFacingMessage } from "./user-facing.ts";
 
 function filesFrom(argv: string[]): string[] {
@@ -82,10 +83,15 @@ export async function main(argv = Bun.argv.slice(2)): Promise<void> {
 }
 
 export function serveUi(openBrowser = true): void {
+  const stagedInputs = new StagedInputRegistry();
+  const bridge = createWsBridge({ stagedInputs });
   const running = startLocalServer({
     openBrowser,
+    stagingRoot: stagedInputs.root,
+    stagedInputs,
     onWebSocketOpen: createWorkflowCatalogSender(),
-    onWebSocketMessage: createWsBridge(),
+    onWebSocketMessage: bridge,
+    onWebSocketClose: (socket) => bridge.close(socket),
   });
   console.log(`Steward UI: ${running.url}`);
 }

@@ -5,69 +5,31 @@ import {
 } from "./composition-output-allocation.ts";
 import { createCompositionOutputRoot } from "./composition-output-root.ts";
 import { resolveDerivationSlots } from "./derivation-runtime.ts";
-import { executePlan, type ExecutionOptions, type PlanExecutionResult } from "./executor.ts";
+import { executePlan, type ExecutionOptions } from "./executor.ts";
 import { discardFailedOutput } from "./failed-output.ts";
-import type { Plan } from "./plan.ts";
-import { probeSystem, type SystemProfile } from "./probe.ts";
+import { probeSystem } from "./probe.ts";
 import { renderRecipe } from "./recipe-template.ts";
-import type {
-  AtomicRecipe, CompositionRecipe, CompositionStage,
-} from "./recipe-types.ts";
 import { isAtomicRecipe, validateSavedRecipe } from "./recipe-validation.ts";
-import { verifyChecks, type VerificationResult } from "./verify/index.ts";
-export interface StageVerificationResult extends VerificationResult {
-  stage_index: number;
-  source_id: string;
-}
-export interface CompositionStageRun {
-  stage_index: number;
-  source_id: string;
-  input_path: string;
-  plan: Plan;
-  execution: PlanExecutionResult;
-  checks: StageVerificationResult[];
-  all_pass: boolean;
-}
-export interface CompositionRun {
-  composition_id: string;
-  success: boolean;
-  output_path?: string;
-  failed_stage?: number;
-  stages: CompositionStageRun[];
-  model_calls: 0;
-}
-export interface CompositionRuntimeOptions {
-  profile?: SystemProfile;
-  executionOptions?: ExecutionOptions;
-}
-function stageRecipe(
-  composition: CompositionRecipe,
-  stage: CompositionStage,
-): AtomicRecipe {
-  return {
-    name: stage.source_id,
-    command_template: stage.command_template,
-    checks: stage.checks,
-    created_at: composition.created_at,
-    arch: composition.arch,
-    tool: stage.tool,
-    install_weight: stage.install_weight,
-    ...(stage.derivations ? { derivations: stage.derivations } : {}),
-    ...(stage.intermediates ? { intermediates: stage.intermediates } : {}),
-    ...(stage.resources ? { resources: stage.resources } : {}),
-  };
-}
-function failed(
-  composition: CompositionRecipe,
-  stages: CompositionStageRun[],
+import {
+  failedComposition, stageRecipe,
+} from "./composition-runtime-state.ts";
+import type {
+  CompositionRun, CompositionRuntimeOptions, CompositionStageRun,
+} from "./composition-runtime-types.ts";
+import { verifyChecks } from "./verify/index.ts";
+function stageExecutionOptions(
+  options: CompositionRuntimeOptions,
   stageIndex: number,
-): CompositionRun {
+  sourceId: string,
+): ExecutionOptions {
   return {
-    composition_id: composition.name,
-    success: false,
-    failed_stage: stageIndex,
-    stages,
-    model_calls: 0,
+    ...options.executionOptions,
+    onEvent: (event) => {
+      options.executionOptions?.onEvent?.(event);
+      options.onEvent?.({
+        type: "execution", stage_index: stageIndex, source_id: sourceId, event,
+      });
+    },
   };
 }
 export async function runComposition(
@@ -90,7 +52,15 @@ export async function runComposition(
     currentInput = stageInput;
     const profile = options.profile ?? probeSystem();
     for (const [stageIndex, stage] of saved.stages.entries()) {
-      const slots = await resolveDerivationSlots(stage.derivations, [stageInput], profile);
+      options.executionOptions?.signal?.throwIfAborted();
+      options.onEvent?.({
+        type: "stage_started", stage_index: stageIndex, source_id: stage.source_id,
+        check_names: stage.checks.map((check) => check.type),
+      });
+      const stageOptions = stageExecutionOptions(options, stageIndex, stage.source_id);
+      const slots = await resolveDerivationSlots(
+        stage.derivations, [stageInput], profile, stageOptions,
+      );
       const rendered = renderRecipe(stageRecipe(saved, stage), [stageInput], slots);
       const final = stageIndex === saved.stages.length - 1;
       const plan = final
@@ -98,31 +68,43 @@ export async function runComposition(
         : allocateInternalStageOutput(rendered, stageInput, managed.capability);
       if (final) finalOutput = plan.output_path;
       const execution = await executePlan(
-        plan, profile, [stageInput], options.executionOptions, managed.capability,
+        plan, profile, [stageInput],
+        stageOptions, managed.capability,
       );
       if (!execution.ok) {
         stages.push({
           stage_index: stageIndex, source_id: stage.source_id, input_path: stageInput,
           plan, execution, checks: [], all_pass: false,
         });
-        run = failed(saved, stages, stageIndex);
+        run = failedComposition(saved, stages, stageIndex);
         break;
       }
+      options.onEvent?.({
+        type: "verification_started", stage_index: stageIndex, source_id: stage.source_id,
+      });
+      const verificationStarted = performance.now();
       const checks = (await verifyChecks(plan.checks, {
         outputPath: plan.output_path,
         sourcePaths: [stageInput],
         profile,
-        onExecutionEvent: options.executionOptions?.onEvent,
+        onExecutionEvent: stageOptions.onEvent,
+        executionOptions: stageOptions,
       })).map((result) => ({
         ...result, stage_index: stageIndex, source_id: stage.source_id,
       }));
+      options.onEvent?.({
+        type: "verification_completed", stage_index: stageIndex, source_id: stage.source_id,
+        duration_ms: Math.round(performance.now() - verificationStarted),
+      });
+      checks.forEach((result) => options.onEvent?.({ type: "check_result", result }));
       const allPass = checks.length === plan.checks.length && checks.every((check) => check.pass);
+      options.executionOptions?.signal?.throwIfAborted();
       stages.push({
         stage_index: stageIndex, source_id: stage.source_id, input_path: stageInput,
         plan, execution, checks, all_pass: allPass,
       });
       if (!allPass) {
-        run = failed(saved, stages, stageIndex);
+        run = failedComposition(saved, stages, stageIndex);
         break;
       }
       stageInput = plan.output_path;
@@ -148,3 +130,8 @@ export async function runComposition(
     { action: "managed_root", run: managed.cleanup },
   ]);
 }
+
+export type {
+  CompositionRun, CompositionRuntimeEvent, CompositionRuntimeOptions,
+  CompositionStageRun, StageVerificationResult,
+} from "./composition-runtime-types.ts";

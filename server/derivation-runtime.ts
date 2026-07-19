@@ -1,4 +1,4 @@
-import { executeFfprobe } from "./executor.ts";
+import { executeFfprobe, type ExecutionOptions } from "./executor.ts";
 import { resolveDerivation, type Derivations } from "./derivations.ts";
 import type { Plan } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
@@ -25,10 +25,11 @@ export async function resolveDerivationSlots(
   derivations: Derivations | undefined,
   files: string[],
   profile: SystemProfile,
+  options: ExecutionOptions = {},
 ): Promise<Record<string, string>> {
   if (!derivations || Object.keys(derivations).length === 0) return {};
   if (!files[0]) throw new Error("cannot resolve derivation without a first input file");
-  const probe = await executeFfprobe("duration", files[0], profile);
+  const probe = await executeFfprobe("duration", files[0], profile, options);
   if (!probe.ok) throw new Error(`cannot resolve derivation: ${probe.stderr_tail}`);
   const duration = durationFrom(probe.stdout_tail);
   return Object.fromEntries(Object.entries(derivations).map(([slot, spec]) =>

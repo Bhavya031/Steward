@@ -67,14 +67,18 @@ export async function resourceIsValid(id: TrustedResourceId): Promise<boolean> {
 export async function installResource(
   id: TrustedResourceId,
   onProgress: (progress: ResourceProgress) => void = () => undefined,
-  fetcher: (url: string) => Promise<Response> = (url) => fetch(url),
+  fetcher: (url: string, signal?: AbortSignal) => Promise<Response> =
+    (url, signal) => fetch(url, { signal }),
+  signal?: AbortSignal,
 ): Promise<string> {
+  signal?.throwIfAborted();
   const metadata = TRUSTED_RESOURCES[id];
   mkdirSync(resourceDirectory(), { recursive: true });
   const destination = resourcePath(id);
   const temporary = `${destination}.download`;
   rmSync(temporary, { force: true });
-  const response = await fetcher(metadata.url);
+  const response = await fetcher(metadata.url, signal);
+  signal?.throwIfAborted();
   if (!response.ok || !response.body) throw new Error(`model download failed with HTTP ${response.status}`);
   const file = Bun.file(temporary).writer();
   const hash = createHash("sha256");
@@ -83,6 +87,7 @@ export async function installResource(
   try {
     const reader = response.body.getReader();
     while (true) {
+      signal?.throwIfAborted();
       const { done, value } = await reader.read();
       if (done) break;
       const bytes = value;

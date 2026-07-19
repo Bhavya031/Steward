@@ -1,4 +1,4 @@
-import type { ExecutionEvent } from "../execution-types.ts";
+import type { ExecutionEvent, ExecutionOptions } from "../execution-types.ts";
 import type { SystemProfile } from "../probe.ts";
 
 export interface VerificationResult {
@@ -13,6 +13,7 @@ export interface VerificationContext {
   sourcePaths: string[];
   profile: SystemProfile;
   onExecutionEvent?: (event: ExecutionEvent) => void;
+  executionOptions?: ExecutionOptions;
 }
 
 export interface VerificationRunContext extends VerificationContext {

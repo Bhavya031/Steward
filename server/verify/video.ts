@@ -46,7 +46,10 @@ async function streamsPresent(target: CheckTarget, context: VerificationContext)
 
 async function plays(target: CheckTarget, context: VerificationContext): Promise<VerificationResult> {
   if (target !== true) return result("plays", false, "target true", `invalid target: ${String(target)}`);
-  const probe = await executeFfprobe("decode", context.outputPath, context.profile);
+  const probe = await executeFfprobe("decode", context.outputPath, context.profile, {
+    ...context.executionOptions,
+    onEvent: context.onExecutionEvent,
+  });
   let streams: ProbeStream[] = [];
   try {
     streams = streamsFrom(JSON.parse(probe.stdout_tail));

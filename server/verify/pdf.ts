@@ -20,6 +20,7 @@ export function parseGhostscriptPageCount(stdout: string): number {
 
 function options(context: VerificationRunContext, observe?: (event: ExecutionEvent) => void) {
   return {
+    ...context.executionOptions,
     onEvent: (event: ExecutionEvent) => {
       observe?.(event);
       context.onExecutionEvent?.(event);

@@ -48,7 +48,10 @@ export async function verifyMediaFormat(
 ): Promise<VerificationResult> {
   const expected = mediaFormat(target);
   if (!expected) return result("format_matches", false, "supported media format", `invalid target: ${String(target)}`);
-  const execution = await executeFfprobe("media_format", context.outputPath, context.profile);
+  const execution = await executeFfprobe("media_format", context.outputPath, context.profile, {
+    ...context.executionOptions,
+    onEvent: context.onExecutionEvent,
+  });
   if (!execution.ok) return result("format_matches", false, expected.toUpperCase(), `ffprobe exit ${execution.exit_code}: ${execution.stderr_tail.trim()}`);
   let parsed: unknown;
   try { parsed = JSON.parse(execution.stdout_tail); } catch { parsed = null; }

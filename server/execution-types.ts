@@ -21,11 +21,20 @@ export type ExecutionEvent =
 export interface ExecutionOptions {
   timeoutMs?: number;
   onEvent?: (event: ExecutionEvent) => void;
+  signal?: AbortSignal;
 }
 
 export class ExecutionError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ExecutionError";
+  }
+}
+
+export class ExecutionCancelledError extends ExecutionError {
+  constructor(message = "Steward execution was cancelled", options?: ErrorOptions) {
+    super(message);
+    this.name = "ExecutionCancelledError";
+    if (options?.cause !== undefined) this.cause = options.cause;
   }
 }

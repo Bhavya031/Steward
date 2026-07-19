@@ -9,7 +9,13 @@ import {
 import { renderRecipe } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
 import { TOOL_POLICIES } from "./tools.ts";
-import type { ClientEvent, EmitServerEvent } from "./ws-events.ts";
+import {
+  handlesCompositionEvent, runCompositionProtocolEvent,
+  type WsCompositionOptions,
+} from "./ws-composition.ts";
+import type {
+  ClientEvent, EmitServerEvent, EmitWsEvent, WsClientEvent,
+} from "./ws-events.ts";
 import {
   checkResults, executionEvents, failedAttempt, pendingChecks, readableInputFiles,
 } from "./ws-run-events.ts";
@@ -22,10 +28,8 @@ import { userFacingMessage } from "./user-facing.ts";
 interface Completion { outputPath: string; modelCalls?: number }
 type SavedSelection = { kind: "matched"; score: number } | { kind: "direct" };
 export type { PendingInstall } from "./ws-install-flow.ts";
-export interface WsEngineOptions {
-  recipeDirectory?: string;
+export interface WsEngineOptions extends WsCompositionOptions {
   pendingRuns?: Map<string, PendingInstall>;
-  profile?: SystemProfile;
 }
 
 function activity(runId: string, message: string, emit: EmitServerEvent): void {
@@ -202,32 +206,49 @@ async function execute(
   return runPlanned(request.task, files, directory, runId, emit, pendingRuns);
 }
 
+export function runEngineEvent(
+  request: ClientEvent, emit: EmitServerEvent, options?: WsEngineOptions,
+): Promise<void>;
+export function runEngineEvent(
+  request: WsClientEvent, emit: EmitWsEvent, options?: WsEngineOptions,
+): Promise<void>;
 export async function runEngineEvent(
-  request: ClientEvent, emit: EmitServerEvent, options: WsEngineOptions = {},
+  request: WsClientEvent,
+  emit: EmitServerEvent | EmitWsEvent,
+  options: WsEngineOptions = {},
 ): Promise<void> {
+  const pendingCompositionRuns = options.pendingCompositionRuns ?? new Map();
+  if (handlesCompositionEvent(request, pendingCompositionRuns)) {
+    await runCompositionProtocolEvent(request, emit as EmitWsEvent, {
+      ...options, pendingCompositionRuns,
+    });
+    return;
+  }
+  const legacyRequest = request as ClientEvent;
+  const legacyEmit = emit as EmitServerEvent;
   const pendingRuns = options.pendingRuns ?? new Map<string, PendingInstall>();
-  const runId = request.type === "confirm_install" ? request.run_id : randomUUID();
-  if (request.type !== "confirm_install") {
-    emit({
+  const runId = legacyRequest.type === "confirm_install" ? legacyRequest.run_id : randomUUID();
+  if (legacyRequest.type !== "confirm_install") {
+    legacyEmit({
       type: "run_started", run_id: runId,
-      action: request.type === "run_task" ? "task" : "recipe",
-      files: [...request.files],
+      action: legacyRequest.type === "run_task" ? "task" : "recipe",
+      files: [...legacyRequest.files],
     });
   }
   try {
-    const result = request.type === "confirm_install"
-      ? await resume(request, emit, pendingRuns)
+    const result = legacyRequest.type === "confirm_install"
+      ? await resume(legacyRequest, legacyEmit, pendingRuns)
       : await execute(
-        request, options.recipeDirectory ?? RECIPES_DIRECTORY,
-        runId, emit, pendingRuns, options.profile,
+        legacyRequest, options.recipeDirectory ?? RECIPES_DIRECTORY,
+        runId, legacyEmit, pendingRuns, options.profile,
       );
     if (!result) return;
-    emit({
+    legacyEmit({
       type: "run_complete", run_id: runId, success: true, output_path: result.outputPath,
       ...(result.modelCalls === undefined ? {} : { model_calls: result.modelCalls }),
     });
   } catch (error) {
-    emit({ type: "error", run_id: runId, message: userFacingMessage(error) });
-    emit({ type: "run_complete", run_id: runId, success: false });
+    legacyEmit({ type: "error", run_id: runId, message: userFacingMessage(error) });
+    legacyEmit({ type: "run_complete", run_id: runId, success: false });
   }
 }

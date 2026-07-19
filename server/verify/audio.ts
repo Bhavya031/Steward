@@ -23,9 +23,10 @@ export async function measureLoudness(
   const cached = context.measurements.get(key) as Promise<LoudnessStats> | undefined;
   if (cached) return cached;
   const measurement = (async () => {
-    const execution = await executeLoudnessScan(file, context.profile, context.onExecutionEvent
-      ? { onEvent: context.onExecutionEvent }
-      : {});
+    const execution = await executeLoudnessScan(file, context.profile, {
+      ...context.executionOptions,
+      onEvent: context.onExecutionEvent,
+    });
     if (!execution.ok) {
       throw new Error(`ffmpeg loudness scan exited ${execution.exit_code}: ${execution.stderr_tail}`);
     }

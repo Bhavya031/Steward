@@ -64,6 +64,30 @@ describe("local UI server", () => {
     expect(echoed).toBe("steward-echo");
   });
 
+  test("routes authenticated WebSocket closure to server-owned cleanup", async () => {
+    let closed!: (value: { code: number; reason: string }) => void;
+    const observed = new Promise<{ code: number; reason: string }>((resolve) => {
+      closed = resolve;
+    });
+    const closeServer = startLocalServer({
+      staticRoot: root,
+      onWebSocketClose: (_socket, code, reason) => closed({ code, reason }),
+    });
+    try {
+      const wsUrl = `${closeServer.origin.replace("http://", "ws://")}/ws?token=${closeServer.token}`;
+      const socket = new WebSocket(wsUrl);
+      await new Promise<void>((resolveOpen, reject) => {
+        socket.addEventListener("open", () => resolveOpen());
+        socket.addEventListener("error", () => reject(new Error("WebSocket open failed")));
+      });
+      socket.close(1000, "finished");
+      expect(await observed).toEqual({ code: 1000, reason: "finished" });
+    } finally {
+      closeServer.server.stop(true);
+      rmSync(closeServer.stagingRoot, { recursive: true, force: true });
+    }
+  });
+
   test("rejects staging without the session token and confines accepted bytes", async () => {
     const unauthorized = await fetch(`${running.origin}/api/stage-input`, {
       method: "POST",
@@ -78,9 +102,10 @@ describe("local UI server", () => {
 
     const accepted = await stage("clip one.mov", "local bytes");
     expect(accepted.status).toBe(201);
-    const result = await accepted.json() as { path: string };
+    const result = await accepted.json() as { path: string; staged_input_id: string };
     expect(dirname(result.path)).toBe(realpathSync(stagingRoot));
     expect(readFileSync(result.path, "utf8")).toBe("local bytes");
+    expect(running.stagedInputs.has(result.staged_input_id)).toBe(true);
   });
 
   test("uses a unique exclusive path for repeated staged filenames", async () => {
@@ -88,9 +113,12 @@ describe("local UI server", () => {
     const second = await stage("same.pdf", "second");
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
-    const firstPath = (await first.json() as { path: string }).path;
-    const secondPath = (await second.json() as { path: string }).path;
+    const firstResult = await first.json() as { path: string; staged_input_id: string };
+    const secondResult = await second.json() as { path: string; staged_input_id: string };
+    const firstPath = firstResult.path;
+    const secondPath = secondResult.path;
     expect(firstPath).not.toBe(secondPath);
+    expect(firstResult.staged_input_id).not.toBe(secondResult.staged_input_id);
     expect(readFileSync(firstPath, "utf8")).toBe("first");
     expect(readFileSync(secondPath, "utf8")).toBe("second");
   });

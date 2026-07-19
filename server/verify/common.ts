@@ -26,7 +26,10 @@ export async function probeJson(
   path: string,
   context: VerificationContext,
 ): Promise<unknown> {
-  const probe = await executeFfprobe(query, path, context.profile);
+  const probe = await executeFfprobe(query, path, context.profile, {
+    ...context.executionOptions,
+    onEvent: context.onExecutionEvent,
+  });
   if (!probe.ok || probe.stderr_tail.trim()) {
     throw new Error(`ffprobe exit ${probe.exit_code}: ${probe.stderr_tail.trim() || "no details"}`);
   }

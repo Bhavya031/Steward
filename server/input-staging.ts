@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { realpathSync, rmSync, statSync } from "node:fs";
 import { open, type FileHandle } from "node:fs/promises";
 import { basename, dirname, relative, resolve } from "node:path";
+import type { StagedInputRegistry } from "./staged-input-registry.ts";
 
 export const STAGE_INPUT_PATH = "/api/stage-input";
 const FILENAME_HEADER = "x-steward-filename";
@@ -38,7 +39,11 @@ async function writeChunk(handle: FileHandle, chunk: Uint8Array): Promise<void> 
   }
 }
 
-export async function stageInput(request: Request, stagingRoot: string): Promise<Response> {
+export async function stageInput(
+  request: Request,
+  stagingRoot: string,
+  registry?: StagedInputRegistry,
+): Promise<Response> {
   let destination: string | undefined;
   let handle: FileHandle | undefined;
   try {
@@ -62,7 +67,11 @@ export async function stageInput(request: Request, stagingRoot: string): Promise
     if (!inside(root, real) || !statSync(real).isFile()) {
       throw new Error("The staged input is not a confined regular file.");
     }
-    return Response.json({ path: real }, {
+    const stagedInputId = registry?.register(real);
+    return Response.json({
+      path: real,
+      ...(stagedInputId ? { staged_input_id: stagedInputId } : {}),
+    }, {
       status: 201,
       headers: { "Cache-Control": "no-store" },
     });

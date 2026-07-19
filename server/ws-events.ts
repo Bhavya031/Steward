@@ -1,11 +1,18 @@
 import type { PlanSummary } from "./attempt-types.ts";
 import type { Recipe } from "./recipe-types.ts";
 import type { VerificationResult } from "./verify/types.ts";
+import type {
+  CompositionClientEvent, CompositionServerEvent,
+} from "./ws-composition-events.ts";
+import {
+  exactKeys, files, record, stagedInputId, text, workflowId, workflowIds,
+} from "./ws-protocol-validation.ts";
 
 export type ClientEvent =
   | { type: "run_task"; task: string; files: string[] }
   | { type: "run_saved_workflow"; workflow_id: string; files: string[] }
   | { type: "confirm_install"; run_id: string; confirm: true };
+export type WsClientEvent = ClientEvent | CompositionClientEvent;
 
 interface RunEvent { run_id: string }
 
@@ -72,39 +79,10 @@ export type ServerEvent =
   | { type: "error"; message: string; run_id?: string };
 
 export type EmitServerEvent = (event: ServerEvent) => void;
+export type WsServerEvent = ServerEvent | CompositionServerEvent;
+export type EmitWsEvent = (event: WsServerEvent) => void;
 
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function exactKeys(value: Record<string, unknown>, expected: string[]): boolean {
-  const keys = Object.keys(value);
-  return keys.length === expected.length && keys.every((key) => expected.includes(key));
-}
-
-function text(value: unknown, label: string): string {
-  if (typeof value !== "string" || !value.trim() || value.includes("\0") || value.length > 2_000) {
-    throw new Error(`${label} must be a non-empty string up to 2,000 characters`);
-  }
-  return value;
-}
-
-function files(value: unknown): string[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 32) {
-    throw new Error("files must contain 1 to 32 paths");
-  }
-  return value.map((path, index) => text(path, `files[${index}]`));
-}
-
-function workflowId(value: unknown): string {
-  const id = text(value, "workflow_id");
-  if (id.length > 64 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
-    throw new Error("workflow_id must be a lowercase slug up to 64 characters");
-  }
-  return id;
-}
-
-export function parseClientEvent(raw: string): ClientEvent {
+export function parseClientEvent(raw: string): WsClientEvent {
   if (raw.length > 64 * 1_024) throw new Error("WebSocket message exceeds 64 KiB");
   let value: unknown;
   try {
@@ -125,6 +103,31 @@ export function parseClientEvent(raw: string): ClientEvent {
       workflow_id: workflowId(value.workflow_id),
       files: files(value.files),
     };
+  }
+  if (value.type === "get_composable_catalog" && exactKeys(value, ["type"])) {
+    return { type: "get_composable_catalog" };
+  }
+  if (value.type === "run_composition" && exactKeys(
+    value, ["type", "name", "workflow_ids", "staged_input_id"],
+  )) {
+    return {
+      type: "run_composition",
+      name: workflowId(value.name, "name"),
+      workflow_ids: workflowIds(value.workflow_ids),
+      staged_input_id: stagedInputId(value.staged_input_id),
+    };
+  }
+  if (value.type === "run_saved_workflow" && exactKeys(
+    value, ["type", "workflow_id", "staged_input_id"],
+  )) {
+    return {
+      type: "run_saved_workflow",
+      workflow_id: workflowId(value.workflow_id),
+      staged_input_id: stagedInputId(value.staged_input_id),
+    };
+  }
+  if (value.type === "deny_install" && exactKeys(value, ["type", "run_id"])) {
+    return { type: "deny_install", run_id: text(value.run_id, "run_id") };
   }
   if (value.type === "confirm_install" &&
       exactKeys(value, ["type", "run_id", "confirm"]) && value.confirm === true) {
