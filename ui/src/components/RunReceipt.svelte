@@ -7,6 +7,7 @@
   import {
     formatClock, raycastDeeplink, scriptText, stepTool,
   } from "../lib/receipt-view.ts";
+  import type { SavedCommand } from "../lib/composition-model.ts";
   import type { CheckItem, Recipe, RunHistoryItem } from "../lib/stores.ts";
   import ReceiptPipeline from "./ReceiptPipeline.svelte";
   import ReceiptShelf from "./ReceiptShelf.svelte";
@@ -19,20 +20,24 @@
     modelCalls?: number;
     killTotal: number;
     outputPath?: string;
+    outputName?: string;
+    composition?: boolean;
     now: number;
-    recipes: Recipe[];
+    recipes: SavedCommand[];
     history: RunHistoryItem[];
-    onOpenRecipe: (recipe: Recipe) => void;
+    onOpenRecipe: (recipe: SavedCommand) => void;
   }
 
   let {
     progress, checks, savedRecipe, matchedRecipe,
-    modelCalls, killTotal, outputPath, now,
+    modelCalls, killTotal, outputPath, outputName, composition = false, now,
     recipes, history, onOpenRecipe,
   }: Props = $props();
   let copied = $state(false);
   let copyTimer: ReturnType<typeof setTimeout> | undefined;
-  let outputFile = $derived(outputPath?.split(/[\\/]/).at(-1) ?? "Verified local output");
+  let outputFile = $derived(
+    outputName ?? outputPath?.split(/[\\/]/).at(-1) ?? "Verified local output",
+  );
   let recipeName = $derived(savedRecipe?.name ?? matchedRecipe);
   let total = $derived(totalDuration(progress));
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -112,10 +117,13 @@
     <ReceiptPipeline {progress} />
 
     <div class="receipt-checks">
-      {#each checks as check (check.name)}
+      {#each checks as check (`${check.stageIndex ?? "atomic"}:${check.sourceId ?? ""}:${check.name}`)}
         <div class="receipt-check-row" data-status={check.status}>
           <span class="receipt-tick" aria-hidden="true"></span>
-          <strong>{check.name}</strong>
+          <strong>
+            {#if check.stageIndex !== undefined}Stage {check.stageIndex + 1} · {/if}
+            {check.name}
+          </strong>
           <span class="check-cell">
             <em>Expected</em>
             <span>{check.expected ?? "—"}</span>
@@ -129,19 +137,25 @@
     </div>
 
     <div class="receipt-actions">
-      <button type="button" onclick={saveScript}>
+      <button type="button" onclick={saveScript} disabled={composition}>
         <span class="action-icon action-icon-bash" aria-hidden="true">
           <img src="/logos/Bash_Logo_Colored.svg" alt="" />
         </span>
         <span>Save as script</span>
       </button>
-      <button type="button" onclick={saveToRaycast}>
+      <button type="button" onclick={saveToRaycast} disabled={composition}>
         <span class="action-icon action-icon-raycast" aria-hidden="true">
           <i class="raycast-mark"></i>
         </span>
         <span>Save to Raycast</span>
       </button>
     </div>
+    {#if composition}
+      <p class="receipt-export-note">
+        Script and Raycast export are unavailable for combined commands because Steward
+        manages and verifies every stage handoff.
+      </p>
+    {/if}
 
     {#if recipes.length > 0}
       <ReceiptShelf {recipes} {history} onOpen={onOpenRecipe} />

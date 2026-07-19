@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ServerEvent } from "../../../server/ws-events.ts";
+import type { ServerEvent, WsServerEvent } from "../../../server/ws-events.ts";
 import { createPacer, STEP_GAP_MS } from "./pacing.ts";
 import { createRunProgress, reduceServerEvent } from "./run-progress.ts";
 
@@ -86,5 +86,23 @@ describe("run pacing", () => {
     pacer.push({ type: "run_started", run_id: "next", action: "task", files: ["/tmp/b.mkv"] });
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(seen).toEqual(["run_started", "run_started"]);
+  });
+
+  test("a composition start or disconnect reset revokes queued stale events", async () => {
+    const seen: string[] = [];
+    const pacer = createPacer((event) => seen.push(event.type), 1_000);
+    burst().forEach((event) => pacer.push(event));
+    const started: WsServerEvent = {
+      type: "composition_run_started", run_id: "chain",
+      action: "create", workflow_id: "media-chain",
+    };
+    pacer.push(started);
+    pacer.push({
+      type: "composition_stage_started", run_id: "chain",
+      stage_index: 0, source_id: "first-command",
+    });
+    pacer.reset();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(seen).toEqual(["run_started", "composition_run_started"]);
   });
 });

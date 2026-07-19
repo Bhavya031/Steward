@@ -5,10 +5,15 @@
   import RunningView from "./components/RunningView.svelte";
   import SavedCommandDetail from "./components/SavedCommandDetail.svelte";
   import {
-    checks, installRequest, killTotal, recipes, runClock, runHistory, runProgress, runState,
-    selectedRecipeName, type Recipe,
+    checks, composableCatalog, compositionStages, installRequest, killTotal,
+    rememberCompositionInputName, runClock, runHistory, runProgress, runState,
+    savedCommands, selectedRecipeName,
   } from "./lib/stores.ts";
-  import type { RunSavedWorkflowEvent, RunTaskEvent } from "./lib/task-entry.ts";
+  import type { SavedCommand } from "./lib/composition-model.ts";
+  import type {
+    RunCompositionEvent, RunSavedCompositionEvent,
+    RunSavedWorkflowEvent, RunTaskEvent,
+  } from "./lib/task-entry.ts";
   import {
     connectWebSocket, disconnectWebSocket, sendClientEvent,
   } from "./lib/ws.ts";
@@ -17,13 +22,13 @@
   let entryLeaving = false;
   let entryTimer: ReturnType<typeof setTimeout> | undefined;
   let transitionMs = 900;
-  let requestedWorkflow: Recipe | undefined;
-  $: selectedRecipe = $recipes.find((recipe) => recipe.name === $selectedRecipeName);
+  let requestedWorkflow: SavedCommand | undefined;
+  $: selectedRecipe = $savedCommands.find((recipe) => recipe.name === $selectedRecipeName);
   $: selectedHistory = selectedRecipe
     ? $runHistory.filter((run) => run.recipeName === selectedRecipe?.name)
     : [];
 
-  function openRecipe(recipe: Recipe): void {
+  function openRecipe(recipe: SavedCommand): void {
     selectedRecipeName.set(recipe.name);
   }
 
@@ -31,7 +36,7 @@
     selectedRecipeName.set(undefined);
   }
 
-  function runAgain(recipe: Recipe): void {
+  function runAgain(recipe: SavedCommand): void {
     closeRecipe();
     entryLeaving = false;
     showEntry = true;
@@ -42,11 +47,23 @@
     sendClientEvent({ type: "confirm_install", run_id: runId, confirm: true });
   }
 
+  function denyInstall(runId: string): void {
+    sendClientEvent({ type: "deny_install", run_id: runId });
+  }
+
   function runTask(event: RunTaskEvent): void {
     sendClientEvent(event);
   }
 
   function runSavedWorkflow(event: RunSavedWorkflowEvent): void {
+    sendClientEvent(event);
+  }
+
+  function runComposition(
+    event: RunCompositionEvent | RunSavedCompositionEvent,
+    inputName: string,
+  ): void {
+    rememberCompositionInputName(inputName);
     sendClientEvent(event);
   }
 
@@ -91,6 +108,9 @@
     now={$runClock}
     status={$runState.status}
     outputPath={$runState.outputPath}
+    outputName={$runState.outputName}
+    composition={$runState.composition ?? false}
+    compositionStages={$compositionStages}
     checks={$checks}
     savedRecipe={$runState.savedRecipe}
     matchedRecipe={$runState.matchedRecipe}
@@ -98,7 +118,8 @@
     killTotal={$killTotal}
     installRequest={$installRequest}
     onConfirmInstall={confirmInstall}
-    recipes={$recipes}
+    onDenyInstall={denyInstall}
+    recipes={$savedCommands}
     history={$runHistory}
     onOpenRecipe={openRecipe}
   />
@@ -109,7 +130,10 @@
     <DropSurface
       onRunTask={runTask}
       onRunSavedWorkflow={runSavedWorkflow}
-      recipes={$recipes}
+      onRunSavedComposition={runComposition}
+      onRunComposition={runComposition}
+      recipes={$savedCommands}
+      catalog={$composableCatalog}
       history={$runHistory}
       onOpenRecipe={openRecipe}
       {requestedWorkflow}

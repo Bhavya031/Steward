@@ -1,4 +1,4 @@
-import type { ClientEvent, ServerEvent } from "../../../server/ws-events.ts";
+import type { WsClientEvent, WsServerEvent } from "../../../server/ws-events.ts";
 import {
   applyActivity, completeStep, completeWithDuration, completeWithoutTiming, displayCommand,
   resetStep, settleExecute, settlePlanAndProbe, startStep,
@@ -17,7 +17,7 @@ export interface RunStep {
 }
 
 export interface RunRequest {
-  kind: "task" | "recipe";
+  kind: "task" | "recipe" | "composition";
   description: string;
   files: string[];
 }
@@ -67,22 +67,34 @@ function copy(state: RunProgress): RunProgress {
 }
 
 export function reduceClientEvent(
-  state: RunProgress, event: ClientEvent,
+  state: RunProgress, event: WsClientEvent,
 ): RunProgress {
-  if (event.type === "confirm_install") return copy(state);
+  if (event.type === "confirm_install" || event.type === "deny_install" ||
+      event.type === "get_composable_catalog" ||
+      event.type === "get_composition_detail") return copy(state);
   const request: RunRequest = event.type === "run_task"
     ? { kind: "task", description: event.task, files: [...event.files] }
+    : event.type === "run_composition"
+    ? { kind: "composition", description: event.name, files: ["Selected local file"] }
+    : "staged_input_id" in event
+    ? { kind: "composition", description: event.workflow_id, files: ["Selected local file"] }
     : { kind: "recipe", description: event.workflow_id, files: [...event.files] };
   return createRunProgress(request);
 }
 
 export function reduceServerEvent(
-  current: RunProgress, event: ServerEvent, at: number,
+  current: RunProgress, event: WsServerEvent, at: number,
 ): RunProgress {
-  if (event.type === "run_started") {
+  if (event.type === "run_started" || event.type === "composition_run_started") {
     const state = createRunProgress(current.request);
-    startStep(state, "probe", at);
-    state.activity = "Checking saved commands and this Mac.";
+    if (event.type === "composition_run_started") {
+      state.steps.probe = { status: "skipped" };
+      state.steps.plan = { status: "active", startedAt: at };
+      state.activity = "Preparing the verified saved-command chain.";
+    } else {
+      startStep(state, "probe", at);
+      state.activity = "Checking saved commands and this Mac.";
+    }
     return state;
   }
   const state = copy(current);
@@ -99,6 +111,14 @@ export function reduceServerEvent(
     state.steps.plan.note = `${event.model_calls} model calls`;
     state.activity = "Saved plan ready. Preparing local execution.";
   }
+  if (event.type === "composition_selected") {
+    state.steps.probe = { status: "skipped" };
+    state.steps.plan = {
+      status: "complete", durationMs: 0,
+      note: `${event.model_calls} model calls`,
+    };
+    state.activity = "Saved combined command selected directly.";
+  }
   if (event.type === "command_started") {
     settlePlanAndProbe(state, at);
     if (state.steps.verify.status !== "pending") resetStep(state, "verify");
@@ -109,7 +129,21 @@ export function reduceServerEvent(
     state.progress = "";
     state.commandStartedAt = at;
   }
+  if (event.type === "composition_command_started") {
+    settlePlanAndProbe(state, at);
+    if (state.steps.verify.status !== "pending") resetStep(state, "verify");
+    startStep(state, "execute", at);
+    state.command = `Stage ${event.stage_index + 1} · ${event.source_id.replaceAll("-", " ")} · command ${event.command_index + 1}`;
+    state.commands.push(state.command);
+    state.progress = "";
+    state.commandStartedAt = at;
+  }
   if (event.type === "command_completed") {
+    state.commandDurationMs += Math.max(0, event.duration_ms);
+    state.commandDurationCount += 1;
+    state.commandStartedAt = undefined;
+  }
+  if (event.type === "composition_command_completed") {
     state.commandDurationMs += Math.max(0, event.duration_ms);
     state.commandDurationCount += 1;
     state.commandStartedAt = undefined;
@@ -122,10 +156,24 @@ export function reduceServerEvent(
     state.activity = "Checking the output against the plan.";
     state.progress = "";
   }
+  if (event.type === "composition_verification_started") {
+    settlePlanAndProbe(state, at);
+    settleExecute(state, at);
+    if (state.steps.verify.status === "complete") resetStep(state, "verify");
+    startStep(state, "verify", at);
+    state.activity = `Verifying stage ${event.stage_index + 1}: ${event.source_id.replaceAll("-", " ")}.`;
+  }
   if (event.type === "verification_completed") {
     settlePlanAndProbe(state, at);
     settleExecute(state, at);
     completeWithDuration(state, "verify", at, event.duration_ms);
+  }
+  if (event.type === "composition_verification_completed") {
+    settlePlanAndProbe(state, at);
+    settleExecute(state, at);
+    if (event.duration_ms !== undefined) {
+      completeWithDuration(state, "verify", at, event.duration_ms);
+    }
   }
   if (event.type === "check_result") {
     settlePlanAndProbe(state, at);
@@ -133,9 +181,17 @@ export function reduceServerEvent(
     if (state.steps.verify.status === "pending") startStep(state, "verify", at);
     state.activity = `Verifying ${event.name}.`;
   }
+  if (event.type === "composition_check_result") {
+    settlePlanAndProbe(state, at);
+    settleExecute(state, at);
+    if (state.steps.verify.status === "pending") startStep(state, "verify", at);
+    state.activity = `Stage ${event.stage_index + 1}: verifying ${event.name}.`;
+  }
   if (event.type === "repair_attempt") state.activity = `Repair attempt ${event.attempt}.`;
   if (event.type === "error") state.activity = event.message;
-  if (event.type === "run_complete" && event.success) {
+  if (event.type === "composition_error") state.activity = event.message;
+  if ((event.type === "run_complete" || event.type === "composition_run_complete") &&
+      event.success) {
     settlePlanAndProbe(state, at);
     settleExecute(state, at);
     if (state.steps.verify.status === "active") completeStep(state, "verify", at);

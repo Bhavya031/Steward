@@ -6,7 +6,11 @@
   import {
     STEP_ART, STEP_TITLES, activeTool, stepDuration, stepLines, toolMark,
   } from "../lib/run-view.ts";
-  import type { CheckItem, InstallRequest, Recipe, RunHistoryItem } from "../lib/stores.ts";
+  import type { SavedCommand } from "../lib/composition-model.ts";
+  import type {
+    CheckItem, CompositionStageProgress, InstallRequest, Recipe, RunHistoryItem,
+  } from "../lib/stores.ts";
+  import CompositionStageProgressView from "./CompositionStageProgress.svelte";
   import RunReceipt from "./RunReceipt.svelte";
   import StepTile from "./StepTile.svelte";
 
@@ -14,6 +18,9 @@
   export let now: number;
   export let status: "running" | "complete" | "failed";
   export let outputPath: string | undefined = undefined;
+  export let outputName: string | undefined = undefined;
+  export let composition = false;
+  export let compositionStages: CompositionStageProgress[] = [];
   export let checks: CheckItem[] = [];
   export let savedRecipe: Recipe | undefined = undefined;
   export let matchedRecipe: string | undefined = undefined;
@@ -21,9 +28,10 @@
   export let killTotal = 0;
   export let installRequest: InstallRequest | null = null;
   export let onConfirmInstall: (runId: string) => void = () => undefined;
-  export let recipes: Recipe[] = [];
+  export let onDenyInstall: (runId: string) => void = () => undefined;
+  export let recipes: SavedCommand[] = [];
   export let history: RunHistoryItem[] = [];
-  export let onOpenRecipe: (recipe: Recipe) => void = () => {};
+  export let onOpenRecipe: (recipe: SavedCommand) => void = () => {};
 
   const OUTRO_MS = 650;
   const reducedMotion = typeof matchMedia === "function"
@@ -98,6 +106,7 @@
       <RunReceipt
         {progress} {checks} {savedRecipe} {matchedRecipe}
         {modelCalls} {killTotal} {outputPath} {now}
+        {outputName} {composition}
         {recipes} {history} {onOpenRecipe}
       />
     {:else}
@@ -113,7 +122,11 @@
             <progress max="100" value={installRequest.progress.percent}></progress>
           {:else}
             <p>
-              {#if installRequest.tool}{installRequest.tool} and {/if}
+              {#if "tool" in installRequest && installRequest.tool}{installRequest.tool} and {/if}
+              {#if "tools" in installRequest && installRequest.tools.length}
+                {installRequest.tools.flatMap((item) => item.tools).join(", ")}
+                {installRequest.resources.length ? " and " : ""}
+              {/if}
               {installRequest.resources.map((resource) =>
                 `${resource.id} (${(resource.bytes / 1_000_000_000).toFixed(2)} GB, SHA-256 pinned)`
               ).join(", ")}
@@ -121,8 +134,20 @@
             <button type="button" on:click={() => onConfirmInstall(installRequest.run_id)}>
               CONFIRM INSTALL & CONTINUE
             </button>
+            {#if "tools" in installRequest}
+              <button
+                class="install-deny"
+                type="button"
+                on:click={() => onDenyInstall(installRequest.run_id)}
+              >
+                NOT NOW
+              </button>
+            {/if}
           {/if}
         </section>
+      {/if}
+      {#if composition}
+        <CompositionStageProgressView stages={compositionStages} />
       {/if}
       <div class="run-shelf" class:content-departing={status === "complete"}>
         <div class="run-items">

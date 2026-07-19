@@ -1,25 +1,30 @@
-import type { ServerEvent } from "../../../server/ws-events.ts";
+import type { WsServerEvent } from "../../../server/ws-events.ts";
 
 export const STEP_GAP_MS = 1_000;
 
-function advancesStep(event: ServerEvent): boolean {
+function advancesStep(event: WsServerEvent): boolean {
   if (event.type === "recipe_matched" || event.type === "workflow_selected" ||
       event.type === "command_started" ||
-      event.type === "verification_started" || event.type === "run_complete") return true;
+      event.type === "verification_started" || event.type === "run_complete" ||
+      event.type === "composition_stage_started" ||
+      event.type === "composition_command_started" ||
+      event.type === "composition_verification_started" ||
+      event.type === "composition_run_complete") return true;
   if (event.type !== "activity") return false;
   return event.message.startsWith("Planning a local command") ||
     event.message.startsWith("Plan ready.");
 }
 
 export interface Pacer {
-  push(event: ServerEvent): void;
+  push(event: WsServerEvent): void;
+  reset(): void;
 }
 
 export function createPacer(
-  dispatch: (event: ServerEvent, receivedAt: number) => void,
+  dispatch: (event: WsServerEvent, receivedAt: number) => void,
   gapMs = STEP_GAP_MS,
 ): Pacer {
-  let queue: Array<{ event: ServerEvent; at: number }> = [];
+  let queue: Array<{ event: WsServerEvent; at: number }> = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastStepAt = 0;
 
@@ -43,14 +48,20 @@ export function createPacer(
     }
   }
 
+  function reset(): void {
+    queue = [];
+    if (timer) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+    lastStepAt = 0;
+  }
+
   return {
-    push(event: ServerEvent): void {
-      if (event.type === "run_started") {
-        queue = [];
-        if (timer) {
-          clearTimeout(timer);
-          timer = undefined;
-        }
+    reset,
+    push(event: WsServerEvent): void {
+      if (event.type === "run_started" || event.type === "composition_run_started") {
+        reset();
         lastStepAt = Date.now();
       }
       queue.push({ event, at: Date.now() });

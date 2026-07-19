@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import {
   EXAMPLE_TASKS, canSubmitTask, filesFromDrop, filesFromPicker,
-  populateTaskFromExample, runSavedWorkflowEvent, runTaskEvent,
-  stageInputFile, submitSavedWorkflow, submitTask,
+  populateTaskFromExample, runCompositionEvent, runSavedCompositionEvent,
+  runSavedWorkflowEvent, runTaskEvent, stageCompositionFile, stageInputFile,
+  submitComposition, submitSavedComposition, submitSavedWorkflow, submitTask,
 } from "./task-entry.ts";
 import { captureStartupSession, resetSessionAuthForTests } from "./ws.ts";
 
@@ -112,5 +113,65 @@ describe("visible task entry", () => {
     });
     expect(() => runSavedWorkflowEvent("../escape", ["/tmp/input.mov"])).toThrow();
     expect(() => runSavedWorkflowEvent("convert-media-to-mp4", [])).toThrow();
+  });
+
+  test("sends only the locked composition request after one-file ID staging", async () => {
+    const stagedId = "d9428888-122b-4e7f-a15b-3f708bc090f1";
+    const event = await submitComposition(
+      "media-chain",
+      ["convert-media-to-mp4", "transcribe-video-to-srt"],
+      [video],
+      async () => stagedId,
+    );
+    expect(event).toEqual({
+      type: "run_composition",
+      name: "media-chain",
+      workflow_ids: ["convert-media-to-mp4", "transcribe-video-to-srt"],
+      staged_input_id: stagedId,
+    });
+    expect(Object.keys(event)).toEqual([
+      "type", "name", "workflow_ids", "staged_input_id",
+    ]);
+    expect(JSON.stringify(event)).not.toContain("/tmp/");
+    expect(() => runCompositionEvent(
+      "Media Chain", ["one-command", "two-command"], stagedId,
+    )).toThrow();
+    await expect(submitComposition(
+      "media-chain", ["one-command", "two-command"], [video, document],
+      async () => stagedId,
+    )).rejects.toThrow("exactly one");
+  });
+
+  test("stages a one-shot ID for composition Do Again without a path", async () => {
+    const stagedId = "a9428888-122b-4e7f-a15b-3f708bc090f1";
+    const event = await submitSavedComposition(
+      "media-chain", [video], async () => stagedId,
+    );
+    expect(event).toEqual({
+      type: "run_saved_workflow",
+      workflow_id: "media-chain",
+      staged_input_id: stagedId,
+    });
+    expect(() => runSavedCompositionEvent("../escape", stagedId)).toThrow();
+  });
+
+  test("extracts only the opaque ID for a composed run", async () => {
+    const storage = memoryStorage();
+    captureStartupSession(
+      new URL("http://127.0.0.1:4321/?token=composition-session"),
+      storage,
+      () => undefined,
+    );
+    const stagedId = "b9428888-122b-4e7f-a15b-3f708bc090f1";
+    const value = await stageCompositionFile(
+      video,
+      new URL("http://127.0.0.1:4321/"),
+      async () => Response.json({
+        path: "/private/tmp/steward-inputs/hidden.mov",
+        staged_input_id: stagedId,
+      }, { status: 201 }),
+    );
+    expect(value).toBe(stagedId);
+    expect(value).not.toContain("private");
   });
 });

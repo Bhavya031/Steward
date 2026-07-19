@@ -128,6 +128,10 @@ describe("UI event stores", () => {
   test("shows confirmed model download progress and clears it before continuation", () => {
     resetStores();
     applyServerEvent({
+      type: "run_started", run_id: runId,
+      action: "task", files: ["/tmp/speech.mp4"],
+    });
+    applyServerEvent({
       type: "install_required", run_id: runId, tool: null, command: null,
       resources: [{
         id: "whisper-large-v3-turbo", bytes: 1_624_555_275,
@@ -146,6 +150,23 @@ describe("UI event stores", () => {
     applyServerEvent({
       type: "install_complete", run_id: runId,
       message: "Installation verified. Continuing automatically.",
+    });
+    expect(get(installRequest)).toBeNull();
+  });
+
+  test("ignores orphaned run-scoped installation events", () => {
+    resetStores();
+    applyServerEvent({
+      type: "install_required", run_id: "orphaned-run", tool: null, command: null,
+      resources: [{
+        id: "whisper-large-v3-turbo", bytes: 1_624_555_275,
+        sha256: "1fc70f", source: "ggerganov/whisper.cpp",
+      }],
+    });
+    applyServerEvent({
+      type: "install_progress", run_id: "orphaned-run",
+      id: "whisper-large-v3-turbo",
+      received: 812_277_637, total: 1_624_555_275, percent: 50,
     });
     expect(get(installRequest)).toBeNull();
   });

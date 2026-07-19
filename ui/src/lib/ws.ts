@@ -1,28 +1,9 @@
-import type { ClientEvent, ServerEvent } from "../../../server/ws-events.ts";
+import type { WsClientEvent, WsServerEvent } from "../../../server/ws-events.ts";
 import { createPacer } from "./pacing.ts";
-import { applyClientEvent, applyServerEvent } from "./stores.ts";
-
-const SERVER_EVENT_TYPES: { [Type in ServerEvent["type"]]: true } = {
-  workflow_catalog: true,
-  run_started: true,
-  activity: true,
-  model_call_count: true,
-  command_started: true,
-  command_completed: true,
-  verification_started: true,
-  verification_completed: true,
-  install_required: true,
-  install_progress: true,
-  install_complete: true,
-  check_pending: true,
-  check_result: true,
-  repair_attempt: true,
-  recipe_saved: true,
-  recipe_matched: true,
-  workflow_selected: true,
-  run_complete: true,
-  error: true,
-};
+import {
+  applyClientEvent, applyServerEvent, handleConnectionClosed, handleConnectionOpened,
+} from "./stores.ts";
+import { isWsServerEvent } from "./ws-event-validation.ts";
 
 let sessionToken: string | null = null;
 let socket: WebSocket | null = null;
@@ -30,10 +11,6 @@ const SESSION_TOKEN_KEY = "steward.session-token";
 
 type SessionStorage = Pick<Storage, "getItem" | "setItem">;
 type ReplaceUrl = (url: string) => void;
-
-function record(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 export function sessionTokenFromUrl(url: URL): string {
   const token = url.searchParams.get("token");
@@ -76,18 +53,17 @@ export function sessionTokenForRequest(url?: URL): string {
   throw new Error("Session token is missing or invalid.");
 }
 
-export function parseServerEvent(raw: string): ServerEvent {
+export function parseServerEvent(raw: string): WsServerEvent {
   let value: unknown;
   try {
     value = JSON.parse(raw);
   } catch {
     throw new Error("Server event is not valid JSON.");
   }
-  if (!record(value) || typeof value.type !== "string" ||
-      !Object.hasOwn(SERVER_EVENT_TYPES, value.type)) {
-    throw new Error("Server event type is unsupported.");
+  if (!isWsServerEvent(value)) {
+    throw new Error("Server event payload is unsupported.");
   }
-  return value as ServerEvent;
+  return value;
 }
 
 function websocketUrl(token: string): string {
@@ -100,14 +76,31 @@ function websocketUrl(token: string): string {
 
 const pacer = createPacer(applyServerEvent);
 
-function receive(raw: string): void {
+type CompositionDetailRequest = Extract<
+  WsClientEvent, { type: "get_composition_detail" }
+>;
+
+export function compositionDetailRequests(
+  event: WsServerEvent,
+): CompositionDetailRequest[] {
+  if (event.type !== "composable_catalog") return [];
+  return [...new Set(event.workflows
+    .filter((workflow) => workflow.kind === "composition")
+    .map((workflow) => workflow.workflow_id))]
+    .map((workflow_id) => ({ type: "get_composition_detail", workflow_id }));
+}
+
+function receive(raw: string): WsServerEvent | undefined {
   try {
-    pacer.push(parseServerEvent(raw));
+    const event = parseServerEvent(raw);
+    pacer.push(event);
+    return event;
   } catch (error) {
     applyServerEvent({
       type: "error",
       message: error instanceof Error ? error.message : String(error),
     });
+    return undefined;
   }
 }
 
@@ -127,28 +120,49 @@ export function connectWebSocket(): WebSocket | null {
   }
   const connection = new WebSocket(websocketUrl(token));
   socket = connection;
-  connection.addEventListener("message", (event) => receive(String(event.data)));
-  connection.addEventListener("error", () => applyServerEvent({
-    type: "error",
-    message: "Connection to Steward was interrupted.",
-  }));
+  connection.addEventListener("message", (event) => {
+    if (socket !== connection) return;
+    const received = receive(String(event.data));
+    if (!received) return;
+    for (const request of compositionDetailRequests(received)) {
+      sendClientEvent(request);
+    }
+  });
+  connection.addEventListener("open", () => {
+    if (socket === connection) {
+      handleConnectionOpened();
+      sendClientEvent({ type: "get_composable_catalog" });
+    }
+  }, { once: true });
+  connection.addEventListener("error", () => {
+    if (socket === connection) applyServerEvent({
+      type: "error",
+      message: "Connection to Steward was interrupted.",
+    });
+  });
   connection.addEventListener("close", () => {
-    if (socket === connection) socket = null;
+    if (socket !== connection) return;
+    socket = null;
+    pacer.reset();
+    handleConnectionClosed();
   });
   return connection;
 }
 
-export function sendClientEvent(event: ClientEvent): void {
+export function sendClientEvent(event: WsClientEvent): void {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     throw new Error("Steward is not connected.");
   }
-  applyClientEvent(event);
   socket.send(JSON.stringify(event));
+  applyClientEvent(event);
 }
 
 export function disconnectWebSocket(): void {
-  socket?.close();
+  const connection = socket;
   socket = null;
+  pacer.reset();
+  handleConnectionClosed();
+  connection?.close();
 }
 
 export function resetSessionAuthForTests(): void {

@@ -2,29 +2,40 @@
   import {
     EXAMPLE_TASKS, canSubmitTask, filesFromDrop, filesFromPicker,
     populateTaskFromExample, submitSavedWorkflow, submitTask,
+    submitSavedComposition, type RunCompositionEvent, type RunSavedCompositionEvent,
     type RunSavedWorkflowEvent, type RunTaskEvent,
   } from "../lib/task-entry.ts";
-  import type { Recipe, RunHistoryItem } from "../lib/stores.ts";
+  import type { ComposableCatalogEntry } from "../../../server/composition-catalog.ts";
+  import {
+    isCompositionCommand, type SavedCommand,
+  } from "../lib/composition-model.ts";
+  import type { RunHistoryItem } from "../lib/stores.ts";
+  import CombineFlow from "./CombineFlow.svelte";
   import ReceiptShelf from "./ReceiptShelf.svelte";
 
   interface Props {
     onRunTask: (event: RunTaskEvent) => void;
     onRunSavedWorkflow: (event: RunSavedWorkflowEvent) => void;
-    recipes: Recipe[];
+    onRunSavedComposition: (event: RunSavedCompositionEvent, inputName: string) => void;
+    onRunComposition: (event: RunCompositionEvent, inputName: string) => void;
+    recipes: SavedCommand[];
+    catalog: ComposableCatalogEntry[];
     history: RunHistoryItem[];
-    onOpenRecipe: (recipe: Recipe) => void;
-    requestedWorkflow?: Recipe;
+    onOpenRecipe: (recipe: SavedCommand) => void;
+    requestedWorkflow?: SavedCommand;
     onRequestedWorkflowHandled?: () => void;
   }
   let {
-    onRunTask, onRunSavedWorkflow, recipes, history, onOpenRecipe,
+    onRunTask, onRunSavedWorkflow, onRunSavedComposition, onRunComposition,
+    recipes, catalog, history, onOpenRecipe,
     requestedWorkflow, onRequestedWorkflowHandled,
   }: Props = $props();
   let task = $state("");
   let files = $state<File[]>([]);
   let busy = $state(false);
   let error = $state<string | undefined>();
-  let repeatWorkflow = $state<Recipe | undefined>();
+  let repeatWorkflow = $state<SavedCommand | undefined>();
+  let combining = $state(false);
   let handledRequest = $state<string | undefined>();
   let fileInput: HTMLInputElement;
   let canRun = $derived(canSubmitTask(task, files, busy));
@@ -44,7 +55,14 @@
     busy = true;
     error = undefined;
     try {
-      onRunSavedWorkflow(await submitSavedWorkflow(workflow.name, selected));
+      if (isCompositionCommand(workflow)) {
+        onRunSavedComposition(
+          await submitSavedComposition(workflow.name, selected),
+          selected[0]!.name,
+        );
+      } else {
+        onRunSavedWorkflow(await submitSavedWorkflow(workflow.name, selected));
+      }
       repeatWorkflow = undefined;
     } catch (caught) {
       error = caught instanceof Error ? caught.message : String(caught);
@@ -68,7 +86,7 @@
     await runSavedSelection(files);
   }
 
-  function chooseNewFile(recipe: Recipe): void {
+  function chooseNewFile(recipe: SavedCommand): void {
     repeatWorkflow = recipe;
     files = [];
     error = undefined;
@@ -187,7 +205,15 @@
           {history}
           onOpen={onOpenRecipe}
           onDoAgain={chooseNewFile}
+          onCombine={() => combining = true}
         />
+        {#if combining}
+          <CombineFlow
+            {catalog}
+            onRun={onRunComposition}
+            onClose={() => combining = false}
+          />
+        {/if}
       </section>
     {/if}
   </div>

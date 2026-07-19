@@ -6,6 +6,35 @@ import { formatClock, pipelineSegments, stepTool } from "./receipt-view.ts";
 import { stepDuration, totalDuration } from "./run-view.ts";
 
 describe("running-state event clock", () => {
+  test("renders a combined run as zero-call stage-indexed local work", () => {
+    let state = reduceClientEvent(createRunProgress(), {
+      type: "run_composition", name: "media-chain",
+      workflow_ids: ["convert-media-to-mp4", "transcribe-video-to-srt"],
+      staged_input_id: "d9428888-122b-4e7f-a15b-3f708bc090f1",
+    });
+    state = reduceServerEvent(state, {
+      type: "composition_run_started", run_id: "chain",
+      action: "create", workflow_id: "media-chain",
+    }, 100);
+    expect(state.steps.plan).toEqual({ status: "active", startedAt: 100 });
+    state = reduceServerEvent(state, {
+      type: "model_call_count", run_id: "chain", model_calls: 0,
+    }, 110);
+    state = reduceServerEvent(state, {
+      type: "composition_command_started", run_id: "chain",
+      stage_index: 0, source_id: "convert-media-to-mp4", command_index: 0,
+    }, 120);
+    expect(state.request).toEqual({
+      kind: "composition", description: "media-chain", files: ["Selected local file"],
+    });
+    expect(state.steps.probe.status).toBe("skipped");
+    expect(state.steps.plan).toMatchObject({
+      status: "complete", note: "0 model calls",
+    });
+    expect(state.command).toBe("Stage 1 · convert media to mp4 · command 1");
+    expect(JSON.stringify(state)).not.toContain("d9428888");
+  });
+
   test("shows a direct saved-workflow selection as a zero-model plan", () => {
     let state = reduceClientEvent(createRunProgress(), {
       type: "run_saved_workflow",

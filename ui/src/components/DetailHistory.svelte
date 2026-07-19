@@ -33,10 +33,13 @@
         </header>
         <p class="detail-run-file">{fileName(run.files[0] ?? "")}</p>
         <div class="detail-evidence">
-          {#each run.checks as check (check.name)}
+          {#each run.checks as check (`${check.stageIndex ?? "atomic"}:${check.sourceId ?? ""}:${check.name}`)}
             <div data-status={check.status}>
               <span class="evidence-status" aria-hidden="true"></span>
-              <strong>{check.name.replaceAll("_", " ")}</strong>
+              <strong>
+                {#if check.stageIndex !== undefined}Stage {check.stageIndex + 1} · {/if}
+                {check.name.replaceAll("_", " ")}
+              </strong>
               <span><em>Expected</em>{check.expected ?? "—"}</span>
               <span><em>Actual</em>{check.actual ?? "—"}</span>
             </div>
