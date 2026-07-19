@@ -1,9 +1,9 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Plan } from "./plan.ts";
-import { load, match, renderRecipe, save } from "./recipes.ts";
+import { load, match, RECIPES_DIRECTORY, renderRecipe, save } from "./recipes.ts";
 import type { SaveRecipeInput } from "./recipe-types.ts";
 import { relativeSourceGraph } from "./source-graph.ts";
 import type { VerificationResult } from "./verify/index.ts";
@@ -51,6 +51,16 @@ function input(verification = evidence()): SaveRecipeInput {
 }
 
 describe("recipes", () => {
+  test("loads every shipped atomic record without enriching its shape", () => {
+    const expected = readdirSync(RECIPES_DIRECTORY)
+      .filter((name) => name.endsWith(".json"))
+      .sort()
+      .map((name) => JSON.parse(readFileSync(join(RECIPES_DIRECTORY, name), "utf8")));
+    expect(expected).toHaveLength(7);
+    expect(load()).toEqual(expected);
+    expect(load().every((recipe) => !Object.hasOwn(recipe, "composition_contract"))).toBe(true);
+  });
+
   test("saves only when every planned check is green", () => {
     const failedDirectory = join(root, "failed");
     const failed = evidence();

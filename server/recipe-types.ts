@@ -5,8 +5,10 @@ import type { Plan, PlanCheck, PlanTool } from "./plan.ts";
 import type { SystemProfile } from "./probe.ts";
 import type { VerificationResult } from "./verify/index.ts";
 import type { TrustedResourceId } from "./trusted-resources.ts";
+import type { CompositionContract } from "./composition-contract.ts";
 
-export interface Recipe {
+export interface AtomicRecipe {
+  kind?: "atomic";
   name: string;
   task_signature?: string;
   replaced_service?: string;
@@ -22,6 +24,30 @@ export interface Recipe {
   resources?: TrustedResourceId[];
 }
 
+export interface CompositionStage {
+  source_id: string;
+  command_template: AtomicRecipe["command_template"];
+  checks: PlanCheck[];
+  tool: PlanTool;
+  install_weight: InstallWeight;
+  derivations?: Derivations;
+  intermediates?: string[];
+  resources?: TrustedResourceId[];
+  composition_contract: CompositionContract;
+}
+
+export interface CompositionRecipe {
+  kind: "composition";
+  name: string;
+  created_at: string;
+  arch: string;
+  stages: CompositionStage[];
+  composition_contract: CompositionContract;
+}
+
+export type Recipe = AtomicRecipe;
+export type SavedRecipe = AtomicRecipe | CompositionRecipe;
+
 export interface SaveRecipeInput {
   plan: Plan;
   taskDescription?: string;
@@ -32,7 +58,7 @@ export interface SaveRecipeInput {
 }
 
 export interface RecipeMatch {
-  recipe: Recipe;
+  recipe: AtomicRecipe;
   confidence: number;
 }
 

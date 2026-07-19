@@ -1,16 +1,15 @@
-import { randomUUID } from "node:crypto";
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { executePlan } from "./executor.ts";
 import { discardFailedOutput } from "./failed-output.ts";
-import {
-  exactTaskRecipe, recipeConfidence, recipeMatchesIntent, semanticTaskSignature,
-} from "./recipe-match.ts";
+import { exactTaskRecipe, recipeConfidence, recipeMatchesIntent, semanticTaskSignature } from "./recipe-match.ts";
 import { allocatePlanOutput } from "./output-allocation.ts";
 import { renderRecipe, templatizePlan } from "./recipe-template.ts";
 import { runtimeRecipeSlots } from "./recipe-runtime.ts";
-import type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
-import { validateRecipe } from "./recipe-validation.ts";
+import type { AtomicRecipe, Recipe, RecipeMatch, RecipeRun,
+  RerunOptions, SaveRecipeInput, SavedRecipe } from "./recipe-types.ts";
+import { isAtomicRecipe, validateRecipe, validateSavedRecipe } from "./recipe-validation.ts";
+import { persistRecipe } from "./recipe-persistence.ts";
 import { probeSystem } from "./probe.ts";
 import { replacementClaimFor } from "./replacement-prices.ts";
 import { installWeightFor } from "./tools.ts";
@@ -23,7 +22,7 @@ const MATCH_LEAD = 0.15;
 export function save(
   input: SaveRecipeInput,
   directory = RECIPES_DIRECTORY,
-): Recipe | null {
+): AtomicRecipe | null {
   const checksGreen =
     input.verification.length === input.plan.checks.length &&
     input.verification.every((check, index) =>
@@ -48,19 +47,11 @@ export function save(
     ...(input.plan.intermediates ? { intermediates: input.plan.intermediates } : {}),
     ...(input.plan.resources ? { resources: input.plan.resources } : {}),
   });
-  mkdirSync(directory, { recursive: true });
-  const destination = join(directory, `${recipe.name}.json`);
-  const temporary = join(directory, `.${recipe.name}.${randomUUID()}.tmp`);
-  try {
-    writeFileSync(temporary, `${JSON.stringify(recipe, null, 2)}\n`, { flag: "wx" });
-    renameSync(temporary, destination);
-  } finally {
-    rmSync(temporary, { force: true });
-  }
+  persistRecipe(recipe, directory);
   return recipe;
 }
 
-export function load(directory = RECIPES_DIRECTORY): Recipe[] {
+export function loadSaved(directory = RECIPES_DIRECTORY): SavedRecipe[] {
   if (!existsSync(directory)) return [];
   return readdirSync(directory)
     .filter((name) => name.endsWith(".json"))
@@ -75,8 +66,12 @@ export function load(directory = RECIPES_DIRECTORY): Recipe[] {
       } catch (error) {
         throw new Error(`recipe JSON is invalid (${name}): ${error instanceof Error ? error.message : String(error)}`);
       }
-      return validateRecipe(parsed);
+      return validateSavedRecipe(parsed);
     });
+}
+
+export function load(directory = RECIPES_DIRECTORY): Recipe[] {
+  return loadSaved(directory).filter(isAtomicRecipe);
 }
 
 export function match(
@@ -99,7 +94,7 @@ export function match(
 }
 
 export async function rerun(
-  recipe: Recipe,
+  recipe: AtomicRecipe,
   files: string[],
   options: RerunOptions = {},
 ): Promise<RecipeRun> {
@@ -129,4 +124,5 @@ export async function rerun(
 }
 
 export { renderRecipe } from "./recipe-template.ts";
-export type { Recipe, RecipeMatch, RecipeRun, RerunOptions, SaveRecipeInput } from "./recipe-types.ts";
+export type { AtomicRecipe, CompositionRecipe, Recipe, RecipeMatch, RecipeRun,
+  RerunOptions, SaveRecipeInput, SavedRecipe } from "./recipe-types.ts";

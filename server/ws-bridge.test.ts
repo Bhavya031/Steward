@@ -1,13 +1,43 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { createWorkflowCatalogSender, createWsBridge } from "./ws-bridge.ts";
 import type { runEngineEvent } from "./ws-engine.ts";
 import { parseClientEvent, type ServerEvent } from "./ws-events.ts";
+import { RECIPES_DIRECTORY } from "./recipes.ts";
+import type { AtomicRecipe } from "./recipe-types.ts";
 
 type EngineRunner = typeof runEngineEvent;
 
 class FakeSocket {
   messages: ServerEvent[] = [];
-  send(raw: string): void { this.messages.push(JSON.parse(raw) as ServerEvent); }
+  rawMessages: string[] = [];
+  send(raw: string): void {
+    this.rawMessages.push(raw);
+    this.messages.push(JSON.parse(raw) as ServerEvent);
+  }
+}
+
+function legacyCatalogRecords(): AtomicRecipe[] {
+  return readdirSync(RECIPES_DIRECTORY).filter((name) => name.endsWith(".json")).sort().map((name) => {
+    const raw = JSON.parse(readFileSync(join(RECIPES_DIRECTORY, name), "utf8"));
+    return {
+      name: raw.name,
+      command_template: raw.command_template,
+      checks: raw.checks,
+      created_at: raw.created_at,
+      arch: raw.arch,
+      tool: raw.tool,
+      install_weight: raw.install_weight,
+      ...(raw.task_signature ? { task_signature: raw.task_signature } : {}),
+      ...(raw.replaced_service ? {
+        replaced_service: raw.replaced_service, monthly_price: raw.monthly_price,
+      } : {}),
+      ...(raw.derivations ? { derivations: raw.derivations } : {}),
+      ...(raw.intermediates ? { intermediates: raw.intermediates } : {}),
+      ...(raw.resources ? { resources: raw.resources } : {}),
+    };
+  });
 }
 
 describe("typed WebSocket protocol", () => {
@@ -38,8 +68,11 @@ describe("typed WebSocket protocol", () => {
   test("sends the real validated saved-workflow catalog", () => {
     const socket = new FakeSocket();
     createWorkflowCatalogSender()(socket);
+    const expected: ServerEvent = { type: "workflow_catalog", workflows: legacyCatalogRecords() };
+    expect(expected.workflows).toHaveLength(7);
     expect(socket.messages).toHaveLength(1);
-    expect(socket.messages[0]).toMatchObject({ type: "workflow_catalog" });
+    expect(socket.messages[0]).toEqual(expected);
+    expect(socket.rawMessages).toEqual([JSON.stringify(expected)]);
     const catalog = socket.messages[0];
     if (catalog?.type !== "workflow_catalog") throw new Error("catalog was not sent");
     expect(catalog.workflows.length).toBeGreaterThan(0);

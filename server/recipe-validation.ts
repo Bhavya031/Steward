@@ -1,61 +1,70 @@
-import { CHECK_TYPES, type CheckTarget, type PlanCheck, type PlanCheckType, type PlanTool } from "./plan.ts";
-import { checkSemanticError } from "./check-policy.ts";
-import { validateCommandSlots, validateDerivations, type Derivations } from "./derivations.ts";
-import { validateIntermediates } from "./intermediate-policy.ts";
-import type { Recipe } from "./recipe-types.ts";
-import { TOOL_POLICIES, type InstallWeight } from "./tools.ts";
-import { resourceSlot, validateResources, type TrustedResourceId } from "./trusted-resources.ts";
+import {
+  deriveCompositionContract, sameCompositionContract, type CompositionContract,
+} from "./composition-contract.ts";
+import {
+  compositionSourceId, validateCompositionContract, validateCompositionRecipe,
+} from "./composition-validation.ts";
+import type { AtomicRecipe, CompositionStage, SavedRecipe } from "./recipe-types.ts";
+import { validateSnapshotBody, type SnapshotBody } from "./recipe-snapshot-validation.ts";
 
-const REQUIRED_RECIPE_KEYS = [
-  "name", "command_template", "checks",
-  "created_at", "arch", "tool", "install_weight",
+const REQUIRED_ATOMIC_KEYS = [
+  "name", "command_template", "checks", "created_at", "arch", "tool", "install_weight",
 ];
-const RECIPE_KEYS = [
-  ...REQUIRED_RECIPE_KEYS, "replaced_service", "monthly_price", "derivations", "intermediates",
+const ATOMIC_KEYS = [
+  ...REQUIRED_ATOMIC_KEYS, "kind", "replaced_service", "monthly_price", "derivations", "intermediates",
   "resources", "task_signature",
 ];
-const CHECK_TYPE_SET = new Set<string>(CHECK_TYPES);
+const REQUIRED_STAGE_KEYS = [
+  "source_id", "command_template", "checks", "tool", "install_weight", "composition_contract",
+];
+const STAGE_KEYS = [...REQUIRED_STAGE_KEYS, "derivations", "intermediates", "resources"];
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function exactKeys(value: Record<string, unknown>, keys: string[]): boolean {
-  const actual = Object.keys(value);
-  return actual.length === keys.length && actual.every((key) => keys.includes(key));
 }
 
 function safeString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && !value.includes("\0");
 }
 
-function validateChecks(value: unknown): PlanCheck[] {
-  if (!Array.isArray(value) || value.length === 0) throw new Error("recipe checks must be non-empty");
-  const checks = value.map((check, index) => {
-    if (!record(check) || !exactKeys(check, ["type", "target"])) {
-      throw new Error(`recipe checks[${index}] is malformed`);
-    }
-    if (!safeString(check.type) || !CHECK_TYPE_SET.has(check.type)) {
-      throw new Error(`recipe checks[${index}].type is unsupported`);
-    }
-    if (!["string", "number", "boolean"].includes(typeof check.target)) {
-      throw new Error(`recipe checks[${index}].target is unsupported`);
-    }
-    return { type: check.type as PlanCheckType, target: check.target as CheckTarget };
-  });
-  const semanticError = checkSemanticError(checks);
-  if (semanticError) throw new Error(`recipe checks are invalid: ${semanticError}`);
-  return checks;
+function legacyAtomicSlug(value: unknown): value is string {
+  return safeString(value) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
-export function validateRecipe(value: unknown): Recipe {
-  if (!record(value) || !Object.keys(value).every((key) => RECIPE_KEYS.includes(key)) ||
-      !REQUIRED_RECIPE_KEYS.every((key) => Object.hasOwn(value, key))) {
+function validatedContract(
+  value: unknown, body: SnapshotBody, required: boolean,
+): CompositionContract | undefined {
+  const derived = deriveCompositionContract(body);
+  if (value === undefined) {
+    if (required) throw new Error("composition stage contract is required");
+    return derived ?? undefined;
+  }
+  const persisted = validateCompositionContract(value);
+  if (!derived || !sameCompositionContract(persisted, derived)) {
+    throw new Error("persisted composition contract does not match the validated command and checks");
+  }
+  return persisted;
+}
+
+function validateStage(value: unknown, index: number): CompositionStage {
+  if (!record(value) || !Object.keys(value).every((key) => STAGE_KEYS.includes(key)) ||
+      !REQUIRED_STAGE_KEYS.every((key) => Object.hasOwn(value, key))) {
+    throw new Error(`composition stages[${index}] shape is invalid`);
+  }
+  const body = validateSnapshotBody(value);
+  return {
+    source_id: compositionSourceId(value.source_id, index), ...body,
+    composition_contract: validatedContract(value.composition_contract, body, true)!,
+  };
+}
+
+function validateAtomicRecipe(value: Record<string, unknown>): AtomicRecipe {
+  if (!Object.keys(value).every((key) => ATOMIC_KEYS.includes(key)) ||
+      !REQUIRED_ATOMIC_KEYS.every((key) => Object.hasOwn(value, key)) ||
+      value.kind !== undefined && value.kind !== "atomic") {
     throw new Error("recipe shape is invalid");
   }
-  if (!safeString(value.name) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.name)) {
-    throw new Error("recipe name must be a lowercase slug");
-  }
+  if (!legacyAtomicSlug(value.name)) throw new Error("recipe name must be a lowercase slug");
   const hasService = Object.hasOwn(value, "replaced_service");
   const hasPrice = Object.hasOwn(value, "monthly_price");
   if (hasService !== hasPrice) throw new Error("recipe replacement claim must include service and price");
@@ -64,58 +73,23 @@ export function validateRecipe(value: unknown): Recipe {
       !Number.isFinite(value.monthly_price) || value.monthly_price < 0)) {
     throw new Error("recipe monthly_price is invalid");
   }
-  if (!record(value.command_template) || !exactKeys(value.command_template, ["commands", "output_path"])) {
-    throw new Error("recipe command_template is invalid");
-  }
-  const commands = value.command_template.commands;
-  if (!Array.isArray(commands) || commands.length === 0 || commands.length > 8 ||
-      !commands.every((argv) => Array.isArray(argv) && argv.length > 0 && argv.every(safeString)) ||
-      !safeString(value.command_template.output_path)) {
-    throw new Error("recipe command template strings are invalid");
-  }
-  const derivations: Derivations | undefined = value.derivations === undefined
-    ? undefined : validateDerivations(value.derivations);
-  const intermediates = value.intermediates === undefined
-    ? undefined : validateIntermediates(value.intermediates);
-  const resources: TrustedResourceId[] | undefined = value.resources === undefined
-    ? undefined : validateResources(value.resources);
-  const resourceSlots = new Set((resources ?? []).map(resourceSlot));
-  validateCommandSlots(commands, derivations, (slot) =>
-    slot === "temp_dir" || /^input_\d+(?:_(?:dir|name|stem|ext))?$/.test(slot) ||
-    resourceSlots.has(slot)
-  );
-  if (!value.command_template.output_path.startsWith("{{input_0_dir}}/")) {
-    throw new Error("recipe output must remain inside the first input directory");
-  }
-  if (!safeString(value.tool) || value.tool === "brew" || !Object.hasOwn(TOOL_POLICIES, value.tool)) {
-    throw new Error("recipe tool is not allowlisted");
-  }
-  const tool = value.tool as PlanTool;
-  if (commands.at(-1)?.[0] !== tool ||
-      !commands.every((argv) => argv[0] !== "brew" && Object.hasOwn(TOOL_POLICIES, argv[0]!))) {
-    throw new Error("recipe commands must be allowlisted and end with the primary tool");
-  }
-  const expectedWeight = TOOL_POLICIES[tool].install_weight;
-  if (value.install_weight !== expectedWeight) throw new Error("recipe install_weight does not match policy");
   if (!safeString(value.created_at) || !Number.isFinite(Date.parse(value.created_at))) {
     throw new Error("recipe created_at is invalid");
   }
   if (!safeString(value.arch)) throw new Error("recipe arch is invalid");
-  const recipe: Recipe = {
+  const body = validateSnapshotBody(value);
+  const recipe: AtomicRecipe = {
+    ...(value.kind === "atomic" ? { kind: "atomic" as const } : {}),
     name: value.name,
-    command_template: {
-      commands: commands.map((argv) => [...argv]),
-      output_path: value.command_template.output_path,
-    },
-    checks: validateChecks(value.checks),
+    command_template: body.command_template,
+    checks: body.checks,
     created_at: value.created_at,
     arch: value.arch,
-    tool,
-    install_weight: value.install_weight as InstallWeight,
+    tool: body.tool,
+    install_weight: body.install_weight,
   };
   if (value.task_signature !== undefined) {
-    if (typeof value.task_signature !== "string" ||
-        !/^sha256:[0-9a-f]{64}$/.test(value.task_signature)) {
+    if (typeof value.task_signature !== "string" || !/^sha256:[0-9a-f]{64}$/.test(value.task_signature)) {
       throw new Error("recipe task_signature is invalid");
     }
     recipe.task_signature = value.task_signature;
@@ -124,8 +98,26 @@ export function validateRecipe(value: unknown): Recipe {
     recipe.replaced_service = value.replaced_service as string;
     recipe.monthly_price = value.monthly_price as number;
   }
-  if (derivations) recipe.derivations = derivations;
-  if (intermediates) recipe.intermediates = intermediates;
-  if (resources) recipe.resources = resources;
+  if (body.derivations) recipe.derivations = body.derivations;
+  if (body.intermediates) recipe.intermediates = body.intermediates;
+  if (body.resources) recipe.resources = body.resources;
   return recipe;
 }
+
+export function isAtomicRecipe(recipe: SavedRecipe): recipe is AtomicRecipe {
+  return recipe.kind !== "composition";
+}
+
+export function validateSavedRecipe(value: unknown): SavedRecipe {
+  if (record(value) && value.kind === "composition") return validateCompositionRecipe(value, validateStage);
+  if (!record(value)) throw new Error("recipe shape is invalid");
+  return validateAtomicRecipe(value);
+}
+
+export function validateAtomic(value: unknown): AtomicRecipe {
+  const recipe = validateSavedRecipe(value);
+  if (!isAtomicRecipe(recipe)) throw new Error("composition recipe requires the composition runtime");
+  return recipe;
+}
+
+export const validateRecipe = validateAtomic;
