@@ -16,6 +16,7 @@ export interface ValidatedPaths {
 export interface CommandPathOptions {
   requireOutput?: boolean;
   temporaryDirectory?: string | null;
+  additionalOutputRoots?: string[];
   declaredIntermediates?: string[];
   readableIntermediates?: string[];
   trustedInputs?: string[];
@@ -64,6 +65,7 @@ export function validateCommandPaths(
   const outputRoots = [
     ...inputs.map((input) => dirname(input.real)),
     ...(temporaryDirectory ? [temporaryDirectory] : []),
+    ...(options.additionalOutputRoots ?? []),
   ];
   const output = validateOutput(outputPath, outputRoots);
   const inputAliases = new Set(inputs.flatMap((input) => [input.raw, input.real]));

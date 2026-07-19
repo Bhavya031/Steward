@@ -35,6 +35,15 @@ function replaceOutput(value: string, from: string, to: string): string {
   return value;
 }
 
+export function allocateAvailableOutput(requested: string, roots: string[]): string {
+  for (let number = 1; number < Number.MAX_SAFE_INTEGER; number += 1) {
+    const next = candidate(requested, number);
+    if (occupied(next)) continue;
+    return validateOutput(next, roots).real;
+  }
+  throw new Error("could not allocate an available output path");
+}
+
 export function allocatePlanOutput(plan: Plan, inputPaths: string[]): Plan {
   const rawInputs = inputPaths.map((path) => resolve(path));
   const inputs = rawInputs.map((path) => realpathSync(path));
@@ -42,14 +51,7 @@ export function allocatePlanOutput(plan: Plan, inputPaths: string[]): Plan {
   const requested = resolve(plan.output_path);
   const requestedIsInput = inputAliases.has(requested);
   const roots = inputs.map(dirname);
-  let resolved: string | undefined;
-  for (let number = 1; number < Number.MAX_SAFE_INTEGER; number += 1) {
-    const next = candidate(requested, number);
-    if (occupied(next)) continue;
-    resolved = validateOutput(next, roots).real;
-    break;
-  }
-  if (!resolved) throw new Error("could not allocate an available output path");
+  const resolved = allocateAvailableOutput(requested, roots);
   const commands = plan.commands.map((command) => {
     const rewritten = [...command];
     for (const path of classifyCommand(plan.tool, command)) {

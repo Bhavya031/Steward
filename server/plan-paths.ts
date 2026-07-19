@@ -9,6 +9,7 @@ export function validatePlanPaths(
   runtime: RuntimeCommands,
   inputPaths: unknown,
   trustedInputs: string[] = [],
+  additionalOutputRoots: string[] = [],
 ): void {
   if (runtime.intermediates.length > 0 && !runtime.directory) {
     throw new ExecutionError("declared intermediates require a Steward temp root");
@@ -21,6 +22,7 @@ export function validatePlanPaths(
     const checked = validateCommandPaths(command[0] as Plan["tool"], command, inputPaths, plan.output_path, {
       requireOutput: index === runtime.commands.length - 1,
       temporaryDirectory: runtime.directory,
+      additionalOutputRoots,
       declaredIntermediates: declared,
       readableIntermediates: [...produced],
       trustedInputs,

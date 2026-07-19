@@ -1,4 +1,5 @@
 import { constants, accessSync } from "node:fs";
+import { compositionOutputRoots } from "./composition-output-root.ts";
 import { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
 import { boundedTimeout, resolveBinary, summarizeExecution } from "./execution-policy.ts";
 import { buildGhostscriptDocumentCommand, type GhostscriptDocumentQuery } from "./document-policy.ts";
@@ -16,7 +17,6 @@ import { enforceManagedPasslogs } from "./two-pass-policy.ts";
 import { fillResourceSlots, resourceSlots } from "./trusted-resources.ts";
 
 export { ExecutionError, MAX_EXECUTION_MS, type ExecutionEvent, type ExecutionOptions, type ExecutionResult, type PlanExecutionResult } from "./execution-types.ts";
-
 async function runBinary(
   binary: string, executable: string, args: string[], options: ExecutionOptions,
 ): Promise<ExecutionResult> {
@@ -63,12 +63,12 @@ async function runBinary(
     if (forceTimer) clearTimeout(forceTimer);
   }
 }
-
 export async function executePlan(
   untrustedPlan: unknown,
   profile: SystemProfile,
   inputPaths: unknown,
   options: ExecutionOptions = {},
+  outputRootCapability?: unknown,
 ): Promise<PlanExecutionResult> {
   const plan: Plan = validatePlan(untrustedPlan);
   if (plan.install_cmd !== null) {
@@ -79,13 +79,15 @@ export async function executePlan(
     throw new ExecutionError(`trusted resources require installation: ${resources.missing.join(", ")}`);
   }
   const timeoutMs = boundedTimeout(options.timeoutMs);
+  const additionalOutputRoots = outputRootCapability === undefined
+    ? [] : compositionOutputRoots(outputRootCapability);
   const commands = fillResourceSlots(plan.commands, resources.slots);
   const runtime = materializeRuntimeCommands(commands, plan.intermediates);
   const isolatedProfile = commands.some((command) => command[0] === "soffice")
     ? createSofficeProfile() : null;
   try {
     enforceManagedPasslogs(runtime.commands, runtime.directory);
-    validatePlanPaths(plan, runtime, inputPaths, resources.trustedPaths);
+    validatePlanPaths(plan, runtime, inputPaths, resources.trustedPaths, additionalOutputRoots);
     const results: ExecutionResult[] = [];
     const started = performance.now();
     for (const command of runtime.commands) {
@@ -105,7 +107,6 @@ export async function executePlan(
     runtime.cleanup();
   }
 }
-
 export async function executeInstall(
   tool: unknown, proposedArgv: unknown, profile: SystemProfile, heavyConfirmed: unknown,
   options: ExecutionOptions = {},
@@ -113,7 +114,6 @@ export async function executeInstall(
   const install = validateInstallProposal(tool, proposedArgv, profile, heavyConfirmed);
   return runBinary("brew", resolveBinary("brew", profile), install.argv.slice(1), options);
 }
-
 export async function executeHelperStep(
   untrustedStep: unknown, grants: unknown,
   options: ExecutionOptions = {},
@@ -127,7 +127,6 @@ export async function executeHelperStep(
   }
   return runBinary(step.tool, executable, step.command.slice(1), options);
 }
-
 export async function executeFfprobe(
   query: FfprobeQuery, inputPath: unknown, profile: SystemProfile,
   options: ExecutionOptions = {},
@@ -135,7 +134,6 @@ export async function executeFfprobe(
   const command = buildFfprobeCommand(query, inputPath);
   return runBinary("ffprobe", resolveBinary("ffprobe", profile), command.slice(1), options);
 }
-
 export async function executeLoudnessScan(
   inputPath: unknown, profile: SystemProfile,
   options: ExecutionOptions = {},
@@ -143,7 +141,6 @@ export async function executeLoudnessScan(
   const command = buildLoudnessCommand(inputPath);
   return runBinary("ffmpeg", resolveBinary("ffmpeg", profile), command.slice(1), options);
 }
-
 export async function executeGhostscriptDocument(
   query: GhostscriptDocumentQuery, inputPath: unknown, profile: SystemProfile,
   options: ExecutionOptions = {},
