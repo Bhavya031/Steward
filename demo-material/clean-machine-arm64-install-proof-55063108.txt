@@ -1,0 +1,124 @@
+STEWARD CLEAN-MACHINE APPLE SILICON INSTALLATION PROOF
+Date: 2026-07-19
+Target commit: 55063108ef0330442806afef4bb71511023521a5
+Result: PASS
+
+SCOPE AND ISOLATION
+- Used a new disposable clone at the exact target commit.
+- Used a completely fresh HOME nested under the disposable proof root.
+- Automatic cleanup remained disabled; temporary roots were left intact.
+- Authentication credentials and all private/temporary paths are redacted.
+- Product code and global package state were not modified.
+- The integration/submission worktree was clean before the proof.
+
+HARNESS HISTORY
+- Attempt 1 aborted before cloning: a zsh loop variable named "path" overwrote PATH.
+- Attempt 2 aborted during environment capture: sanitized PATH omitted the captured
+  user-level Bun directory; a GNU-only stat option was also incompatible with macOS.
+- Attempt 3 was rejected before execution because an automatic rm -rf cleanup trap
+  violated the command-safety guard.
+- Attempt 4 aborted during preflight because the harness hardcoded a nonexistent
+  /usr/bin/mkdir path on macOS.
+- Attempt 5 reached the second install but aborted because the harness incorrectly
+  required fresh HOME to contain zero files and rejected permitted isolated Bun
+  dependency-cache files.
+- Final harness used a safe PATH, command discovery, macOS stat -f, strict execution,
+  no automatic cleanup, and an allowlist for isolated HOME state.
+- Final harness preflight passed, including a deliberate failure proving that the
+  next command did not run.
+
+ENVIRONMENT
+- macOS: 26.4.1
+- uname architecture: arm64
+- arch: arm64
+- Homebrew path: /opt/homebrew/bin/brew
+- Homebrew prefix: /opt/homebrew
+- Homebrew version: Homebrew 6.0.11-102-g4bb472f
+- Bun version: 1.2.8
+- Git version: Apple Git 2.50.1
+- Fresh HOME initial mode: 700
+- Clone HEAD before and after: 55063108ef0330442806afef4bb71511023521a5
+
+FIRST INSTALL
+- Command: ./install.sh
+- Exit status: 0
+- Reused the already-installed Bun binary; no Bun or Homebrew installation ran.
+- Locked install used the committed bun.lockb.
+- Installed 52 project-local packages.
+- bun.lockb hash remained unchanged.
+- Production UI build succeeded: 144 modules transformed.
+- ui/dist/index.html and hashed production assets were present.
+- Installer printed the documented startup command:
+  bun run server/index.ts --serve
+- Steward cache mode: 700
+- Steward models cache mode: 700
+- Steward models cache: empty
+- Fresh HOME contained only permitted Bun cache entries and the required Steward
+  cache/models directories.
+- The build emitted a Node-version compatibility warning (Node 22.6.0 versus Vite's
+  stated 22.12+ requirement), but Vite completed successfully with exit status 0
+  and the built UI was subsequently loaded and exercised.
+
+PRODUCTION STARTUP AND AUTHENTICATION
+- Started with: bun run server/index.ts --serve
+- Server configuration requested port 0.
+- Runtime selected random port 55300.
+- Listener was IPv4 127.0.0.1 only; no wildcard or IPv6 listener was present.
+- Production index response loaded successfully.
+- Production JavaScript asset response loaded successfully.
+- HTTP without authentication: 401
+- HTTP with incorrect authentication: 401
+- HTTP with correct authentication: 200
+- WebSocket without authentication: rejected
+- WebSocket with incorrect authentication: rejected
+- Authenticated WebSocket: connected and received the workflow catalog
+- In-app browser loaded the rendered Steward production UI.
+- After authenticated bootstrap, the visible URL was:
+  http://127.0.0.1:55300/
+- The visible URL contained no authentication credential and no query string.
+
+SHUTDOWN
+- Steward was stopped with an interrupt.
+- The recorded server process exited.
+- No recorded child process remained.
+- No listener remained on runtime port 55300.
+
+SECOND INSTALL / IDEMPOTENCY
+- Command: ./install.sh
+- Exit status: 0
+- Reused the already-installed Bun binary again.
+- Dependency result: 52 installs checked, no changes.
+- Production UI rebuilt successfully: 144 modules transformed.
+- Production asset hashes were identical to the first build.
+- bun.lockb remained unchanged.
+- Steward cache and models cache retained mode 700.
+- Steward models cache remained empty.
+- Fresh HOME passed the strict allowlist: only Bun dependency-cache entries and the
+  empty Steward cache/models directories existed.
+- Disposable clone remained completely clean.
+
+DEPENDENCY AND GLOBAL-STATE ACCOUNTING
+- Homebrew, Bun, and Git already existed before the proof.
+- FFmpeg already existed before the proof and remained unchanged.
+- OCRmyPDF already existed before the proof and remained unchanged.
+- whisper-cli already existed before the proof and remained unchanged.
+- whisper-cpp was absent before the proof and remained absent.
+- Homebrew formula inventory was byte-for-byte unchanged across both installs.
+- No workflow tool, Whisper resource, model, workflow, receipt, or other Steward
+  state was installed into the fresh HOME.
+- The only newly installed dependencies were the 52 project-local packages in the
+  disposable clone.
+
+FINAL INTEGRITY
+- Disposable clone remained clean at the exact target commit.
+- integration/submission HEAD remained at the target commit throughout the proof.
+- Integration worktree and diff fingerprints were unchanged before report creation.
+- Real Steward HOME/state fingerprint was unchanged.
+- No proof server listener remained.
+- main was not touched.
+
+RAW EVIDENCE
+- Raw installer, listener, HTTP, WebSocket, browser, process, inventory, fingerprint,
+  and comparison evidence remains under the intact disposable proof root.
+- Its location is intentionally omitted here and must be reported separately for
+  explicitly approved cleanup.
