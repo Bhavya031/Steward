@@ -54,12 +54,19 @@ const TOOL_DEFINITIONS: ToolDefinition[] = [
   { name: "soffice", binaries: ["soffice"], versionArgs: ["--version"] },
 ];
 
-function runFixed(argv: string[]): string | null {
+const DEFAULT_PROBE_TIMEOUT_MS = 5_000;
+export const HOMEBREW_PROBE_TIMEOUT_MS = 750;
+
+function runFixed(
+  argv: string[],
+  timeout = DEFAULT_PROBE_TIMEOUT_MS,
+): string | null {
   try {
     const result = Bun.spawnSync(argv, {
       stdout: "pipe",
       stderr: "pipe",
-      timeout: 5_000,
+      timeout,
+      killSignal: "SIGKILL",
     });
     if (result.exitCode !== 0) return null;
     const output = `${result.stdout.toString()}\n${result.stderr.toString()}`.trim();
@@ -67,6 +74,13 @@ function runFixed(argv: string[]): string | null {
   } catch {
     return null;
   }
+}
+
+export function runHomebrewProbe(
+  brewBinary: string,
+  args: string[],
+): string | null {
+  return runFixed([brewBinary, ...args], HOMEBREW_PROBE_TIMEOUT_MS);
 }
 
 function executableAt(path: string): boolean {
@@ -107,7 +121,9 @@ function probeTool(
   const binary = findBinary(definition.binaries, directories);
   const formulaVersion =
     binary && definition.brewFormula && brewBinary
-      ? runFixed([brewBinary, "list", "--versions", definition.brewFormula])
+      ? runHomebrewProbe(brewBinary, [
+        "list", "--versions", definition.brewFormula,
+      ])
       : null;
   return {
     name: definition.name,
@@ -139,9 +155,9 @@ export function probeSystem(): SystemProfile {
       installed: brewBinary !== null,
       install_weight: installWeightFor("brew"),
       binary: brewBinary,
-      version: brewBinary ? runFixed([brewBinary, "--version"]) : null,
+      version: brewBinary ? runHomebrewProbe(brewBinary, ["--version"]) : null,
       expectedPrefix,
-      actualPrefix: brewBinary ? runFixed([brewBinary, "--prefix"]) : null,
+      actualPrefix: brewBinary ? runHomebrewProbe(brewBinary, ["--prefix"]) : null,
     },
     tools: TOOL_DEFINITIONS.map((tool) => probeTool(tool, directories, brewBinary)),
   };
