@@ -6,6 +6,7 @@ bunfig.toml:C—
 MAP.md:D—
 GUIDE.md:D—
 AUDIT.md:D—
+install.sh:X—
 package.json:CX
 README.md:D—
 tsconfig.json:C—
@@ -95,6 +96,7 @@ server/installation-runtime.ts:EA
 server/index.ts:EM
 server/install-policy.ts:SA
 server/input-staging.ts:SA
+server/install-script.test.ts:T—
 server/local-server.test.ts:T—
 server/local-server.ts:SA
 server/loudness-policy.ts:SA

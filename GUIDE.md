@@ -5,3 +5,21 @@ Recipe 6: verified `ffmpeg→managed WAV→whisper-cli→SRT`; per-command allow
 Now: Phase 3 includes the saved-command Detail view, visible task-input flow, deterministic collision-safe output allocation, and event-backed pipeline state/timing. Browser-selected bytes are token-staged into unique confined Steward temp inputs before the existing typed `run_task` event; task text, picker/drop selection, example chips, Detail history/Run Again, installation continuation, suffixed output paths, skipped stages, and authoritative command/verification timing remain real.
 Rules: ≤150L; heavy ask; `gpt-5.6-sol`; executor-only spawn; recipes≠agent; argv[][]; schema re-frozen after owner-approved `name`; checks are target-validated before execution; repairs preserve canonical name plus fixed checks; repair≤3/evidence-only; pre-spawn rejections consume/log attempts while retaining measured evidence; outputs confined; ordinary intermediates must be declared direct `{{temp_dir}}` children, become readable only after write, and always clean; argv positively classified; failed outputs removed; recipe=authored plan; non-path slots require serialized model-declared derivations; baked loudnorm measurements cannot save; prices use lowest annual-billing monthly rate; unknown=no claim; kill total dedupes service; match ≥0.45 + lead ≥0.15; WS accepts exact typed JSON ≤64KiB and one active run/socket; UI has one module-scoped socket, token from startup URL, exhaustive stores, no component logic.
 Risks: Brew `/opt/homebrew|/usr/local`; isolate `soffice`; passlogs/null sinks are executor-owned temp artifacts; shared loudness scan/file/run; ≤-69 LUFS=silent fail; PDF parse/text=GS only; OCR source checks require explicit grants; ZIP markers; Day5 deferrals in AUDIT.md.
+
+## Install and start
+
+Steward supports macOS on Apple Silicon (`arm64`) and Intel (`x86_64`). From the
+repository root:
+
+```sh
+./install.sh
+bun run server/index.ts --serve
+```
+
+The installer uses the committed `bun.lockb`, builds the production UI, and
+creates the restrictive `~/Library/Caches/Steward/models` directory without
+downloading workflow tools or model resources. It expects Homebrew at
+`/opt/homebrew` on Apple Silicon and `/usr/local` on Intel. If Bun is missing,
+the installer shows the exact `brew install bun` command and asks before
+running it. FFmpeg, OCRMyPDF, Whisper resources, and other workflow-specific
+tools remain managed by Steward when a task actually requires them.
