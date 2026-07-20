@@ -137,10 +137,10 @@ async function runPlannedReady(
 
 async function runPlanned(
   task: string, files: string[], directory: string, runId: string, emit: EmitServerEvent,
-  pendingRuns: Map<string, PendingInstall>,
+  pendingRuns: Map<string, PendingInstall>, suppliedProfile?: SystemProfile,
 ): Promise<Completion | null> {
   activity(runId, "No saved workflow matched. Reading the local system profile.", emit);
-  const profile = probeSystem();
+  const profile = suppliedProfile ?? probeSystem();
   activity(runId, `macOS ${profile.macosVersion} · ${profile.architecture} · ${profile.ram.gib} GiB.`, emit);
   activity(runId, "Planning a local command.", emit);
   const { planTask } = await import("./agent.ts");
@@ -203,7 +203,9 @@ async function execute(
       files, runId, emit, pendingRuns, suppliedProfile,
     );
   }
-  return runPlanned(request.task, files, directory, runId, emit, pendingRuns);
+  return runPlanned(
+    request.task, files, directory, runId, emit, pendingRuns, suppliedProfile,
+  );
 }
 
 export function runEngineEvent(
