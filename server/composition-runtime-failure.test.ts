@@ -192,6 +192,55 @@ describe("composition failure and confinement", () => {
       .toBeGreaterThanOrEqual(6);
   });
 
+  test("keeps the derivation probe on the raw stream and off the numbered sequence", async () => {
+    const derivations = {
+      video_bitrate: {
+        name: "size_target_video_bitrate" as const,
+        args: { target_bytes: 300_000, audio_kbps: 32, safety_factor: 0.9 },
+      },
+    };
+    const recipe = composition("derivation-numbering", [
+      videoStage({
+        id: "derivation-stage", suffix: "derivation", format: "mov", derivations,
+        args: ["-c:v", "libx264", "-b:v", "{{video_bitrate}}", "-pix_fmt", "yuv420p"],
+      }),
+      videoStage({ id: "plain-stage", suffix: "plain" }),
+    ]);
+    const runtimeEvents: CompositionRuntimeEvent[] = [];
+    const rawExecution: ExecutionEvent[] = [];
+    const run = await runComposition(recipe, source, {
+      profile,
+      executionOptions: { onEvent: (event) => rawExecution.push(event) },
+      onEvent: (event) => runtimeEvents.push(event),
+    });
+    expect(run).toMatchObject({ success: true, model_calls: 0 });
+
+    // The derivation probe resolves the slot before the stage's authored command runs,
+    // and it is observable on the caller's raw executor stream.
+    const rawStarted = rawExecution.flatMap((event) =>
+      event.type === "started" ? [event.argv] : []
+    );
+    expect(rawStarted[0]?.[0]).toBe("ffprobe");
+    expect(rawStarted[1]?.[0]).toBe("ffmpeg");
+
+    // Routing that probe back through the numbered reporter would add an ffprobe here.
+    const numbered = runtimeEvents.flatMap((event) =>
+      event.type === "execution" && event.event.type === "started" ? [event.event.argv] : []
+    );
+    expect(numbered.every((argv) => argv[0] === "ffmpeg")).toBe(true);
+    expect(numbered).toHaveLength(2);
+    const derivationStageCommands = runtimeEvents.filter((event) =>
+      event.type === "execution" && event.stage_index === 0 && event.event.type === "started"
+    );
+    expect(derivationStageCommands)
+      .toHaveLength(recipe.stages[0]!.command_template.commands.length);
+
+    // The slot really was resolved from the probe, so it was not skipped or stubbed.
+    const authoredCommand = run.stages[0]!.plan.commands[0]!;
+    expect(authoredCommand).not.toContain("{{video_bitrate}}");
+    expect(authoredCommand[authoredCommand.indexOf("-b:v") + 1]).toMatch(/^\d+k$/);
+  });
+
   test("cancellation during verification still aborts and cleans the composition root", async () => {
     const recipe = composition("cancel-during-verification", [
       videoStage({ id: "cancel-stage-one", suffix: "cancel-one", format: "mov" }),
