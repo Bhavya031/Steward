@@ -371,4 +371,63 @@ describe("composition UI stores", () => {
     ]);
     expect(get(compositionStages).some(({ stageIndex }) => stageIndex === 1)).toBe(false);
   });
+
+  test("numbers stage commands from authored templates on live runs and after reload", () => {
+    begin();
+    const detail = authoritativeDetail();
+    const stream: WsServerEvent[] = [];
+    for (const stage of detail.stages) {
+      stream.push({
+        type: "composition_stage_started", run_id: "chain-run",
+        stage_index: stage.stage_index, source_id: stage.source_id,
+      });
+      // Only authored template commands produce numbered command events.
+      stage.command_templates.forEach((_command, commandIndex) => {
+        stream.push({
+          type: "composition_command_started", run_id: "chain-run",
+          stage_index: stage.stage_index, source_id: stage.source_id,
+          command_index: commandIndex,
+        });
+        stream.push({
+          type: "composition_command_completed", run_id: "chain-run",
+          stage_index: stage.stage_index, source_id: stage.source_id,
+          command_index: commandIndex, exit_code: 0, duration_ms: 12,
+        });
+      });
+      // Verification helpers surface only as verification and check progress.
+      stream.push({
+        type: "composition_verification_started", run_id: "chain-run",
+        stage_index: stage.stage_index, source_id: stage.source_id,
+      });
+      stream.push({
+        type: "composition_check_result", run_id: "chain-run",
+        stage_index: stage.stage_index, source_id: stage.source_id,
+        name: "plays", pass: true, expected: "decode", actual: "ok",
+      });
+      stream.push({
+        type: "composition_verification_completed", run_id: "chain-run",
+        stage_index: stage.stage_index, source_id: stage.source_id, duration_ms: 30,
+      });
+    }
+    stream.forEach((event, index) => applyServerEvent(event, 200 + index));
+
+    // CompositionStageProgress renders `Command {index + 1}` for each entry here.
+    const live = get(compositionStages);
+    expect(live).toHaveLength(detail.stages.length);
+    live.forEach((stage, stageIndex) => {
+      const authored = detail.stages[stageIndex]!.command_templates.length;
+      expect(stage.commands).toHaveLength(authored);
+      expect(stage.commands.map((command) => command.index + 1))
+        .toEqual([...Array(authored).keys()].map((index) => index + 1));
+      expect(stage.commands.every((command) => command.status === "passed")).toBe(true);
+    });
+
+    // Reload from the authoritative server detail must agree with the live numbering.
+    applyServerEvent({ type: "composition_detail", detail });
+    const reloaded = get(compositions).find(({ name }) => name === "media-chain");
+    expect(reloaded?.detail?.stages).toHaveLength(detail.stages.length);
+    reloaded?.detail?.stages.forEach((stage, stageIndex) => {
+      expect(stage.command_templates).toHaveLength(live[stageIndex]!.commands.length);
+    });
+  });
 });

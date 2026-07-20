@@ -81,6 +81,10 @@ describe("stable-ID direct saved-workflow rerun", () => {
     const started = events.find((event) => event.type === "command_started");
     if (started?.type !== "command_started") throw new Error("command was not started");
     expect(started.argv).toContain(freshInput);
+    // Legacy atomic numbering counts authored commands only; verification helper
+    // subprocesses never entered this stream and must stay out of it.
+    expect(events.filter((event) => event.type === "command_started"))
+      .toHaveLength(workflow.command_template.commands.length);
     const completed = events.find((event) => event.type === "run_complete");
     expect(completed).toMatchObject({
       success: true,

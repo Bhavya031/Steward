@@ -32,6 +32,14 @@ function stageExecutionOptions(
     },
   };
 }
+
+// Derivation probes and verification helpers are not authored stage commands, so they must
+// not reach the numbered `execution` reporter. They keep the caller's cancellation signal,
+// timeout, and raw executor stream; their progress is reported by the verification and
+// check events instead.
+function helperExecutionOptions(options: CompositionRuntimeOptions): ExecutionOptions {
+  return { ...options.executionOptions };
+}
 export async function runComposition(
   untrustedComposition: unknown,
   stagedInput: unknown,
@@ -58,8 +66,9 @@ export async function runComposition(
         check_names: stage.checks.map((check) => check.type),
       });
       const stageOptions = stageExecutionOptions(options, stageIndex, stage.source_id);
+      const helperOptions = helperExecutionOptions(options);
       const slots = await resolveDerivationSlots(
-        stage.derivations, [stageInput], profile, stageOptions,
+        stage.derivations, [stageInput], profile, helperOptions,
       );
       const rendered = renderRecipe(stageRecipe(saved, stage), [stageInput], slots);
       const final = stageIndex === saved.stages.length - 1;
@@ -87,8 +96,8 @@ export async function runComposition(
         outputPath: plan.output_path,
         sourcePaths: [stageInput],
         profile,
-        onExecutionEvent: stageOptions.onEvent,
-        executionOptions: stageOptions,
+        onExecutionEvent: helperOptions.onEvent,
+        executionOptions: helperOptions,
       })).map((result) => ({
         ...result, stage_index: stageIndex, source_id: stage.source_id,
       }));

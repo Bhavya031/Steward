@@ -8,7 +8,7 @@ import {
   createCompositionOutputRoot, compositionInternalRoot,
 } from "./composition-output-root.ts";
 import { composition, videoStage } from "./composition-runtime-test-helpers.ts";
-import { runComposition } from "./composition-runtime.ts";
+import { runComposition, type CompositionRuntimeEvent } from "./composition-runtime.ts";
 import { executePlan, type ExecutionEvent } from "./executor.ts";
 import type { Plan, PlanCheck } from "./plan.ts";
 import { probeSystem } from "./probe.ts";
@@ -146,5 +146,76 @@ describe("composition failure and confinement", () => {
       managed.cleanup();
     }
     expect(existsSync(internal)).toBe(false);
+  });
+
+  test("reports authored commands only and keeps helper probes off the numbered stream", async () => {
+    const recipe = composition("authored-only-events", [
+      videoStage({ id: "authored-stage-one", suffix: "authored-one", format: "mov" }),
+      videoStage({ id: "authored-stage-two", suffix: "authored-two" }),
+    ]);
+    const runtimeEvents: CompositionRuntimeEvent[] = [];
+    const rawExecution: ExecutionEvent[] = [];
+    const run = await runComposition(recipe, source, {
+      profile,
+      executionOptions: { onEvent: (event) => rawExecution.push(event) },
+      onEvent: (event) => runtimeEvents.push(event),
+    });
+    expect(run).toMatchObject({ success: true, model_calls: 0 });
+
+    for (const [stageIndex, stage] of recipe.stages.entries()) {
+      const authored = stage.command_template.commands.length;
+      const started = runtimeEvents.filter((event) =>
+        event.type === "execution" && event.stage_index === stageIndex &&
+        event.event.type === "started"
+      );
+      expect(started).toHaveLength(authored);
+    }
+
+    // The raw executor stream still sees helper probes, so nothing is silently hidden.
+    const rawStarted = rawExecution.filter((event) => event.type === "started");
+    const numbered = runtimeEvents.filter((event) =>
+      event.type === "execution" && event.event.type === "started"
+    );
+    expect(rawStarted.length).toBeGreaterThan(numbered.length);
+    expect(rawStarted.some((event) => event.argv[0] === "ffprobe")).toBe(true);
+    expect(numbered.every((event) =>
+      event.type === "execution" && event.event.type === "started" &&
+      event.event.argv[0] === "ffmpeg"
+    )).toBe(true);
+
+    // Verification remains truthfully reported for every stage.
+    expect(runtimeEvents.filter((event) => event.type === "verification_started"))
+      .toHaveLength(2);
+    expect(runtimeEvents.filter((event) => event.type === "verification_completed"))
+      .toHaveLength(2);
+    expect(runtimeEvents.filter((event) => event.type === "check_result").length)
+      .toBeGreaterThanOrEqual(6);
+  });
+
+  test("cancellation during verification still aborts and cleans the composition root", async () => {
+    const recipe = composition("cancel-during-verification", [
+      videoStage({ id: "cancel-stage-one", suffix: "cancel-one", format: "mov" }),
+      videoStage({ id: "cancel-stage-two", suffix: "cancel-two" }),
+    ]);
+    const controller = new AbortController();
+    const runtimeEvents: CompositionRuntimeEvent[] = [];
+    const before = tempCompositionRoots();
+    await expect(runComposition(recipe, source, {
+      profile,
+      executionOptions: { signal: controller.signal },
+      onEvent: (event) => {
+        runtimeEvents.push(event);
+        // Abort as soon as the first stage enters verification.
+        if (event.type === "verification_started" && event.stage_index === 0) {
+          controller.abort(new Error("cancelled during verification"));
+        }
+      },
+    })).rejects.toThrow();
+
+    expect(runtimeEvents.some((event) => event.type === "verification_started")).toBe(true);
+    expect(runtimeEvents.some((event) =>
+      event.type === "stage_started" && event.stage_index === 1
+    )).toBe(false);
+    expect(tempCompositionRoots()).toEqual(before);
   });
 });

@@ -298,4 +298,70 @@ describe("composition WebSocket execution", () => {
       }
     }
   });
+
+  test("numbers only authored stage commands while helpers stay verification-only", async () => {
+    const events: WsServerEvent[] = [];
+    const stagedId = stageCopy("authored-numbering-source.mp4");
+    await withCodexTrap(() => runEngineEvent({
+        type: "run_composition",
+        name: "authored-numbering-chain",
+        workflow_ids: ["protocol-stage-one", "protocol-stage-two"],
+        staged_input_id: stagedId,
+      }, (event) => events.push(event), {
+        recipeDirectory: catalog, profile, stagedInputs: staging,
+        pendingCompositionRuns: new Map(),
+      }),
+    );
+    expect(existsSync(codexMarker)).toBe(false);
+    expect(events.at(-1)).toMatchObject({
+      type: "composition_run_complete", success: true, model_calls: 0,
+    });
+
+    const saved = loadSaved(catalog).find(({ name }) => name === "authored-numbering-chain");
+    const authoritative = validateSavedRecipe(saved);
+    if (authoritative.kind !== "composition") throw new Error("expected a saved composition");
+    expect(authoritative.stages).toHaveLength(2);
+
+    const startedIndexes = (stageIndex: number): number[] => events.flatMap((event) =>
+      event.type === "composition_command_started" && event.stage_index === stageIndex
+        ? [event.command_index] : []
+    );
+    const completedIndexes = (stageIndex: number): number[] => events.flatMap((event) =>
+      event.type === "composition_command_completed" && event.stage_index === stageIndex
+        ? [event.command_index] : []
+    );
+
+    for (const [stageIndex, stage] of authoritative.stages.entries()) {
+      const authored = stage.command_template.commands.length;
+      expect(authored).toBe(1);
+      const expected = [...Array(authored).keys()];
+      expect(startedIndexes(stageIndex)).toEqual(expected);
+      expect(completedIndexes(stageIndex)).toEqual(expected);
+    }
+
+    // Helpers stay visible, but only as verification progress and check evidence.
+    expect(eventsOf(events, "composition_verification_started")).toHaveLength(2);
+    expect(eventsOf(events, "composition_verification_completed")).toHaveLength(2);
+    const checkResults = events.filter((event) =>
+      event.type === "composition_check_result"
+    );
+    expect(checkResults.length).toBeGreaterThanOrEqual(6);
+    expect(checkResults.every((event) =>
+      event.type === "composition_check_result" &&
+      typeof event.expected === "string" && typeof event.actual === "string"
+    )).toBe(true);
+
+    // Every authored command must be reported before its stage's verification begins.
+    const ordering = events.filter((event) =>
+      event.type === "composition_command_started" ||
+      event.type === "composition_command_completed" ||
+      event.type === "composition_verification_started"
+    ).map((event) => event.type);
+    expect(ordering).toEqual([
+      "composition_command_started", "composition_command_completed",
+      "composition_verification_started",
+      "composition_command_started", "composition_command_completed",
+      "composition_verification_started",
+    ]);
+  });
 });
