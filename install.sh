@@ -10,6 +10,30 @@
 # assignment cannot be shadowed, so this keeps a trustworthy sourced-versus-executed answer
 # even after an imported function has run. An environment-supplied value is overwritten.
 __STEWARD_SELF="${BASH_SOURCE[0]}"
+
+# Streamed-install bootstrap. When run from a real file (./install.sh, `bash install.sh`,
+# or the privileged re-exec) __STEWARD_SELF is that file and this block is skipped
+# entirely, so every hardening step below runs unchanged. When the installer is streamed
+# over a pipe (read from stdin, so there is no file and no checkout) clone the repository
+# and re-exec its on-disk install.sh, which regains privileged mode from its shebang and
+# performs the full hardened install. Cloning uses git by absolute path (a name with a
+# slash cannot be shadowed by a shell function). The path that is privileged from line one
+# is the git-clone install documented in the README; this convenience path hands control
+# to that same hardened file before resolving any executable.
+if [[ ! -f "${__STEWARD_SELF:-}" ]]; then
+  set -euo pipefail
+  umask 077
+  __steward_repo="${STEWARD_REPO:-https://github.com/Bhavya031/Steward.git}"
+  __steward_dir="${STEWARD_DIR:-${HOME:?HOME must be set}/Steward}"
+  if [[ -e "$__steward_dir" ]]; then
+    builtin printf 'Steward install: %s already exists. Remove it or set STEWARD_DIR to an unused path.\n' "$__steward_dir" >&2
+    exit 1
+  fi
+  builtin printf 'Fetching Steward into %s ...\n' "$__steward_dir"
+  /usr/bin/git clone --depth 1 "$__steward_repo" "$__steward_dir"
+  exec /bin/bash -p "$__steward_dir/install.sh"
+fi
+
 case $- in
   *p*) ;;
   *)
