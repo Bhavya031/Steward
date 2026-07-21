@@ -10,7 +10,7 @@ A local macOS app that turns a plain-language task and a file into a
 <p align="center"><em>OpenAI Build Week · Work &amp; Productivity</em></p>
 
 <p align="center">
-  <img src="demo-material/steward-home-4k.png" alt="Steward entrance screen: describe a task, attach a file, run it locally" width="820">
+  <img src="poster.png" alt="Steward — one request, a whole system gets to work: understand, inspect, plan, execute, verify, save" width="820">
 </p>
 
 ---
@@ -63,6 +63,10 @@ Steward opens on a private `127.0.0.1` address with a per-session token. **Nothi
 4. **It runs once.** A confined, argv-only executor runs the plan on your Mac.
 5. **It proves it worked.** Fixed local verifiers measure the output and record **expected-vs-actual** evidence.
 6. **It becomes yours.** A verified run is saved as a **command** that reruns with **`model_calls: 0`** — no model, no cost, forever.
+
+<p align="center">
+  <img src="demo-material/steward-home-4k.png" alt="Steward running locally: describe a task, attach a file, and reuse verified commands" width="820">
+</p>
 
 ---
 
