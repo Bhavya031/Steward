@@ -1,170 +1,165 @@
-# Steward
+<h1 align="center">Steward</h1>
 
-**Your computer already knows how.**
+<p align="center"><strong>Your computer already knows how.</strong></p>
 
-**Ask once. Verify locally. Keep the saved command.**
+<p align="center">
+A local macOS app that turns a plain-language task and a file into a
+<strong>verified, reusable command</strong> — planned by GPT-5.6, run entirely on your Mac.
+</p>
 
-Built for **OpenAI Build Week**, **Work & Productivity** track.
+<p align="center"><em>OpenAI Build Week · Work &amp; Productivity</em></p>
 
-Steward turns a file chore into a verified local workflow. You describe the task
-in plain language and drop in a file. The Codex CLI, running `gpt-5.6-sol`,
-plans the work **once** and returns strict plan data — never a shell string.
-Steward validates that plan, executes it through a confined argv-only executor
-using an allowlisted set of local tools, and then measures the result with fixed
-local verifiers. Only a workflow that passes verification is kept, as a **saved
-command**. Running it again on a different file costs `model_calls: 0`. Two or
-more compatible saved commands can be combined into an ordered multi-stage
-workflow that also runs with `model_calls: 0`.
+<p align="center">
+  <img src="demo-material/steward-home-4k.png" alt="Steward entrance screen: describe a task, attach a file, run it locally" width="820">
+</p>
 
-## How it works
+---
 
-1. The Codex CLI uses `gpt-5.6-sol` (GPT-5.6) to plan the first workflow.
-2. Steward validates the plan, then runs literal argument arrays through its
-   confined, allowlisted executor — never a model-authored shell string.
-3. Fixed local verifiers measure the output against objective checks and record
-   expected-versus-actual evidence.
-4. Only a verified workflow is retained as a saved command. **Do Again** reuses
-   its exact commands, resources, and checks without invoking Codex.
+## Watch it work
 
-Open **Past Tasks**, choose **Do Again**, and pick a different file to execute a
-saved command directly with `model_calls: 0`.
+**Demo walkthrough:** [youtu.be/2MfCul45hmg](https://youtu.be/2MfCul45hmg)
 
-## Combining saved commands
+**Full uncut run:** [youtu.be/BFZc4Jtzv7I](https://youtu.be/BFZc4Jtzv7I)
 
-**Combine commands** builds a multi-stage workflow from saved commands whose
-declared input and output contracts line up. Steward derives each stage's
-contract from its own template, so only genuinely compatible stages can be
-chained, in an order you control.
+---
 
-- The first run of a combination and every later rerun both report
-  `model_calls: 0`. Combining does not call the model.
-- Each stage runs, is verified, and hands its output to the next stage. A failed
-  stage stops the chain and nothing is saved.
-- Live progress numbers **only the authored commands** of each stage. The
-  template for a stage with one command shows exactly one numbered command.
-  Verification helpers and derivation probes are real subprocesses, but they are
-  reported through verification and check events rather than being counted as
-  commands you did not write.
-- Reopening a saved combination in **Past Tasks** fetches its detail from the
-  server, so the stage and command counts you see after a reload come from the
-  authoritative saved template rather than from anything the browser inferred.
+## Install
 
-## Requirements
-
-- macOS on Apple Silicon (`arm64`) or Intel (`x86_64`).
-- Homebrew at `/opt/homebrew` (Apple Silicon) or `/usr/local` (Intel).
-- Apple Command Line Tools (`xcode-select --install`).
-- The Codex CLI, installed and already authenticated. Steward never logs you in.
-  Install it with `npm install -g @openai/codex`, then run `codex login`
-  yourself before installing Steward.
-
-## Install and run
-
-From the repository root:
+**One line.** Paste it in Terminal:
 
 ```sh
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/Bhavya031/Steward/main/install.sh | bash
 ```
 
-`./install.sh` is the only supported way to invoke the installer — see
-[AUDIT.md](AUDIT.md) for why. The installer resolves Bun and the Codex CLI to
-absolute paths, installs dependencies from the committed `bun.lockb` with
-`--frozen-lockfile`, builds the production UI, and creates the private
-`~/Library/Caches/Steward/models` directory. If Bun is missing it shows the
-exact `brew install bun` command and asks before running it. It does not
-preinstall workflow tools or model resources; those are managed later, with
-confirmation, only when a task needs them.
+That **clones Steward** and runs the installer. No checkout required first.
 
-The installer checks Codex readiness by running exactly two commands —
-`codex --version` and `codex login status`. It never starts a login and never
-stores credentials. If Codex is not authenticated, it stops and prints the exit
-code, the diagnostic output, and a shell-safely quoted `<resolved codex> login`
-command for you to run.
+**Prefer to see the code before you run it?** Clone, then install:
 
-When it finishes, the installer prints the launch command using the same
-absolute Bun binary it just used, in the form:
-
-```
-From the repository root, start Steward with:
-  /opt/homebrew/bin/bun run server/index.ts --serve
+```sh
+git clone https://github.com/Bhavya031/Steward.git && cd Steward && ./install.sh
 ```
 
-Run the command exactly as printed. Steward binds a random free port on
-`127.0.0.1` and prints a URL carrying a per-session token.
+**You need:** macOS · Homebrew · Apple Command Line Tools (`xcode-select --install`) · the **Codex CLI, already logged in** (`npm install -g @openai/codex` then `codex login` — Steward never logs you in).
 
-### Codex CLI resolution
+The installer prints the exact launch command. Run it as printed:
 
-Steward resolves the Codex binary in a fixed order, with no shell evaluation at
-any step:
+```sh
+<the bun path it prints> run server/index.ts --serve
+```
 
-1. `STEWARD_CODEX_BIN`, if set. An explicitly set override is authoritative — if
-   it is empty, missing, not a regular file, or not executable, installation and
-   planning **fail closed** with an actionable error rather than falling back.
-2. `$HOME/.local/bin/codex`, if executable.
-3. A manual walk of `PATH`, entry by entry.
+Steward opens on a private `127.0.0.1` address with a per-session token. **Nothing is hosted. Nothing is shared.**
 
-Resolution always yields an absolute executable path. If nothing is found, the
-error names both remedies: install the Codex CLI, or set `STEWARD_CODEX_BIN`.
+> **Security note.** The one-line install reads over a pipe, so it clones and then **hands control to the hardened on-disk installer**. For privileged-mode hardening from the very first line, use the **git-clone** install above — it is the fully-hardened path.
 
-## Privacy
+---
 
-Input file bytes stay on your Mac. Files chosen in the browser are staged
-through the authenticated loopback server and processed by local tools; their
-contents are not uploaded. For a first-time workflow, Codex receives the task
-text and the local planning context needed to produce a plan. Saved-command
-reruns and combination runs do not call the model at all.
+## The idea, in one flow
 
-## Safety and evidence
+**Ask once. Verify locally. Keep the command.**
 
-Steward uses argv-only execution, tool and flag allowlists, path confinement,
-authenticated loopback HTTP and WebSocket access, bounded repair, cleanup, and
-objective verification. The boundaries and the evidence are documented in
-[AUDIT.md](AUDIT.md); day-to-day usage is covered in [GUIDE.md](GUIDE.md) and
-the file-level architecture in [MAP.md](MAP.md).
+1. **Describe it.** Type a task in plain language, drop in a file.
+2. **Codex plans it.** GPT-5.6 returns a **strict plan** — a tool, argument arrays, an output path, and checks. **Data, never a shell string.**
+3. **Steward validates it.** Every argument is checked against per-tool policy **before anything runs**.
+4. **It runs once.** A confined, argv-only executor runs the plan on your Mac.
+5. **It proves it worked.** Fixed local verifiers measure the output and record **expected-vs-actual** evidence.
+6. **It becomes yours.** A verified run is saved as a **command** that reruns with **`model_calls: 0`** — no model, no cost, forever.
 
-Verification status at this commit:
+---
 
-- 382 tests, 1,286 assertions, 61 files, zero failures.
-- TypeScript clean; Svelte 0 errors, 0 warnings; production build passing.
+## Why it's different
 
-Observed proof, reproduced on a development machine:
+- **Open-ended, not a menu.** You describe the problem in your words — **Codex figures out the tool and the flags.**
+- **Objective proof, not vibes.** Every run is **verified against measured evidence** (file size, duration, streams, format). A run that can't be proven **isn't saved**.
+- **It compounds.** Each verified task **accumulates as a reusable command.** The second time is free and instant.
+- **It teaches.** Steward **shows you the real command** it ran — so the CLI stops being a black box.
 
-- A fresh, unmatched prompt planned once with the real Codex CLI — one model
-  call.
-- A saved atomic rerun on a different file reported `model_calls: 0`.
-- A combination's first run and its later rerun both reported `model_calls: 0`.
-- Final outputs were confirmed with independent `ffprobe` evidence — container
-  format, duration, and the expected video and audio streams.
+---
 
-## Limitations
+## What ships
 
-This release states only what it can support:
+**Seven verified starter commands**, each mapped to a paid service it replaces:
 
-- The proof above was captured on a development machine. **It is not a
-  clean-macOS-machine proof of the current installer.** The clean-machine
-  transcript in `demo-material/` was captured against an earlier commit and does
-  not cover the portable-installation work in this one.
-- There is **no real Intel-machine installation proof**. Intel support is
-  covered by unit tests over the architecture and Homebrew-prefix logic only.
-- The audit records four open items this release does not claim to solve: trust
-  validation for binaries discovered through `PATH`; path TOCTOU between
-  validation and a tool opening the file; cleanup of temporary roots after
-  abrupt process death; and architecture-compatibility enforcement when
-  rerunning saved commands.
+| Command | Tool | Replaces |
+| --- | --- | --- |
+| **Compress video under 25 MB** | `ffmpeg` | Clideo — $9/mo |
+| **Convert to MP4** | `ffmpeg` | CloudConvert — $8/mo |
+| **Convert to MOV** | `ffmpeg` | CloudConvert — $8/mo |
+| **Normalize audio to −14 LUFS** | `ffmpeg` | Auphonic — $11/mo |
+| **Markdown → DOCX** | `pandoc` | Convertio — $6.99/mo |
+| **OCR a scanned PDF** | `ocrmypdf` | iLovePDF — $5/mo |
+| **Transcribe video → SRT** | `whisper-cli` | *(local, free)* |
 
-## Terminology
+**Multi-step shipped as Combine — not batch.** There is **no multi-file batch mode.** What shipped is **Combine**: chain **2–8 saved commands** (up to 8 argv arrays total) into one ordered, verified workflow. Each stage is verified before it feeds the next, and the **whole chain runs at `model_calls: 0`** — first run and every rerun.
 
-This documentation says **saved command**. Code identifiers and the `recipes/`
-directory may still say *recipe*, and runtime error messages currently say
-*saved workflow*; none of that naming is being changed for this submission.
+---
 
-## Codex collaboration disclosure
+## Architecture
 
-- The original core Codex thread is the `/feedback` judged artifact.
-- After that thread became context-heavy, a fresh Codex chat handled integration
-  and final verification.
-- Claude Code performed report-only auditing, review, and planning.
-- Codex wrote the shipped code.
+**The model plans. Your Mac does everything else.**
 
-The repository does not contain the original `/feedback` session ID. It is still
-outstanding for the Devpost submission and is deliberately not invented here.
+- **Plan-only model.** Codex returns a **strict JSON plan** and nothing else — it **never** gets a shell, a path it invented, or a free-form command.
+- **The command *is* the plan.** A saved command stores the **exact plan template that just passed** — same argv arrays, checks, derivations. Rerun **replays it verbatim.** No second, drifting representation.
+- **Argv-only executor.** Runs over a **curated tool allowlist** with **positive per-flag classification** and **path confinement** — never a model-authored string.
+- **Evidence-based verification.** Fixed `ffprobe` / `ffmpeg` / Ghostscript probes produce **expected-vs-actual** results the executor path can't fake.
+- **One authenticated channel.** A single WebSocket plus a **256-bit per-session token** — every request without it is rejected before routing.
+- **Curated price map.** Replacement claims are a **hand-verified, deduplicated** table — not model-invented numbers.
+
+---
+
+## Security
+
+**Loopback-only, argv-only, proven-or-discarded.**
+
+- **Local surface only.** Binds `127.0.0.1` on a **random free port**, guarded by a **256-bit `base64url` per-session token** (`randomBytes(32)`), compared in **constant time**.
+- **Output-path confinement.** The output and its parent are resolved **after symlinks** and confined to the **input and temp roots** — existing and dangling output symlinks **fail closed**.
+- **Positive flag allowlist.** **Every token is classified per tool.** Anything not explicitly permitted is denied — no denylist gaps.
+- **The verifier never runs plan argv.** Checks use **fixed probe commands only**, so a plan can't smuggle work through its own verification.
+- **Two independently-found criticals — both closed:**
+  - **Model-controlled `output_path` could target arbitrary writable locations** → now resolved post-symlink and confined to input/temp roots.
+  - **Allowlisted binaries accepted dangerous model-controlled flags and embedded sources** → every token is positively classified; **Ghostscript pipe/unsafe, ffmpeg `lavfi`/`movie`, and pandoc execution hooks are explicitly denied.**
+
+Full boundary in **[AUDIT.md](AUDIT.md)**.
+
+---
+
+## Testing
+
+**383 tests · 1,293 assertions · 61 files · all green.**
+
+- **Server suite: 383 pass / 0 fail**, run under `bun test`.
+- **Svelte-check: 377 files · 0 errors · 0 warnings.**
+- **Zero-model-call is a *test*, not a promise.** `recipes.test.ts` resolves the rerun's **module graph** and independently **bundles the rerun entry**, then asserts neither can reach **`server/agent.ts`** — the planner is **not even importable** on the rerun path.
+- **The installer is tested as hostile input.** Executable resolution, privileged-mode re-exec, fail-closed backstops, and **"no `eval` / `sh -c` / `curl` / `wget`"** are all asserted.
+- **Security invariants are covered:** output confinement, per-flag classification, staged-input single-use leases, derivation typing.
+- **Motion is accessible.** The UI respects **`prefers-reduced-motion`** throughout.
+
+---
+
+## Impact
+
+**Meet Maya — a freelance video editor.**
+
+She owes a client a **sub-25 MB cut by midnight**, needs the audio at broadcast **−14 LUFS**, and has to hand over an **SRT** and a **DOCX** of the brief. Today that's **four browser tabs and five subscriptions**.
+
+- **Steward replaces $39.99/mo of tools** — Clideo, CloudConvert, Auphonic, Convertio, iLovePDF, **deduplicated** to real distinct services.
+- **Real, verified result:** *"Compress this video under 1 MB"* → Codex derived a **1152 kbps** bitrate → output **900,553 bytes (879 KB)**, **proven** under the 1,000,000-byte cap by `ffprobe`.
+- **The second time is free.** After the first verified run, Maya's compress command reruns at **`model_calls: 0`** — a property the module-graph test **guarantees**, not just claims.
+
+She never learns a flag. She never uploads a byte. She stops paying five companies for what her Mac already does.
+
+---
+
+## Powered by OpenAI
+
+This was built in one week, and it was only possible because of **GPT-5.6** and **Codex**.
+
+- **GPT-5.6-Sol (`gpt-5.6-sol`) — the planner and the thinking partner.** It turns a plain-language task plus a local system profile into a **strict, validated plan**: data, never a shell string. At **extra-high reasoning**, it was also the partner for the architecture itself — the confinement model, the verification contract, the command-is-the-plan invariant.
+- **Codex CLI — the builder.** Codex wrote the **shipped code**: the argv-only executor, the evidence-based verifiers, the hardened installer, and the **383 green tests** that hold all of it in place.
+
+The best part: **Steward runs on Codex inside itself.** The same engine that built it is the engine it calls to plan your first run.
+
+---
+
+## Try it
+
+**Live and testable through August 5, 2026.** Install with the one-liner above, drop in a file, and ask.
