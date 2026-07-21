@@ -108,6 +108,46 @@ describe("local UI server", () => {
     expect(running.stagedInputs.has(result.staged_input_id)).toBe(true);
   });
 
+  test("reveals an existing output and rejects bad requests on /api/reveal", async () => {
+    const revealed: string[] = [];
+    const revealServer = startLocalServer({
+      staticRoot: root,
+      revealInFinder: async (path) => {
+        revealed.push(path);
+        return true;
+      },
+    });
+    const output = join(root, "output.wav");
+    writeFileSync(output, "verified bytes");
+    const call = (token: string | null, body: string) =>
+      fetch(`${revealServer.origin}/api/reveal${token === null ? "" : `?token=${token}`}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+    try {
+      // 401: no session token, and the reveal never runs.
+      expect((await call(null, JSON.stringify({ path: output }))).status).toBe(401);
+      // 400: a relative path is refused before touching the filesystem.
+      expect((await call(revealServer.token, JSON.stringify({ path: "relative.wav" }))).status)
+        .toBe(400);
+      // 404: an absolute path that is not on disk.
+      expect((await call(revealServer.token, JSON.stringify({ path: join(root, "gone.wav") })))
+        .status).toBe(404);
+      // 200: an existing absolute path is handed to the injected opener exactly once.
+      const ok = await call(revealServer.token, JSON.stringify({ path: output }));
+      expect(ok.status).toBe(200);
+      expect(await ok.json()).toEqual({ ok: true });
+      expect(revealed).toEqual([output]);
+      // Only POST is allowed.
+      expect((await fetch(`${revealServer.origin}/api/reveal?token=${revealServer.token}`))
+        .status).toBe(405);
+    } finally {
+      revealServer.server.stop(true);
+      rmSync(revealServer.stagingRoot, { recursive: true, force: true });
+    }
+  });
+
   test("uses a unique exclusive path for repeated staged filenames", async () => {
     const first = await stage("same.pdf", "first");
     const second = await stage("same.pdf", "second");
