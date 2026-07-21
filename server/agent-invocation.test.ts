@@ -160,13 +160,14 @@ describe("Codex CLI invocation boundary", () => {
     expect(calls).toBe(1);
     expect(invocations()).toHaveLength(1);
     const [argv] = invocations();
-    expect(argv?.slice(0, 8)).toEqual([
-      "exec", "--ephemeral", "--sandbox", "read-only",
+    expect(argv?.slice(0, 10)).toEqual([
+      "exec", "-c", "model_reasoning_effort=low",
+      "--ephemeral", "--sandbox", "read-only",
       "--model", PLANNER_MODEL, "--color", "never",
     ]);
-    expect(argv?.[8]).toBe("--output-schema");
-    expect(argv?.[9]).toEndWith("/server/plan.schema.json");
-    expect(argv?.[10]).toContain(JSON.stringify(task));
+    expect(argv?.[10]).toBe("--output-schema");
+    expect(argv?.[11]).toEndWith("/server/plan.schema.json");
+    expect(argv?.[12]).toContain(JSON.stringify(task));
     expect(existsSync(injectedMarker)).toBe(false);
   });
 

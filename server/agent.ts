@@ -141,7 +141,8 @@ async function runCodex(
   onModelCall?.();
   const child = Bun.spawn(
     [
-      binary, "exec", "--ephemeral", "--sandbox", "read-only",
+      binary, "exec", "-c", "model_reasoning_effort=low",
+      "--ephemeral", "--sandbox", "read-only",
       "--model", PLANNER_MODEL, "--color", "never",
       "--output-schema", PLAN_SCHEMA_PATH, prompt,
     ],
