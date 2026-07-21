@@ -7,6 +7,7 @@
   import {
     formatClock, raycastDeeplink, scriptText, stepTool,
   } from "../lib/receipt-view.ts";
+  import { revealOutputPath } from "../lib/task-entry.ts";
   import type { SavedCommand } from "../lib/composition-model.ts";
   import type { CheckItem, Recipe, RunHistoryItem } from "../lib/stores.ts";
   import ReceiptPipeline from "./ReceiptPipeline.svelte";
@@ -33,8 +34,8 @@
     modelCalls, killTotal, outputPath, outputName, composition = false, now,
     recipes, history, onOpenRecipe,
   }: Props = $props();
-  let copied = $state(false);
-  let copyTimer: ReturnType<typeof setTimeout> | undefined;
+  let revealLabel = $state("Reveal in Finder");
+  let revealTimer: ReturnType<typeof setTimeout> | undefined;
   let outputFile = $derived(
     outputName ?? outputPath?.split(/[\\/]/).at(-1) ?? "Verified local output",
   );
@@ -46,12 +47,26 @@
     easing: cubicOut,
   });
 
-  async function copyOutputPath(): Promise<void> {
+  function flashReveal(label: string): void {
+    revealLabel = label;
+    if (revealTimer) clearTimeout(revealTimer);
+    revealTimer = setTimeout(() => revealLabel = "Reveal in Finder", 1_800);
+  }
+
+  async function revealOutput(): Promise<void> {
     if (!outputPath) return;
-    await navigator.clipboard.writeText(outputPath);
-    copied = true;
-    if (copyTimer) clearTimeout(copyTimer);
-    copyTimer = setTimeout(() => copied = false, 1_500);
+    try {
+      await revealOutputPath(outputPath);
+      flashReveal("Revealed");
+    } catch {
+      // Fall back to copying the path so the output is still reachable.
+      try {
+        await navigator.clipboard.writeText(outputPath);
+        flashReveal("Path copied");
+      } catch {
+        flashReveal("Couldn't reveal");
+      }
+    }
   }
 
   function saveScript(): void {
@@ -68,7 +83,7 @@
   }
 
   onDestroy(() => {
-    if (copyTimer) clearTimeout(copyTimer);
+    if (revealTimer) clearTimeout(revealTimer);
   });
 </script>
 
@@ -109,8 +124,8 @@
     <div class="receipt-file-row">
       <img src="/art/filename-flower-tile.png" alt="" aria-hidden="true" />
       <strong>{outputFile}</strong>
-      <button type="button" disabled={!outputPath} onclick={copyOutputPath}>
-        {copied ? "Path copied" : "Reveal in Finder"}
+      <button type="button" disabled={!outputPath} onclick={revealOutput}>
+        {revealLabel}
       </button>
     </div>
 

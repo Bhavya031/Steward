@@ -56,6 +56,31 @@ export function runSavedWorkflowEvent(
   return { type: "run_saved_workflow", workflow_id: workflowId, files: [...paths] };
 }
 
+export async function revealOutputPath(
+  path: string,
+  pageUrl = new URL(window.location.href),
+  fetcher: Fetcher = fetch,
+): Promise<void> {
+  const token = sessionTokenForRequest(pageUrl);
+  const url = new URL("/api/reveal", pageUrl);
+  url.search = "";
+  url.searchParams.set("token", token);
+  const response = await fetcher(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!response.ok) {
+    const result: unknown = await response.json().catch(() => null);
+    const message = typeof result === "object" && result !== null &&
+      Object.hasOwn(result, "error") &&
+      typeof (result as { error?: unknown }).error === "string"
+      ? (result as { error: string }).error
+      : "Steward could not reveal the output.";
+    throw new Error(message);
+  }
+}
+
 export async function stageInputFile(
   file: File,
   pageUrl = new URL(window.location.href),
